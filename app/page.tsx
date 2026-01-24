@@ -37,7 +37,11 @@ export default function ChatbotPage() {
         </div>
       )}
       {statusLabel && (
-        <div className="mx-4 mt-2 rounded-lg bg-blue-100 px-4 py-2 text-center text-sm text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
+        <div className={`mx-4 mt-2 rounded-lg px-4 py-2 text-center text-sm ${
+          listeningMode === 'connected'
+            ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400'
+            : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
+        }`}>
           {statusLabel}
         </div>
       )}
