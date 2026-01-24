@@ -36,11 +36,12 @@ export function float32ToInt16(float32: Float32Array): Int16Array {
 
 /**
  * Converte Int16Array (PCM 16-bit) in Float32Array (Web Audio)
+ * Usa divisione uniforme per evitare discontinuità a 0
  */
 export function int16ToFloat32(int16: Int16Array): Float32Array {
   const float32 = new Float32Array(int16.length);
   for (let i = 0; i < int16.length; i++) {
-    float32[i] = int16[i] / (int16[i] < 0 ? 0x8000 : 0x7FFF);
+    float32[i] = int16[i] / 32768;
   }
   return float32;
 }

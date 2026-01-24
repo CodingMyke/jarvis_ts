@@ -120,6 +120,11 @@ export class VoiceChatClient {
       this.audioOutput?.playChunk(data);
     });
 
+    this.provider.on("turnComplete", () => {
+      // Flush remaining audio chunks when turn is complete
+      this.audioOutput?.flush();
+    });
+
     this.provider.on("error", ({ error }) => {
       this.options.onError?.(error);
     });
