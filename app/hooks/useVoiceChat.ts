@@ -1,156 +1,148 @@
 "use client";
 
 import { useState, useRef, useCallback, useEffect } from "react";
+import type { Message } from "@/app/lib/speech/types";
 import {
-  Message,
-  VoiceChatHook,
-  GOODBYE_RESPONSE,
-  containsWakeWord,
-  containsThankYou,
-  resolveResponse,
-  speak,
-  cancelSpeech,
-} from "@/app/lib/speech";
+  VoiceChatClient,
+  createGeminiProvider,
+  VoiceChatError,
+  type ConnectionState,
+} from "@/app/lib/voice-chat";
 
-const SPEECH_RECOGNITION_CONFIG = {
-  lang: "it-IT",
-  continuous: true,
-  interimResults: false,
-} as const;
+export interface UseVoiceChatReturn {
+  isConnected: boolean;
+  isListening: boolean;
+  isMuted: boolean;
+  messages: Message[];
+  audioLevel: number;
+  error: VoiceChatError | null;
+  connectionState: ConnectionState;
+  connect: () => Promise<void>;
+  disconnect: () => void;
+  toggleMute: () => void;
+}
 
-export function useVoiceChat(): VoiceChatHook {
-  const [isRecording, setIsRecording] = useState(false);
+/**
+ * Hook per gestire la voice chat con Gemini Live API.
+ * Fornisce connessione WebSocket bidirezionale per conversazioni real-time.
+ */
+export function useVoiceChat(): UseVoiceChatReturn {
+  const clientRef = useRef<VoiceChatClient | null>(null);
+  
+  const [connectionState, setConnectionState] = useState<ConnectionState>('disconnected');
+  const [isListening, setIsListening] = useState(false);
+  const [isMuted, setIsMuted] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
+  const [audioLevel, setAudioLevel] = useState(0);
+  const [error, setError] = useState<VoiceChatError | null>(null);
 
-  const recognitionRef = useRef<SpeechRecognition | null>(null);
-  const isSpeakingRef = useRef(false);
-  const isRecordingRef = useRef(false);
-  const restartRecognitionRef = useRef<(() => void) | null>(null);
-
-  const addMessage = useCallback((text: string, isUser: boolean): Message => {
+  const addMessage = useCallback((text: string, isUser: boolean): void => {
     const message: Message = {
       id: `${Date.now()}-${isUser ? "user" : "ai"}`,
       text,
       isUser,
     };
     setMessages((prev) => [...prev, message]);
-    return message;
   }, []);
 
-  const stopRecording = useCallback(() => {
-    setIsRecording(false);
-    isRecordingRef.current = false;
-    isSpeakingRef.current = false;
-
-    recognitionRef.current?.stop();
-    recognitionRef.current = null;
-    cancelSpeech();
-  }, []);
-
-  const createRecognition = useCallback((): SpeechRecognition | null => {
-    if (typeof window === "undefined") return null;
-
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SpeechRecognition) return null;
-
-    const recognition = new SpeechRecognition();
-    recognition.lang = SPEECH_RECOGNITION_CONFIG.lang;
-    recognition.continuous = SPEECH_RECOGNITION_CONFIG.continuous;
-    recognition.interimResults = SPEECH_RECOGNITION_CONFIG.interimResults;
-
-    return recognition;
-  }, []);
-
-  const restartRecognition = useCallback(() => {
-    if (!isRecordingRef.current) return;
-
-    const recognition = createRecognition();
-    if (!recognition) return;
-
-    recognition.onresult = (event) => {
-      if (isSpeakingRef.current) return;
-
-      const lastResult = event.results[event.results.length - 1];
-      if (!lastResult.isFinal) return;
-
-      const transcript = lastResult[0].transcript.trim();
-      if (!transcript || !containsWakeWord(transcript)) return;
-
-      addMessage(transcript, true);
-
-      if (containsThankYou(transcript)) {
-        addMessage(GOODBYE_RESPONSE, false);
-        speak(GOODBYE_RESPONSE, stopRecording);
-        return;
-      }
-
-      const response = resolveResponse(transcript);
-      if (!response) return;
-
-      addMessage(response, false);
-      isSpeakingRef.current = true;
-      recognition.stop();
-
-      speak(response, () => {
-        isSpeakingRef.current = false;
-        if (isRecordingRef.current) restartRecognitionRef.current?.();
-      });
-    };
-
-    recognition.onerror = (event) => {
-      const { error } = event;
-
-      if (error === "no-speech" || error === "network") {
-        setTimeout(() => {
-          if (isRecordingRef.current && !isSpeakingRef.current) {
-            restartRecognitionRef.current?.();
-          }
-        }, error === "network" ? 1000 : 0);
-        return;
-      }
-
-      if (error === "not-allowed" || error === "permission-denied") {
-        alert("Permessi del microfono negati. Consenti l'accesso nelle impostazioni del browser.");
-      }
-
-      stopRecording();
-    };
-
-    recognition.onend = () => {
-      if (!isSpeakingRef.current && isRecordingRef.current) {
-        restartRecognitionRef.current?.();
-      }
-    };
-
-    recognition.start();
-    recognitionRef.current = recognition;
-  }, [addMessage, createRecognition, stopRecording]);
-
-  useEffect(() => {
-    restartRecognitionRef.current = restartRecognition;
-  }, [restartRecognition]);
-
-  const startRecording = useCallback(async () => {
-    if (typeof window === "undefined") return;
-
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SpeechRecognition) {
-      alert("Il riconoscimento vocale non è supportato nel tuo browser.");
+  const connect = useCallback(async () => {
+    console.log('[useVoiceChat] connect called, clientRef:', clientRef.current);
+    
+    // Evita connessioni multiple
+    if (clientRef.current) {
+      console.log('[useVoiceChat] client already exists, returning');
       return;
     }
+
+    setError(null);
 
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      stream.getTracks().forEach((track) => track.stop());
-    } catch {
-      alert("Impossibile accedere al microfono. Verifica i permessi nelle impostazioni.");
-      return;
+      console.log('[useVoiceChat] creating provider...');
+      const provider = createGeminiProvider();
+
+      console.log('[useVoiceChat] creating client...');
+      const client = new VoiceChatClient({
+        provider,
+        config: {
+          voice: 'Kore',
+          language: 'it-IT',
+        },
+        tools: [], // Lista vuota, pronta per futuro function calling
+        onTranscript: (text: string, type: 'input' | 'output') => {
+          addMessage(text, type === 'input');
+        },
+        onStateChange: (state: ConnectionState) => {
+          console.log('[useVoiceChat] state changed:', state);
+          setConnectionState(state);
+        },
+        onError: (err: VoiceChatError) => {
+          console.error('[useVoiceChat] error:', err);
+          setError(err);
+        },
+        onAudioLevel: setAudioLevel,
+      });
+
+      clientRef.current = client;
+
+      console.log('[useVoiceChat] connecting...');
+      await client.connect();
+      console.log('[useVoiceChat] connected! starting listening...');
+      await client.startListening();
+      console.log('[useVoiceChat] listening started!');
+      
+      setIsListening(true);
+    } catch (err) {
+      console.error('[useVoiceChat] catch error:', err);
+      const voiceError = err instanceof VoiceChatError
+        ? err
+        : new VoiceChatError(
+            err instanceof Error ? err.message : 'Unknown error',
+            'UNKNOWN_ERROR',
+            false
+          );
+      setError(voiceError);
+      
+      // Cleanup in caso di errore
+      clientRef.current?.dispose();
+      clientRef.current = null;
     }
+  }, [addMessage]);
 
-    setIsRecording(true);
-    isRecordingRef.current = true;
-    restartRecognition();
-  }, [restartRecognition]);
+  const disconnect = useCallback(() => {
+    clientRef.current?.dispose();
+    clientRef.current = null;
+    
+    setIsListening(false);
+    setIsMuted(false);
+    setAudioLevel(0);
+    setConnectionState('disconnected');
+  }, []);
 
-  return { isRecording, messages, startRecording, stopRecording };
+  const toggleMute = useCallback(() => {
+    if (!clientRef.current) return;
+    
+    const newMuted = !isMuted;
+    clientRef.current.setMuted(newMuted);
+    setIsMuted(newMuted);
+  }, [isMuted]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      clientRef.current?.dispose();
+    };
+  }, []);
+
+  return {
+    isConnected: connectionState === 'connected',
+    isListening,
+    isMuted,
+    messages,
+    audioLevel,
+    error,
+    connectionState,
+    connect,
+    disconnect,
+    toggleMute,
+  };
 }
