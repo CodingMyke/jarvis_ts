@@ -23,7 +23,7 @@ export function Button({
   ...props
 }: ButtonProps) {
   const baseStyles =
-    "flex items-center justify-center rounded-lg border px-3 py-2 transition-colors focus:outline-none focus:ring-2 disabled:opacity-50";
+    "cursor-pointer flex items-center justify-center rounded-lg border px-3 py-2 transition-colors focus:outline-none focus:ring-2 disabled:opacity-50";
 
   return (
     <button

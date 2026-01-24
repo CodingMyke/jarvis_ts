@@ -7,6 +7,9 @@ import {
   createGeminiProvider,
   VoiceChatError,
   WakeWordManager,
+  ConversationStorage,
+  summarizeConversation,
+  createSummaryTurns,
   type ConnectionState,
 } from "@/app/lib/voice-chat";
 import { JARVIS_CONFIG } from "@/app/lib/voice-chat/jarvis.config";
@@ -25,6 +28,7 @@ export interface UseVoiceChatReturn {
   startListening: () => void;
   stopListening: () => void;
   toggleMute: () => void;
+  clearConversation: () => void;
 }
 
 /**
@@ -36,6 +40,8 @@ export function useVoiceChat(): UseVoiceChatReturn {
   const clientRef = useRef<VoiceChatClient | null>(null);
   const wakeWordRef = useRef<WakeWordManager | null>(null);
   const currentMessageIdRef = useRef<{ user: string | null; ai: string | null }>({ user: null, ai: null });
+  const storageRef = useRef<ConversationStorage>(new ConversationStorage());
+  const messagesRef = useRef<Message[]>([]);
   
   const [connectionState, setConnectionState] = useState<ConnectionState>('disconnected');
   const [listeningMode, setListeningMode] = useState<ListeningMode>('idle');
@@ -43,6 +49,53 @@ export function useVoiceChat(): UseVoiceChatReturn {
   const [messages, setMessages] = useState<Message[]>([]);
   const [audioLevel, setAudioLevel] = useState(0);
   const [error, setError] = useState<VoiceChatError | null>(null);
+
+  // Mantieni messagesRef sincronizzato con lo state
+  useEffect(() => {
+    messagesRef.current = messages;
+  }, [messages]);
+
+  // Carica la history al mount
+  useEffect(() => {
+    const saved = storageRef.current.load();
+    if (saved && saved.turns.length > 0) {
+      const loadedMessages: Message[] = saved.turns.map((turn, index) => ({
+        id: `history-${index}`,
+        text: turn.parts.map((p) => p.text).join(' '),
+        isUser: turn.role === 'user',
+      }));
+      setMessages(loadedMessages);
+      console.log('[useVoiceChat] loaded history:', loadedMessages.length, 'messages');
+    }
+  }, []);
+
+  /**
+   * Salva la conversazione corrente nel localStorage.
+   * Se i messaggi utente sono >= 20, genera prima un riassunto.
+   */
+  const saveConversation = useCallback(async (currentMessages: Message[]) => {
+    const storage = storageRef.current;
+    
+    // Non salvare conversazioni vuote
+    if (currentMessages.length === 0) return;
+
+    if (storage.needsSummarization(currentMessages)) {
+      console.log('[useVoiceChat] generating summary...');
+      try {
+        const turns = storage.messagesToTurns(currentMessages);
+        const summary = await summarizeConversation(turns);
+        const summaryTurns = createSummaryTurns(summary);
+        storage.saveTurns(summaryTurns, true);
+        console.log('[useVoiceChat] summary saved');
+      } catch (err) {
+        console.error('[useVoiceChat] failed to summarize, saving full conversation:', err);
+        storage.save(currentMessages, false);
+      }
+    } else {
+      console.log('[useVoiceChat] saving full conversation');
+      storage.save(currentMessages, false);
+    }
+  }, []);
 
   const handleTranscript = useCallback((text: string, type: 'input' | 'output' | 'thinking'): void => {
     if (type === 'input') {
@@ -131,6 +184,9 @@ export function useVoiceChat(): UseVoiceChatReturn {
         onEndConversation: () => {
           console.log('[useVoiceChat] conversation ended by assistant');
           
+          // Salva la conversazione prima di pulire
+          saveConversation(messagesRef.current);
+          
           // Cleanup client Gemini
           clientRef.current?.dispose();
           clientRef.current = null;
@@ -153,6 +209,17 @@ export function useVoiceChat(): UseVoiceChatReturn {
       await client.startListening();
       
       setListeningMode('connected');
+      
+      // Carica e invia la history precedente (se esiste)
+      const savedConversation = storageRef.current.load();
+      if (savedConversation && savedConversation.turns.length > 0) {
+        console.log('[useVoiceChat] sending previous conversation history:', 
+          savedConversation.isSummarized ? 'summarized' : 'full',
+          savedConversation.turns.length, 'turns'
+        );
+        // turnComplete: false -> il modello aspetta altro input
+        client.sendHistory(savedConversation.turns, false);
+      }
       
       // Invia il messaggio iniziale che contiene la wake word
       // Aggiungi il messaggio utente alla lista
@@ -180,7 +247,7 @@ export function useVoiceChat(): UseVoiceChatReturn {
       setListeningMode('wake_word');
       wakeWordRef.current?.resume();
     }
-  }, [handleTranscript]);
+  }, [handleTranscript, saveConversation]);
 
   /**
    * Avvia l'ascolto in modalità wake word.
@@ -242,6 +309,16 @@ export function useVoiceChat(): UseVoiceChatReturn {
     setIsMuted(newMuted);
   }, [isMuted]);
 
+  /**
+   * Cancella tutta la conversazione (stato e localStorage).
+   */
+  const clearConversation = useCallback(() => {
+    setMessages([]);
+    storageRef.current.clear();
+    currentMessageIdRef.current = { user: null, ai: null };
+    console.log('[useVoiceChat] conversation cleared');
+  }, []);
+
   // Cleanup on unmount
   useEffect(() => {
     return () => {
@@ -262,5 +339,6 @@ export function useVoiceChat(): UseVoiceChatReturn {
     startListening,
     stopListening,
     toggleMute,
+    clearConversation,
   };
 }

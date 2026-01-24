@@ -1,6 +1,7 @@
 import type { VoiceChatProvider } from "../providers/base.provider";
 import type { SessionConfig } from "../types/messages.types";
 import type { ToolDefinition, FunctionCall, FunctionResponse } from "../types/tools.types";
+import type { ConversationTurn } from "../storage/types";
 import {
   VoiceChatError,
   type ConnectionState,
@@ -115,6 +116,17 @@ export class VoiceChatClient {
   sendText(text: string): void {
     if (this.state !== "connected") return;
     this.provider.sendText(text);
+  }
+
+  /**
+   * Invia la history della conversazione precedente.
+   * Da chiamare subito dopo connect() e prima di sendText().
+   * @param turns - I turni della conversazione precedente
+   * @param turnComplete - Se false (default), il modello aspetta altro input
+   */
+  sendHistory(turns: ConversationTurn[], turnComplete = false): void {
+    if (this.state !== "connected") return;
+    this.provider.sendHistory(turns, turnComplete);
   }
 
   dispose(): void {

@@ -1,5 +1,6 @@
 import type { SessionConfig, FunctionCall } from '../../types/messages.types';
 import type { FunctionResponse } from '../../types/tools.types';
+import type { ConversationTurn } from '../../storage/types';
 import { VoiceChatError } from '../../types/client.types';
 import type {
   VoiceChatProvider,
@@ -13,6 +14,7 @@ import {
   buildActivityStartMessage,
   buildActivityEndMessage,
   buildToolResponseMessage,
+  buildHistoryMessage,
   parseServerMessage,
 } from './gemini-messages';
 import { GEMINI_MODEL } from '../../config';
@@ -150,6 +152,14 @@ export class GeminiProvider implements VoiceChatProvider {
     if (!this.ws || this.ws.readyState !== WebSocket.OPEN) return;
     
     const msg = buildToolResponseMessage(responses);
+    this.ws.send(JSON.stringify(msg));
+  }
+
+  sendHistory(turns: ConversationTurn[], turnComplete = false): void {
+    if (!this.ws || this.ws.readyState !== WebSocket.OPEN) return;
+    
+    const msg = buildHistoryMessage(turns, turnComplete);
+    console.log('[GeminiProvider] sending history:', JSON.stringify(msg, null, 2));
     this.ws.send(JSON.stringify(msg));
   }
 

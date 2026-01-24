@@ -1,6 +1,7 @@
 import type { SessionConfig, FunctionCall } from '../types/messages.types';
 import type { FunctionResponse } from '../types/tools.types';
 import type { VoiceChatError } from '../types/client.types';
+import type { ConversationTurn } from '../storage/types';
 
 export type ProviderEvent = 
   | 'connected'
@@ -67,6 +68,14 @@ export interface VoiceChatProvider {
    * Invia risposte alle function calls
    */
   sendToolResponse(responses: FunctionResponse[]): void;
+
+  /**
+   * Invia la history della conversazione precedente.
+   * Usato per fornire contesto a una nuova sessione.
+   * @param turns - I turni della conversazione precedente
+   * @param turnComplete - Se false, il modello aspetta altro input prima di rispondere
+   */
+  sendHistory(turns: ConversationTurn[], turnComplete?: boolean): void;
 
   /**
    * Registra handler per eventi

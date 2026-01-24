@@ -51,6 +51,8 @@ export const JARVIS_CONFIG: JarvisConfig = {
 
   - Quando la conversazione sembra terminata e/o hai risposto/fatto tutto quello che ti ho chiesto, NON chiedermi se voglio fare altro.
 
+  - Se ti chiedo l'orario rispondi con l'orario corrente in italiano a meno che non ti chiedo espressamente di dirti l'orario in un altro paese.
+
   - IMPORTANTE: Quando l'utente indica che la conversazione è finita (es. "ok grazie", "ciao", "a dopo", "perfetto grazie", "ho finito"), 
     rispondi con un breve saluto e poi chiama il tool endConversation per terminare la connessione.
   `,

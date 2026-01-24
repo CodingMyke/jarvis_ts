@@ -6,6 +6,7 @@ import type {
   ServerMessage 
 } from '../../types/messages.types';
 import type { FunctionResponse } from '../../types/tools.types';
+import type { ConversationTurn } from '../../storage/types';
 import { pcmToBase64 } from '../../audio/audio-utils';
 
 const AUDIO_INPUT_MIME_TYPE = 'audio/pcm;rate=16000';
@@ -60,6 +61,29 @@ export function buildToolResponseMessage(responses: FunctionResponse[]): ToolRes
   return {
     toolResponse: {
       functionResponses: responses,
+    },
+  };
+}
+
+interface ClientContentMessage {
+  clientContent: {
+    turns: ConversationTurn[];
+    turnComplete: boolean;
+  };
+}
+
+/**
+ * Costruisce messaggio per inviare la history della conversazione.
+ * Usato per fornire contesto a una nuova sessione.
+ */
+export function buildHistoryMessage(
+  turns: ConversationTurn[],
+  turnComplete = false
+): ClientContentMessage {
+  return {
+    clientContent: {
+      turns,
+      turnComplete,
     },
   };
 }
