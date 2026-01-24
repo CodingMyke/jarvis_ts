@@ -13,7 +13,17 @@ export function ChatBubble({ message }: ChatBubbleProps) {
   return (
     <div className={`flex ${alignmentClass}`}>
       <div className={`max-w-[80%] rounded-2xl px-4 py-2 ${bubbleClass}`}>
-        <p className="text-sm">{message.text}</p>
+        {!message.isUser && message.thinking && (
+          <details className="mb-2">
+            <summary className="cursor-pointer text-xs text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300">
+              💭 Ragionamento
+            </summary>
+            <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400 italic border-l-2 border-zinc-300 dark:border-zinc-600 pl-2">
+              {message.thinking}
+            </p>
+          </details>
+        )}
+        {message.text && <p className="text-sm">{message.text}</p>}
       </div>
     </div>
   );

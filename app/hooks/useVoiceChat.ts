@@ -37,35 +37,52 @@ export function useVoiceChat(): UseVoiceChatReturn {
   const [audioLevel, setAudioLevel] = useState(0);
   const [error, setError] = useState<VoiceChatError | null>(null);
 
-  const appendTranscript = useCallback((text: string, isUser: boolean): void => {
-    const key = isUser ? 'user' : 'ai';
-    const otherKey = isUser ? 'ai' : 'user';
-    
-    // Reset l'altro tipo quando cambia speaker
-    currentMessageIdRef.current[otherKey] = null;
-    
-    const currentId = currentMessageIdRef.current[key];
-    
-    if (currentId) {
-      // Aggiorna messaggio esistente
-      setMessages((prev) => 
-        prev.map((msg) => 
-          msg.id === currentId 
-            ? { ...msg, text: msg.text + text }
-            : msg
-        )
-      );
-    } else {
-      // Crea nuovo messaggio
-      const newId = `${Date.now()}-${key}`;
-      currentMessageIdRef.current[key] = newId;
+  const handleTranscript = useCallback((text: string, type: 'input' | 'output' | 'thinking'): void => {
+    if (type === 'input') {
+      // Messaggio utente - reset AI message id
+      currentMessageIdRef.current.ai = null;
       
-      const message: Message = {
-        id: newId,
-        text,
-        isUser,
-      };
-      setMessages((prev) => [...prev, message]);
+      const currentId = currentMessageIdRef.current.user;
+      
+      if (currentId) {
+        setMessages((prev) => 
+          prev.map((msg) => 
+            msg.id === currentId 
+              ? { ...msg, text: msg.text + text }
+              : msg
+          )
+        );
+      } else {
+        const newId = `${Date.now()}-user`;
+        currentMessageIdRef.current.user = newId;
+        setMessages((prev) => [...prev, { id: newId, text, isUser: true }]);
+      }
+    } else {
+      // Messaggio AI (thinking o output) - reset user message id
+      currentMessageIdRef.current.user = null;
+      
+      const currentId = currentMessageIdRef.current.ai;
+      const field = type === 'thinking' ? 'thinking' : 'text';
+      
+      if (currentId) {
+        setMessages((prev) => 
+          prev.map((msg) => 
+            msg.id === currentId 
+              ? { ...msg, [field]: (msg[field] || '') + text }
+              : msg
+          )
+        );
+      } else {
+        const newId = `${Date.now()}-ai`;
+        currentMessageIdRef.current.ai = newId;
+        const message: Message = { 
+          id: newId, 
+          text: type === 'output' ? text : '', 
+          isUser: false,
+          thinking: type === 'thinking' ? text : undefined,
+        };
+        setMessages((prev) => [...prev, message]);
+      }
     }
   }, []);
 
@@ -93,9 +110,7 @@ export function useVoiceChat(): UseVoiceChatReturn {
           systemPrompt: 'Sei un assistente vocale italiano. Parla sempre in italiano con un accento naturale e fluente. Rispondi in modo conversazionale e amichevole ma allo stesso tempo sii coinciso e breve.',
         },
         tools: [], // Lista vuota, pronta per futuro function calling
-        onTranscript: (text: string, type: 'input' | 'output') => {
-          appendTranscript(text, type === 'input');
-        },
+        onTranscript: handleTranscript,
         onStateChange: (state: ConnectionState) => {
           console.log('[useVoiceChat] state changed:', state);
           setConnectionState(state);
@@ -131,7 +146,7 @@ export function useVoiceChat(): UseVoiceChatReturn {
       clientRef.current?.dispose();
       clientRef.current = null;
     }
-  }, [appendTranscript]);
+  }, [handleTranscript]);
 
   const disconnect = useCallback(() => {
     clientRef.current?.dispose();

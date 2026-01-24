@@ -193,9 +193,10 @@ export class GeminiProvider implements VoiceChatProvider {
           this.emit('audio', { data: bytes.buffer });
         }
         
-        // Text transcript
+        // Text transcript (thinking vs output)
         if (part.text) {
-          this.emit('transcript', { text: part.text, type: 'output' });
+          const type = part.thought ? 'thinking' : 'output';
+          this.emit('transcript', { text: part.text, type });
         }
       }
     }

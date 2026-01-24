@@ -33,7 +33,7 @@ export interface VoiceChatClientOptions {
   provider: import('../providers/base.provider').VoiceChatProvider;
   config?: VoiceChatConfig;
   tools?: ToolDefinition[];
-  onTranscript?: (text: string, type: 'input' | 'output') => void;
+  onTranscript?: (text: string, type: 'input' | 'output' | 'thinking') => void;
   onStateChange?: (state: ConnectionState) => void;
   onError?: (error: VoiceChatError) => void;
   onAudioLevel?: (level: number) => void;

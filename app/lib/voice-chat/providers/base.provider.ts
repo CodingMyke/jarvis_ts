@@ -16,7 +16,7 @@ export interface ProviderEventData {
   connected: void;
   disconnected: { reason: string };
   audio: { data: ArrayBuffer };
-  transcript: { text: string; type: 'input' | 'output' };
+  transcript: { text: string; type: 'input' | 'output' | 'thinking' };
   toolCall: { calls: FunctionCall[] };
   turnComplete: void;
   interrupted: void;
