@@ -1,4 +1,5 @@
 import type { AudioFormat } from '../types/audio.types';
+import { GeminiVoice } from './voices.config';
 
 export const AUDIO_INPUT_SAMPLE_RATE = 16000;
 export const AUDIO_OUTPUT_SAMPLE_RATE = 24000;
@@ -13,3 +14,6 @@ export const DEFAULT_AUDIO_FORMAT: AudioFormat = {
 // export const GEMINI_MODEL = 'gemini-2.0-flash-exp';
 export const GEMINI_MODEL = 'gemini-2.5-flash-native-audio-preview-12-2025';
 export const GEMINI_API_VERSION = 'v1alpha';
+
+// export const DEFAULT_VOICE: GeminiVoice = 'Algieba';
+export const DEFAULT_VOICE: GeminiVoice = 'Algenib';
