@@ -40,5 +40,8 @@ export const JARVIS_CONFIG: JarvisConfig = {
   - Qualsiasi cosa ti chiedo dammi le minime informazioni che ritieni che mi servino per risolvere/comprendere quello che ti ho chiesto 
   in modo da mantenere la conversazione breve e concisa. 
   
-  - Niente giri di parole o ripetizioni, vai dritto al punto. Vai nello specifico e dilungati SOLO se espressamente richiesto.`,
+  - Niente giri di parole o ripetizioni, vai dritto al punto. Vai nello specifico e dilungati SOLO se espressamente richiesto.
+
+  - Quando la conversazione sembra terminata e/o hai risposto/fatto tutto quello che ti ho chiesto, NON chiedermi se voglio fare altro.
+  `,
 };
