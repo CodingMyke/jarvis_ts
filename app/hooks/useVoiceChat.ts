@@ -90,6 +90,7 @@ export function useVoiceChat(): UseVoiceChatReturn {
         config: {
           voice: 'Kore',
           language: 'it-IT',
+          systemPrompt: 'Sei un assistente vocale italiano. Parla sempre in italiano con un accento naturale e fluente. Rispondi in modo conversazionale e amichevole ma allo stesso tempo sii coinciso e breve.',
         },
         tools: [], // Lista vuota, pronta per futuro function calling
         onTranscript: (text: string, type: 'input' | 'output') => {

@@ -9,7 +9,7 @@ import {
 } from "../types/client.types";
 import { AudioInputManager } from "../audio/audio-input.manager";
 import { AudioOutputManager } from "../audio/audio-output.manager";
-import { AUDIO_CHUNK_INTERVAL_MS, AUDIO_OUTPUT_SAMPLE_RATE, DEFAULT_AUDIO_FORMAT } from "../config/default.config";
+import { AUDIO_CHUNK_INTERVAL_MS, AUDIO_OUTPUT_SAMPLE_RATE, DEFAULT_AUDIO_FORMAT, GEMINI_MODEL } from "../config/default.config";
 
 
 /**
@@ -148,7 +148,7 @@ export class VoiceChatClient {
     const config = this.options.config || {};
 
     return {
-      model: "models/gemini-2.0-flash-exp",
+      model: `models/${GEMINI_MODEL}`,
       generationConfig: {
         responseModalities: ["AUDIO"],
         speechConfig: {

@@ -10,5 +10,6 @@ export const DEFAULT_AUDIO_FORMAT: AudioFormat = {
   bitDepth: 16,
 };
 
-export const GEMINI_MODEL = 'gemini-2.0-flash-exp';
+// export const GEMINI_MODEL = 'gemini-2.0-flash-exp';
+export const GEMINI_MODEL = 'gemini-2.5-flash-native-audio-preview-12-2025';
 export const GEMINI_API_VERSION = 'v1alpha';
