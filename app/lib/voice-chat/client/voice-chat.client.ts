@@ -175,6 +175,7 @@ export class VoiceChatClient {
             ]
           : undefined,
       inputAudioTranscription: {},
+      outputAudioTranscription: {},
     };
   }
 }

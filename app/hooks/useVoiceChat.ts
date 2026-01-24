@@ -28,6 +28,7 @@ export interface UseVoiceChatReturn {
  */
 export function useVoiceChat(): UseVoiceChatReturn {
   const clientRef = useRef<VoiceChatClient | null>(null);
+  const currentMessageIdRef = useRef<{ user: string | null; ai: string | null }>({ user: null, ai: null });
   
   const [connectionState, setConnectionState] = useState<ConnectionState>('disconnected');
   const [isListening, setIsListening] = useState(false);
@@ -36,13 +37,36 @@ export function useVoiceChat(): UseVoiceChatReturn {
   const [audioLevel, setAudioLevel] = useState(0);
   const [error, setError] = useState<VoiceChatError | null>(null);
 
-  const addMessage = useCallback((text: string, isUser: boolean): void => {
-    const message: Message = {
-      id: `${Date.now()}-${isUser ? "user" : "ai"}`,
-      text,
-      isUser,
-    };
-    setMessages((prev) => [...prev, message]);
+  const appendTranscript = useCallback((text: string, isUser: boolean): void => {
+    const key = isUser ? 'user' : 'ai';
+    const otherKey = isUser ? 'ai' : 'user';
+    
+    // Reset l'altro tipo quando cambia speaker
+    currentMessageIdRef.current[otherKey] = null;
+    
+    const currentId = currentMessageIdRef.current[key];
+    
+    if (currentId) {
+      // Aggiorna messaggio esistente
+      setMessages((prev) => 
+        prev.map((msg) => 
+          msg.id === currentId 
+            ? { ...msg, text: msg.text + text }
+            : msg
+        )
+      );
+    } else {
+      // Crea nuovo messaggio
+      const newId = `${Date.now()}-${key}`;
+      currentMessageIdRef.current[key] = newId;
+      
+      const message: Message = {
+        id: newId,
+        text,
+        isUser,
+      };
+      setMessages((prev) => [...prev, message]);
+    }
   }, []);
 
   const connect = useCallback(async () => {
@@ -69,7 +93,7 @@ export function useVoiceChat(): UseVoiceChatReturn {
         },
         tools: [], // Lista vuota, pronta per futuro function calling
         onTranscript: (text: string, type: 'input' | 'output') => {
-          addMessage(text, type === 'input');
+          appendTranscript(text, type === 'input');
         },
         onStateChange: (state: ConnectionState) => {
           console.log('[useVoiceChat] state changed:', state);
@@ -106,7 +130,7 @@ export function useVoiceChat(): UseVoiceChatReturn {
       clientRef.current?.dispose();
       clientRef.current = null;
     }
-  }, [addMessage]);
+  }, [appendTranscript]);
 
   const disconnect = useCallback(() => {
     clientRef.current?.dispose();

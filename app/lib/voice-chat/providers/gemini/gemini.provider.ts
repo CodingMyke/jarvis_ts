@@ -208,6 +208,14 @@ export class GeminiProvider implements VoiceChatProvider {
       });
     }
 
+    // Output transcript
+    if (message.serverContent?.outputTranscription?.text) {
+      this.emit('transcript', { 
+        text: message.serverContent.outputTranscription.text, 
+        type: 'output' 
+      });
+    }
+
     // Turn complete
     if (message.serverContent?.turnComplete) {
       this.emit('turnComplete', undefined);
