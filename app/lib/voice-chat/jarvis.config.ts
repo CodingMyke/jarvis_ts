@@ -3,6 +3,7 @@ import type { GeminiVoice } from "./config/voices.config";
 interface JarvisConfig {
   voice: GeminiVoice;
   language: string;
+  wakeWord: string;
   systemPrompt: string;
 }
 
@@ -26,6 +27,12 @@ export const JARVIS_CONFIG: JarvisConfig = {
   language: "it-IT",
 
   /**
+   * Parola chiave per attivare l'assistente.
+   * L'assistente rimane in ascolto locale finché non sente questa parola.
+   */
+  wakeWord: "Jarvis",
+
+  /**
    * System prompt che definisce la personalità e il comportamento di Jarvis.
    */
   systemPrompt: `
@@ -43,5 +50,8 @@ export const JARVIS_CONFIG: JarvisConfig = {
   - Niente giri di parole o ripetizioni, vai dritto al punto. Vai nello specifico e dilungati SOLO se espressamente richiesto.
 
   - Quando la conversazione sembra terminata e/o hai risposto/fatto tutto quello che ti ho chiesto, NON chiedermi se voglio fare altro.
+
+  - IMPORTANTE: Quando l'utente indica che la conversazione è finita (es. "ok grazie", "ciao", "a dopo", "perfetto grazie", "ho finito"), 
+    rispondi con un breve saluto e poi chiama il tool endConversation per terminare la connessione.
   `,
 };

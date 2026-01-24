@@ -4,15 +4,29 @@ import { Header, MessageList, ChatInput } from "@/app/components";
 import { useVoiceChat } from "@/app/hooks/useVoiceChat";
 
 export default function ChatbotPage() {
-  const { isListening, messages, connect, disconnect, error } = useVoiceChat();
+  const { isListening, messages, startListening, stopListening, error, listeningMode } = useVoiceChat();
 
   const handleMicrophoneClick = () => {
     if (isListening) {
-      disconnect();
+      stopListening();
     } else {
-      connect();
+      startListening();
     }
   };
+
+  // Label per mostrare lo stato corrente
+  const getStatusLabel = () => {
+    switch (listeningMode) {
+      case 'wake_word':
+        return 'In ascolto... Dì "Jarvis" per iniziare';
+      case 'connected':
+        return 'Connesso con Jarvis';
+      default:
+        return null;
+    }
+  };
+
+  const statusLabel = getStatusLabel();
 
   return (
     <div className="flex h-screen flex-col bg-background">
@@ -20,6 +34,11 @@ export default function ChatbotPage() {
       {error && (
         <div className="mx-4 mt-2 rounded-lg bg-red-100 px-4 py-2 text-sm text-red-700 dark:bg-red-900/30 dark:text-red-400">
           {error.message}
+        </div>
+      )}
+      {statusLabel && (
+        <div className="mx-4 mt-2 rounded-lg bg-blue-100 px-4 py-2 text-center text-sm text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
+          {statusLabel}
         </div>
       )}
       <MessageList messages={messages} />

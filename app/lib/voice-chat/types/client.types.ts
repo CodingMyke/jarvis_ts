@@ -37,4 +37,5 @@ export interface VoiceChatClientOptions {
   onStateChange?: (state: ConnectionState) => void;
   onError?: (error: VoiceChatError) => void;
   onAudioLevel?: (level: number) => void;
+  onEndConversation?: () => void;
 }

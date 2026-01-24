@@ -6,9 +6,12 @@ import {
   VoiceChatClient,
   createGeminiProvider,
   VoiceChatError,
+  WakeWordManager,
   type ConnectionState,
 } from "@/app/lib/voice-chat";
 import { JARVIS_CONFIG } from "@/app/lib/voice-chat/jarvis.config";
+
+type ListeningMode = "idle" | "wake_word" | "connected";
 
 export interface UseVoiceChatReturn {
   isConnected: boolean;
@@ -18,21 +21,24 @@ export interface UseVoiceChatReturn {
   audioLevel: number;
   error: VoiceChatError | null;
   connectionState: ConnectionState;
-  connect: () => Promise<void>;
-  disconnect: () => void;
+  listeningMode: ListeningMode;
+  startListening: () => void;
+  stopListening: () => void;
   toggleMute: () => void;
 }
 
 /**
  * Hook per gestire la voice chat con Gemini Live API.
- * Fornisce connessione WebSocket bidirezionale per conversazioni real-time.
+ * Implementa un sistema di wake word: il browser ascolta localmente finché
+ * non rileva "Jarvis", poi apre la connessione con Gemini.
  */
 export function useVoiceChat(): UseVoiceChatReturn {
   const clientRef = useRef<VoiceChatClient | null>(null);
+  const wakeWordRef = useRef<WakeWordManager | null>(null);
   const currentMessageIdRef = useRef<{ user: string | null; ai: string | null }>({ user: null, ai: null });
   
   const [connectionState, setConnectionState] = useState<ConnectionState>('disconnected');
-  const [isListening, setIsListening] = useState(false);
+  const [listeningMode, setListeningMode] = useState<ListeningMode>('idle');
   const [isMuted, setIsMuted] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [audioLevel, setAudioLevel] = useState(0);
@@ -87,22 +93,23 @@ export function useVoiceChat(): UseVoiceChatReturn {
     }
   }, []);
 
-  const connect = useCallback(async () => {
-    console.log('[useVoiceChat] connect called, clientRef:', clientRef.current);
+  /**
+   * Connette a Gemini e invia il messaggio iniziale con la wake word.
+   */
+  const connectToGemini = useCallback(async (initialMessage: string) => {
+    console.log('[useVoiceChat] connectToGemini called with:', initialMessage);
     
     // Evita connessioni multiple
     if (clientRef.current) {
-      console.log('[useVoiceChat] client already exists, returning');
+      console.log('[useVoiceChat] client already exists');
       return;
     }
 
     setError(null);
 
     try {
-      console.log('[useVoiceChat] creating provider...');
       const provider = createGeminiProvider();
 
-      console.log('[useVoiceChat] creating client...');
       const client = new VoiceChatClient({
         provider,
         config: {
@@ -110,7 +117,7 @@ export function useVoiceChat(): UseVoiceChatReturn {
           language: JARVIS_CONFIG.language,
           systemPrompt: JARVIS_CONFIG.systemPrompt,
         },
-        tools: [], // Lista vuota, pronta per futuro function calling
+        tools: [],
         onTranscript: handleTranscript,
         onStateChange: (state: ConnectionState) => {
           console.log('[useVoiceChat] state changed:', state);
@@ -121,17 +128,40 @@ export function useVoiceChat(): UseVoiceChatReturn {
           setError(err);
         },
         onAudioLevel: setAudioLevel,
+        onEndConversation: () => {
+          console.log('[useVoiceChat] conversation ended by assistant');
+          
+          // Cleanup client Gemini
+          clientRef.current?.dispose();
+          clientRef.current = null;
+          setIsMuted(false);
+          setAudioLevel(0);
+          setConnectionState('disconnected');
+          
+          // Reset message refs per la prossima conversazione
+          currentMessageIdRef.current = { user: null, ai: null };
+          
+          // Torna in modalità wake word
+          setListeningMode('wake_word');
+          wakeWordRef.current?.resume();
+        },
       });
 
       clientRef.current = client;
 
-      console.log('[useVoiceChat] connecting...');
       await client.connect();
-      console.log('[useVoiceChat] connected! starting listening...');
       await client.startListening();
-      console.log('[useVoiceChat] listening started!');
       
-      setIsListening(true);
+      setListeningMode('connected');
+      
+      // Invia il messaggio iniziale che contiene la wake word
+      // Aggiungi il messaggio utente alla lista
+      const messageId = `${Date.now()}-user`;
+      setMessages((prev) => [...prev, { id: messageId, text: initialMessage, isUser: true }]);
+      currentMessageIdRef.current.user = null; // Reset per evitare concatenazioni
+      
+      client.sendText(initialMessage);
+      
     } catch (err) {
       console.error('[useVoiceChat] catch error:', err);
       const voiceError = err instanceof VoiceChatError
@@ -143,17 +173,62 @@ export function useVoiceChat(): UseVoiceChatReturn {
           );
       setError(voiceError);
       
-      // Cleanup in caso di errore
       clientRef.current?.dispose();
       clientRef.current = null;
+      
+      // Torna in wake word mode in caso di errore
+      setListeningMode('wake_word');
+      wakeWordRef.current?.resume();
     }
   }, [handleTranscript]);
 
-  const disconnect = useCallback(() => {
+  /**
+   * Avvia l'ascolto in modalità wake word.
+   * Il browser ascolta localmente finché non rileva "Jarvis".
+   */
+  const startListening = useCallback(() => {
+    console.log('[useVoiceChat] startListening called');
+    
+    if (listeningMode !== 'idle') {
+      console.log('[useVoiceChat] already listening, mode:', listeningMode);
+      return;
+    }
+
+    setError(null);
+
+    // Crea il wake word manager
+    wakeWordRef.current = new WakeWordManager({
+      keyword: JARVIS_CONFIG.wakeWord,
+      language: JARVIS_CONFIG.language,
+      onWakeWord: (transcript) => {
+        console.log('[useVoiceChat] wake word detected:', transcript);
+        connectToGemini(transcript);
+      },
+      onError: (err) => {
+        console.error('[useVoiceChat] wake word error:', err);
+        setError(new VoiceChatError(err.message, 'AUDIO_ERROR', true));
+      },
+    });
+
+    wakeWordRef.current.start();
+    setListeningMode('wake_word');
+  }, [listeningMode, connectToGemini]);
+
+  /**
+   * Ferma completamente l'ascolto (sia wake word che Gemini).
+   */
+  const stopListening = useCallback(() => {
+    console.log('[useVoiceChat] stopListening called');
+    
+    // Ferma wake word manager
+    wakeWordRef.current?.dispose();
+    wakeWordRef.current = null;
+    
+    // Ferma client Gemini
     clientRef.current?.dispose();
     clientRef.current = null;
     
-    setIsListening(false);
+    setListeningMode('idle');
     setIsMuted(false);
     setAudioLevel(0);
     setConnectionState('disconnected');
@@ -170,20 +245,22 @@ export function useVoiceChat(): UseVoiceChatReturn {
   // Cleanup on unmount
   useEffect(() => {
     return () => {
+      wakeWordRef.current?.dispose();
       clientRef.current?.dispose();
     };
   }, []);
 
   return {
     isConnected: connectionState === 'connected',
-    isListening,
+    isListening: listeningMode !== 'idle',
     isMuted,
     messages,
     audioLevel,
     error,
     connectionState,
-    connect,
-    disconnect,
+    listeningMode,
+    startListening,
+    stopListening,
     toggleMute,
   };
 }

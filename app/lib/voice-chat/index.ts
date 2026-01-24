@@ -22,3 +22,6 @@ export type {
 
 // Config
 export { GEMINI_VOICES, type GeminiVoice } from './config/voices.config';
+
+// Audio utilities
+export { WakeWordManager, type WakeWordManagerOptions } from './audio';
