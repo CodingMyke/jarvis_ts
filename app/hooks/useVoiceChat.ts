@@ -8,7 +8,7 @@ import {
   VoiceChatError,
   type ConnectionState,
 } from "@/app/lib/voice-chat";
-import { DEFAULT_VOICE } from "../lib/voice-chat/config";
+import { JARVIS_CONFIG } from "@/app/lib/voice-chat/jarvis.config";
 
 export interface UseVoiceChatReturn {
   isConnected: boolean;
@@ -106,9 +106,9 @@ export function useVoiceChat(): UseVoiceChatReturn {
       const client = new VoiceChatClient({
         provider,
         config: {
-          voice: DEFAULT_VOICE,
-          language: 'it-IT',
-          systemPrompt: 'Sei Jarvis, un assistente personale italiano. Parla sempre in italiano con un accento naturale e fluente. Rispondi in modo coinciso e breve. Qualsiasi cosa ti chiedo dammi le minime informazioni che ritieni che mi servino per risolvere/comprendere quello che ti ho chiesto in modo da mantenere la conversazione breve e concisa. Niente giri di parole o ripetizioni, vai dritto al punto. Vai nello specifico e dilungati SOLO se espressamente richiesto.',
+          voice: JARVIS_CONFIG.voice,
+          language: JARVIS_CONFIG.language,
+          systemPrompt: JARVIS_CONFIG.systemPrompt,
         },
         tools: [], // Lista vuota, pronta per futuro function calling
         onTranscript: handleTranscript,
