@@ -125,6 +125,11 @@ export class VoiceChatClient {
       this.audioOutput?.flush();
     });
 
+    this.provider.on("interrupted", () => {
+      // Interrompi immediatamente la riproduzione quando l'utente parla
+      this.audioOutput?.clear();
+    });
+
     this.provider.on("error", ({ error }) => {
       this.options.onError?.(error);
     });

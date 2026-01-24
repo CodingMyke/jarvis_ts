@@ -159,11 +159,11 @@ export class AudioOutputManager {
     this.accumulator = [];
     this.accumulatorLength = 0;
     
-    // Fade out veloce prima di fermare
+    // Fade out velocissimo prima di fermare (20ms)
     if (this.gainNode && this.audioContext) {
       const now = this.audioContext.currentTime;
       this.gainNode.gain.setValueAtTime(this.gainNode.gain.value, now);
-      this.gainNode.gain.linearRampToValueAtTime(0, now + 0.05);
+      this.gainNode.gain.linearRampToValueAtTime(0, now + 0.02);
       
       // Ferma tutti i source dopo il fade
       setTimeout(() => {
@@ -180,7 +180,7 @@ export class AudioOutputManager {
         if (this.gainNode) {
           this.gainNode.gain.setValueAtTime(1, this.audioContext!.currentTime);
         }
-      }, 60);
+      }, 30);
     }
     
     this.isPlaying = false;
