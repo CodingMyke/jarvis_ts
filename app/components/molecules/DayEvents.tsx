@@ -36,7 +36,7 @@ export function DayEvents({ data, expandedEventId, onToggleEvent }: DayEventsPro
 
   return (
     <div className="space-y-2">
-      <h3 className="text-xs font-medium uppercase tracking-wide text-muted">
+      <h3 className="text-sm font-medium uppercase tracking-wide text-muted">
         {formatDayLabel(date)}
       </h3>
       <div className="space-y-2">

@@ -1,8 +1,47 @@
 "use client";
 
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo, useRef, useEffect } from "react";
 import { DayEvents, type DayEventsData } from "@/app/components/molecules/DayEvents";
-import type { CalendarEvent } from "@/app/components/atoms/EventItem";
+
+// Stima l'altezza extra necessaria quando un evento si espande
+const EXPANSION_HEIGHT_ESTIMATE = 180; // px - copre descrizione lunga + location + attendees + padding
+
+function useEventsScroll(expandedEventId: string | null) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
+  const [scrollOffset, setScrollOffset] = useState(0);
+
+  useEffect(() => {
+    // Se nessun evento è espanso, torna a offset 0
+    if (!expandedEventId) {
+      setScrollOffset(0);
+      return;
+    }
+
+    if (!containerRef.current || !contentRef.current) return;
+
+    // Calcola immediatamente
+    const expandedElement = contentRef.current.querySelector(
+      `[data-event-id="${expandedEventId}"]`
+    ) as HTMLElement | null;
+    
+    if (!expandedElement) return;
+
+    const container = containerRef.current;
+    const containerRect = container.getBoundingClientRect();
+    const elementRect = expandedElement.getBoundingClientRect();
+    
+    // Calcola quanto spazio servirà: posizione attuale + altezza stimata espansione
+    const estimatedFinalBottom = elementRect.bottom + EXPANSION_HEIGHT_ESTIMATE;
+    const overflow = estimatedFinalBottom - containerRect.bottom;
+    
+    if (overflow > 0) {
+      setScrollOffset(overflow);
+    }
+  }, [expandedEventId]);
+
+  return { containerRef, contentRef, scrollOffset };
+}
 
 // Crea una data stabile (solo giorno, senza ore/minuti/secondi)
 function createStableDate(daysOffset: number = 0): Date {
@@ -79,7 +118,8 @@ function useFakeEvents(): DayEventsData[] {
             title: "Dentista",
             time: "10:00",
             color: "#00bcd4",
-            description: "Controllo semestrale e pulizia",
+            description: "Controllo semestrale e pulizia dei denti. Ricordarsi di portare la tessera sanitaria e i referti delle ultime radiografie panoramiche. Chiedere al dottore informazioni sulla possibilità di installare un apparecchio invisibile per correggere il leggero disallineamento dei denti anteriori.",
+            location: "Studio Dentistico Bianchi",
           },
         ],
       },
@@ -92,6 +132,7 @@ function useFakeEvents(): DayEventsData[] {
 export function UpcomingEvents() {
   const days = useFakeEvents();
   const [expandedEventId, setExpandedEventId] = useState<string | null>(null);
+  const { containerRef, contentRef, scrollOffset } = useEventsScroll(expandedEventId);
 
   const handleToggleEvent = useCallback((eventId: string) => {
     setExpandedEventId((current) => (current === eventId ? null : eventId));
@@ -99,16 +140,31 @@ export function UpcomingEvents() {
 
   if (days.length === 0) return null;
 
+  const isScrolled = scrollOffset > 0;
+
   return (
-    <div className="mt-12 max-w-xs space-y-4">
-      {days.map((dayData) => (
-        <DayEvents
-          key={dayData.date.toISOString()}
-          data={dayData}
-          expandedEventId={expandedEventId}
-          onToggleEvent={handleToggleEvent}
-        />
-      ))}
+    <div
+      ref={containerRef}
+      className={`
+        mt-12 max-w-xs
+        max-h-[calc(100vh-220px)] overflow-hidden
+        ${isScrolled ? "events-fade-top" : ""}
+      `}
+    >
+      <div
+        ref={contentRef}
+        className="space-y-4 pr-2 transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]"
+        style={{ transform: `translateY(-${scrollOffset}px)` }}
+      >
+        {days.map((dayData) => (
+          <DayEvents
+            key={dayData.date.toISOString()}
+            data={dayData}
+            expandedEventId={expandedEventId}
+            onToggleEvent={handleToggleEvent}
+          />
+        ))}
+      </div>
     </div>
   );
 }

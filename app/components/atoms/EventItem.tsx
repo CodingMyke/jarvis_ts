@@ -93,6 +93,7 @@ export function EventItem({ event, isExpanded, onToggle }: EventItemProps) {
   return (
     <div
       ref={containerRef}
+      data-event-id={event.id}
       className={`
         event-item-container cursor-pointer select-none
         rounded-xl
@@ -129,7 +130,7 @@ export function EventItem({ event, isExpanded, onToggle }: EventItemProps) {
               className={`
                 shrink-0 text-muted
                 transition-all duration-(--transition-medium) ease-(--easing-smooth)
-                ${isExpanded ? "text-sm font-medium" : "text-xs"}
+                ${isExpanded ? "text-base font-medium" : "text-sm"}
               `}
             >
               {event.time}
@@ -139,7 +140,7 @@ export function EventItem({ event, isExpanded, onToggle }: EventItemProps) {
               className={`
                 text-foreground
                 transition-all duration-(--transition-medium) ease-(--easing-smooth)
-                ${isExpanded ? "text-base font-semibold" : "text-sm truncate"}
+                ${isExpanded ? "text-lg font-semibold" : "text-base truncate"}
               `}
             >
               {event.title}
@@ -152,7 +153,7 @@ export function EventItem({ event, isExpanded, onToggle }: EventItemProps) {
               className={`
                 text-muted/80
                 transition-all duration-(--transition-medium) ease-(--easing-smooth)
-                ${isExpanded ? "mt-3 text-sm line-clamp-none" : "mt-0.5 text-xs line-clamp-2"}
+                ${isExpanded ? "mt-3 text-base line-clamp-none" : "mt-0.5 text-sm line-clamp-2"}
               `}
             >
               {event.description}
@@ -168,7 +169,7 @@ export function EventItem({ event, isExpanded, onToggle }: EventItemProps) {
             `}
           >
             {event.location && (
-              <div className="flex items-center gap-2 text-xs text-muted/70 mb-1">
+              <div className="flex items-center gap-2 text-sm text-muted/70 mb-1">
                 <svg
                   className="w-3.5 h-3.5"
                   fill="none"
@@ -193,7 +194,7 @@ export function EventItem({ event, isExpanded, onToggle }: EventItemProps) {
             )}
 
             {event.attendees && event.attendees.length > 0 && (
-              <div className="flex items-center gap-2 text-xs text-muted/70">
+              <div className="flex items-center gap-2 text-sm text-muted/70">
                 <svg
                   className="w-3.5 h-3.5"
                   fill="none"

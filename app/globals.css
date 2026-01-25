@@ -111,6 +111,12 @@ body {
   -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 30%);
 }
 
+/* Fade top effect for events list when scrolled */
+.events-fade-top {
+  mask-image: linear-gradient(to bottom, transparent 0%, black 15%);
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 15%);
+}
+
 /* Orb animations - usa filter invece di transform per non interferire */
 @keyframes orb-pulse {
   0%, 100% {
