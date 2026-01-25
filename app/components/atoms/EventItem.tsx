@@ -33,12 +33,9 @@ function useEventItem(
   }, []);
 
   const handleMouseUp = useCallback(() => {
-    if (pressedRef.current) {
-      pressedRef.current = false;
-      containerRef.current?.classList.remove("event-pressed");
-      onToggle(event.id);
-    }
-  }, [event.id, onToggle]);
+    pressedRef.current = false;
+    containerRef.current?.classList.remove("event-pressed");
+  }, []);
 
   const handleMouseLeave = useCallback(() => {
     if (pressedRef.current) {
@@ -47,11 +44,22 @@ function useEventItem(
     }
   }, []);
 
+  const handleClick = useCallback(() => {
+    onToggle(event.id);
+  }, [event.id, onToggle]);
+
   useEffect(() => {
     if (!isExpanded) return;
 
     const handleClickOutside = (e: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+      const target = e.target as Element;
+      
+      // Ignora click su altri EventItem - lascia che onClick gestisca il cambio
+      if (target.closest?.(".event-item-container")) {
+        return;
+      }
+      
+      if (containerRef.current && !containerRef.current.contains(target)) {
         onToggle(event.id);
       }
     };
@@ -71,12 +79,13 @@ function useEventItem(
     handleMouseDown,
     handleMouseUp,
     handleMouseLeave,
+    handleClick,
   };
 }
 
 export function EventItem({ event, isExpanded, onToggle }: EventItemProps) {
   const accentColor = event.color || "var(--accent)";
-  const { containerRef, handleMouseDown, handleMouseUp, handleMouseLeave } =
+  const { containerRef, handleMouseDown, handleMouseUp, handleMouseLeave, handleClick } =
     useEventItem(event, isExpanded, onToggle);
 
   const hasDetails = event.location || (event.attendees && event.attendees.length > 0);
@@ -95,6 +104,7 @@ export function EventItem({ event, isExpanded, onToggle }: EventItemProps) {
       onMouseLeave={handleMouseLeave}
       onTouchStart={handleMouseDown}
       onTouchEnd={handleMouseUp}
+      onClick={handleClick}
     >
       <div className="flex gap-3">
         {/* Pallino - si ingrandisce quando espanso */}
