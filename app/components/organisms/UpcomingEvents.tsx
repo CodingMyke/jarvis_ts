@@ -1,3 +1,6 @@
+"use client";
+
+import { useState, useCallback } from "react";
 import { DayEvents, type DayEventsData } from "@/app/components/molecules/DayEvents";
 import type { CalendarEvent } from "@/app/components/atoms/EventItem";
 
@@ -26,7 +29,9 @@ function useFakeEvents(): DayEventsData[] {
           title: "Pranzo con Marco per discutere del nuovo progetto di intelligenza artificiale",
           time: "13:00",
           color: "#34a853",
-          description: "Ristorante Da Luigi, Via Roma 42. Portare i documenti del contratto.",
+          description: "Portare i documenti del contratto.",
+          location: "Ristorante Da Luigi, Via Roma 42",
+          attendees: ["Marco Rossi", "Giulia Bianchi"],
         },
       ],
     },
@@ -48,6 +53,8 @@ function useFakeEvents(): DayEventsData[] {
           endTime: "16:00",
           color: "#fbbc04",
           description: "Link Zoom nel calendario. Preparare slides con mockup.",
+          location: "Zoom Meeting",
+          attendees: ["John Smith", "Sarah Johnson", "Marco Rossi"],
         },
         {
           id: "5",
@@ -77,13 +84,23 @@ function useFakeEvents(): DayEventsData[] {
 
 export function UpcomingEvents() {
   const days = useFakeEvents();
+  const [expandedEventId, setExpandedEventId] = useState<string | null>(null);
+
+  const handleToggleEvent = useCallback((eventId: string) => {
+    setExpandedEventId((current) => (current === eventId ? null : eventId));
+  }, []);
 
   if (days.length === 0) return null;
 
   return (
     <div className="mt-12 max-w-xs space-y-4">
       {days.map((dayData) => (
-        <DayEvents key={dayData.date.toISOString()} data={dayData} />
+        <DayEvents
+          key={dayData.date.toISOString()}
+          data={dayData}
+          expandedEventId={expandedEventId}
+          onToggleEvent={handleToggleEvent}
+        />
       ))}
     </div>
   );

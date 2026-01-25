@@ -7,6 +7,8 @@ export interface DayEventsData {
 
 interface DayEventsProps {
   data: DayEventsData;
+  expandedEventId: string | null;
+  onToggleEvent: (eventId: string) => void;
 }
 
 function formatDayLabel(date: Date): string {
@@ -27,7 +29,7 @@ function formatDayLabel(date: Date): string {
   return `${weekday.charAt(0).toUpperCase() + weekday.slice(1)} ${day} ${month}`;
 }
 
-export function DayEvents({ data }: DayEventsProps) {
+export function DayEvents({ data, expandedEventId, onToggleEvent }: DayEventsProps) {
   const { date, events } = data;
 
   if (events.length === 0) return null;
@@ -37,9 +39,14 @@ export function DayEvents({ data }: DayEventsProps) {
       <h3 className="text-xs font-medium uppercase tracking-wide text-muted">
         {formatDayLabel(date)}
       </h3>
-      <div className="space-y-1.5">
+      <div className="space-y-2">
         {events.map((event) => (
-          <EventItem key={event.id} event={event} />
+          <EventItem
+            key={event.id}
+            event={event}
+            isExpanded={expandedEventId === event.id}
+            onToggle={onToggleEvent}
+          />
         ))}
       </div>
     </div>

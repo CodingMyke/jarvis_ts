@@ -269,3 +269,33 @@ body {
   box-shadow: none;
   animation: none;
 }
+
+/* Event item interactions */
+.event-item {
+  transform: scale(1);
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.event-item.event-pressed {
+  transform: scale(0.97);
+  transition: transform 0.08s cubic-bezier(0.4, 0, 1, 1);
+}
+
+/* Card espansa con blur e sfondo leggibile */
+.event-card-expanded {
+  background: rgba(15, 15, 25, 0.75);
+  -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 
+    0 12px 40px rgba(0, 0, 0, 0.6),
+    0 0 0 1px rgba(255, 255, 255, 0.1);
+  isolation: isolate;
+  transform: translateZ(0);
+  will-change: backdrop-filter;
+}
+
+.event-card-expanded.event-pressed {
+  transform: scale(0.98);
+  transition: transform 0.08s cubic-bezier(0.4, 0, 1, 1);
+}
