@@ -192,7 +192,7 @@ export function EventItem({ event, isExpanded, onToggle }: EventItemProps) {
         ref={collapsedRef}
         className={`
           event-item cursor-pointer select-none
-          transition-all duration-300 ease-out
+          transition-all duration-(--transition-fast) ease-(--easing-standard)
           ${isExpanded ? "opacity-0 pointer-events-none" : ""}
         `}
         onMouseDown={handleMouseDown}
@@ -211,7 +211,7 @@ export function EventItem({ event, isExpanded, onToggle }: EventItemProps) {
           absolute top-0 left-0 right-0 z-50
           event-card-expanded rounded-xl p-4 -mx-2
           cursor-pointer select-none
-          transition-all duration-300 ease-out
+          transition-all duration-(--transition-fast) ease-(--easing-standard)
           ${isExpanded 
             ? "opacity-100 scale-100 pointer-events-auto" 
             : "opacity-0 scale-95 pointer-events-none"

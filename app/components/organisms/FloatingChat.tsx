@@ -64,7 +64,7 @@ function useFloatingChat(onReset?: () => void) {
 
   const closeResetDialog = () => {
     setDialogState("closing");
-    setTimeout(() => setDialogState("closed"), 200);
+    setTimeout(() => setDialogState("closed"), 300); // matches --transition-fast
   };
 
   const confirmReset = () => {
@@ -112,13 +112,13 @@ export function FloatingChat({ messages, onReset }: FloatingChatProps) {
   return (
     <>
       <div
-        className="floating-chat fixed bottom-6 right-6 z-20 w-md transition-[height] duration-1000 ease-[cubic-bezier(0.22,1,0.36,1)]"
+        className="floating-chat fixed bottom-6 right-6 z-20 w-md transition-[height] duration-(--transition-slow) ease-(--easing-smooth)"
         style={{ height: isExpanded ? "calc(100vh - 48px)" : "256px" }}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
       >
         <div
-          className={`relative flex h-full flex-col overflow-hidden rounded-2xl border transition-[border-color,background-color,backdrop-filter] duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] ${
+          className={`relative flex h-full flex-col overflow-hidden rounded-2xl border transition-[border-color,background-color,backdrop-filter] duration-(--transition-medium) ease-(--easing-smooth) ${
             isExpanded
               ? "border-white/20 bg-black/40 backdrop-blur-xl"
               : "border-transparent bg-transparent backdrop-blur-0"
@@ -126,7 +126,7 @@ export function FloatingChat({ messages, onReset }: FloatingChatProps) {
         >
           {/* Header */}
           <div
-            className={`flex h-10 shrink-0 items-center border-b transition-[border-color] duration-500 ${
+            className={`flex h-10 shrink-0 items-center border-b transition-[border-color] duration-(--transition-medium) ${
               isExpanded ? "border-white/10" : "border-transparent"
             }`}
           >
@@ -136,7 +136,7 @@ export function FloatingChat({ messages, onReset }: FloatingChatProps) {
             {/* Toggle button */}
             <button
               onClick={toggleExpanded}
-              className={`flex h-full flex-1 items-center justify-center transition-opacity duration-300 hover:text-foreground ${
+              className={`flex h-full flex-1 items-center justify-center transition-opacity duration-(--transition-fast) hover:text-foreground ${
                 showControls ? "text-muted opacity-100" : "opacity-0"
               }`}
               aria-label={isExpanded ? "Riduci chat" : "Espandi chat"}
@@ -182,7 +182,7 @@ export function FloatingChat({ messages, onReset }: FloatingChatProps) {
       {/* Reset confirmation dialog */}
       {isDialogVisible && (
         <div
-          className={`fixed inset-0 z-50 flex items-center justify-center transition-all duration-200 ${
+          className={`fixed inset-0 z-50 flex items-center justify-center transition-all duration-(--transition-fast) ${
             isDialogAnimatedIn
               ? "bg-black/60 backdrop-blur-sm"
               : "bg-black/0 backdrop-blur-0"
@@ -190,7 +190,7 @@ export function FloatingChat({ messages, onReset }: FloatingChatProps) {
           onClick={closeResetDialog}
         >
           <div
-            className={`mx-4 w-full max-w-sm rounded-2xl border border-white/20 bg-black/80 p-6 backdrop-blur-xl transition-all duration-200 ${
+            className={`mx-4 w-full max-w-sm rounded-2xl border border-white/20 bg-black/80 p-6 backdrop-blur-xl transition-all duration-(--transition-fast) ${
               isDialogAnimatedIn
                 ? "scale-100 opacity-100"
                 : "scale-95 opacity-0"

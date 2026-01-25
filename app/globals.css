@@ -41,6 +41,17 @@
   --orb-core: #00f0ff;
   --orb-mid: #0066ff;
   --orb-outer: #1a0033;
+  
+  /* Transition durations */
+  --transition-slow: 1000ms;
+  --transition-medium: 500ms;
+  --transition-fast: 300ms;
+  --transition-instant: 80ms;
+  
+  /* Transition easings */
+  --easing-smooth: cubic-bezier(0.22, 1, 0.36, 1);
+  --easing-standard: cubic-bezier(0.4, 0, 0.2, 1);
+  --easing-press: cubic-bezier(0.4, 0, 1, 1);
 }
 
 @theme inline {
@@ -170,11 +181,11 @@ body {
   filter: blur(60px);
   pointer-events: none;
   transition: 
-    --orb-color-core 0.6s ease-in-out,
-    --orb-color-mid 0.6s ease-in-out,
-    opacity 0.15s ease-out,
-    transform 0.15s ease-out,
-    filter 0.15s ease-out;
+    --orb-color-core var(--transition-medium) ease-in-out,
+    --orb-color-mid var(--transition-medium) ease-in-out,
+    opacity var(--transition-instant) ease-out,
+    transform var(--transition-instant) ease-out,
+    filter var(--transition-instant) ease-out;
 }
 
 .orb-core {
@@ -198,16 +209,16 @@ body {
     inset 0 0 40px var(--orb-color-glow);
   animation: orb-pulse 4s ease-in-out infinite;
   transition: 
-    --orb-color-core 0.6s ease-in-out,
-    --orb-color-mid 0.6s ease-in-out,
-    --orb-color-glow 0.6s ease-in-out,
-    transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), 
-    box-shadow 0.3s ease-out;
+    --orb-color-core var(--transition-medium) ease-in-out,
+    --orb-color-mid var(--transition-medium) ease-in-out,
+    --orb-color-glow var(--transition-medium) ease-in-out,
+    transform var(--transition-fast) var(--easing-standard), 
+    box-shadow var(--transition-fast) ease-out;
 }
 
 /* Feedback tattile premium - press più veloce */
 .orb-core.pressed {
-  transition: transform 0.06s cubic-bezier(0.4, 0, 1, 1);
+  transition: transform var(--transition-instant) var(--easing-press);
 }
 
 /* Stato listening */
@@ -273,12 +284,12 @@ body {
 /* Event item interactions */
 .event-item {
   transform: scale(1);
-  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: transform var(--transition-fast) var(--easing-standard);
 }
 
 .event-item.event-pressed {
   transform: scale(0.97);
-  transition: transform 0.08s cubic-bezier(0.4, 0, 1, 1);
+  transition: transform var(--transition-instant) var(--easing-press);
 }
 
 /* Card espansa con blur e sfondo leggibile */
@@ -297,5 +308,5 @@ body {
 
 .event-card-expanded.event-pressed {
   transform: scale(0.98);
-  transition: transform 0.08s cubic-bezier(0.4, 0, 1, 1);
+  transition: transform var(--transition-instant) var(--easing-press);
 }
