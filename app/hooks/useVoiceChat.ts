@@ -61,6 +61,19 @@ export function useVoiceChat(): UseVoiceChatReturn {
   useEffect(() => {
     const saved = storageRef.current.load();
     if (saved && saved.turns.length > 0) {
+      // Se la conversazione è riassunta ma il riassunto è vuoto, puliscila e non caricarla
+      if (saved.isSummarized) {
+        const summaryTurn = saved.turns.find(t => t.role === 'model');
+        const summaryText = summaryTurn?.parts.map(p => p.text).join(' ') || '';
+        
+        // Se il riassunto è vuoto, pulisci la conversazione salvata e non caricarla
+        if (!summaryText || summaryText.trim() === '') {
+          console.log('[useVoiceChat] saved conversation has empty summary, clearing it');
+          storageRef.current.clear();
+          return;
+        }
+      }
+      
       const loadedMessages: Message[] = saved.turns.map((turn, index) => ({
         id: `history-${index}`,
         text: turn.parts.map((p) => p.text).join(' '),
@@ -87,6 +100,14 @@ export function useVoiceChat(): UseVoiceChatReturn {
       try {
         const turns = storage.messagesToTurns(currentMessages);
         const summary = await summarizeConversation(turns);
+        
+        // Se il riassunto è vuoto o fallisce, salva la conversazione completa invece del riassunto
+        if (!summary || summary.trim() === '') {
+          console.log('[useVoiceChat] summary is empty, saving full conversation instead');
+          storage.save(currentMessages, false);
+          return;
+        }
+        
         const summaryTurns = createSummaryTurns(summary);
         storage.saveTurns(summaryTurns, true);
         console.log('[useVoiceChat] summary saved');

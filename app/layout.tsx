@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { TimerProvider } from "@/app/components/organisms";
 
 export const metadata: Metadata = {
   title: "Jarvis AI Chatbot",
@@ -14,7 +15,7 @@ export default function RootLayout({
   return (
     <html lang="it" suppressHydrationWarning>
       <body className="antialiased" suppressHydrationWarning>
-        {children}
+        <TimerProvider>{children}</TimerProvider>
       </body>
     </html>
   );

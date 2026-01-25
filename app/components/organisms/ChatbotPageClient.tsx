@@ -1,7 +1,7 @@
 "use client";
 
 import { VoiceOrb } from "@/app/components";
-import { FloatingChat, UpcomingEvents } from "@/app/components/organisms";
+import { FloatingChat, UpcomingEvents, TimerDisplay } from "@/app/components/organisms";
 import { useVoiceChat } from "@/app/hooks/useVoiceChat";
 import type { UIDayEvents } from "@/app/lib/calendar/actions";
 import { useDateTime, useOrbState } from "./ChatbotPageClient.hooks";
@@ -60,6 +60,9 @@ export function ChatbotPageClient({ initialEvents }: ChatbotPageClientProps) {
 
   return (
     <div className="fixed inset-0 overflow-hidden bg-background p-6">
+      {/* Timer Display - Top Right */}
+      <TimerDisplay />
+
       {/* Top bar */}
       <div className="flex items-start justify-between">
         {/* Events - Top Left */}

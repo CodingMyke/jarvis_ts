@@ -1,6 +1,8 @@
 import type { SystemToolDefinition, ToolDeclaration } from "./types";
 import { endConversationTool } from "./definitions/end-conversation.tool";
 import { getCalendarEventsTool } from "./definitions/get-calendar-events.tool";
+import { startTimerTool } from "./definitions/start-timer.tool";
+import { stopTimerTool } from "./definitions/stop-timer.tool";
 
 /**
  * Tutti i tools di sistema con la loro implementazione.
@@ -9,6 +11,8 @@ import { getCalendarEventsTool } from "./definitions/get-calendar-events.tool";
 export const SYSTEM_TOOLS: SystemToolDefinition[] = [
   endConversationTool,
   getCalendarEventsTool,
+  startTimerTool,
+  stopTimerTool,
 ];
 
 /**
