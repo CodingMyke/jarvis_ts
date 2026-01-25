@@ -43,7 +43,7 @@ function useOrbInteraction(onClick?: () => void) {
 function useOrbStyles(state: OrbState, audioLevel: number, isPressed: boolean) {
   return useMemo(() => {
     // Scale: idle più piccolo, attivo più grande
-    const baseScale = state === "idle" ? 0.85 : 1.7;
+    const baseScale = state === "idle" ? 0.85 : 1.5;
     const audioScale = state === "speaking" ? audioLevel * 0.15 : 0;
     const pressScale = isPressed ? -0.15 : 0;
     const coreScale = baseScale + audioScale + pressScale;
