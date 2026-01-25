@@ -61,6 +61,7 @@ export const getTimerStatusTool: SystemToolDefinition = {
           totalFormatted,
           isActive: activeTimer.isActive,
           isExpired: activeTimer.isExpired,
+          isPaused: activeTimer.isPaused,
         },
       };
     } catch (error) {

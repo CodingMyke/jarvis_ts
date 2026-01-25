@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useMemo } from "react";
 import { useSearchParams } from "next/navigation";
+import Link from "next/link";
 
 /**
  * Pagina di setup per Google Calendar OAuth.
@@ -9,32 +10,28 @@ import { useSearchParams } from "next/navigation";
  */
 export default function CalendarSetupPage() {
   const searchParams = useSearchParams();
-  const [status, setStatus] = useState<{
-    type: "idle" | "success" | "error";
-    message?: string;
-    refreshToken?: string;
-    accessToken?: string;
-  }>({ type: "idle" });
-
-  useEffect(() => {
+  
+  const status = useMemo(() => {
     const success = searchParams.get("success");
     const error = searchParams.get("error");
     const refreshToken = searchParams.get("refresh_token");
     const accessToken = searchParams.get("access_token");
 
     if (success === "true" && refreshToken) {
-      setStatus({
-        type: "success",
+      return {
+        type: "success" as const,
         message: "Autenticazione completata con successo!",
         refreshToken,
         accessToken: accessToken || undefined,
-      });
+      };
     } else if (error) {
-      setStatus({
-        type: "error",
+      return {
+        type: "error" as const,
         message: decodeURIComponent(error),
-      });
+      };
     }
+    
+    return { type: "idle" as const };
   }, [searchParams]);
 
   const handleAuthorize = () => {
@@ -133,12 +130,12 @@ export default function CalendarSetupPage() {
 
         {/* Link per tornare */}
         <div className="mt-8">
-          <a
+          <Link
             href="/"
             className="text-muted hover:text-foreground transition-colors"
           >
             ← Torna alla home
-          </a>
+          </Link>
         </div>
       </div>
     </div>

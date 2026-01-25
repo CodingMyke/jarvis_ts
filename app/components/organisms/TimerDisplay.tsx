@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useMemo } from "react";
 import { useTimer } from "./TimerContext";
 
 /**
@@ -14,24 +14,55 @@ function formatTime(seconds: number, milliseconds: number): string {
 
 /**
  * Hook per calcolare il tempo rimanente in modo fluido usando requestAnimationFrame.
+ * Quando il timer è in pausa o expired, usa i valori direttamente dal timer.
  */
-function useSmoothTimer(timer: { startTime: number; durationSeconds: number; isExpired: boolean } | null) {
+function useSmoothTimer(timer: { startTime: number; durationSeconds: number; remainingSeconds: number; remainingMilliseconds: number; isExpired: boolean; isPaused: boolean; pausedElapsed: number } | null) {
+  // Calcola il valore statico quando il timer è expired o in pausa
+  const staticTime = useMemo(() => {
+    if (!timer) return null;
+    if (timer.isExpired) {
+      return { seconds: 0, milliseconds: 0 };
+    }
+    if (timer.isPaused) {
+      return {
+        seconds: timer.remainingSeconds,
+        milliseconds: timer.remainingMilliseconds,
+      };
+    }
+    return null;
+  }, [timer]);
+
   const [displayTime, setDisplayTime] = useState<{ seconds: number; milliseconds: number } | null>(null);
   const frameRef = useRef<number | null>(null);
+  const timerRef = useRef(timer);
 
+  // Aggiorna il ref quando il timer cambia
   useEffect(() => {
-    if (!timer || timer.isExpired) {
+    timerRef.current = timer;
+  }, [timer]);
+
+  // Gestisce l'animazione solo quando il timer è attivo e non in pausa
+  useEffect(() => {
+    if (!timer || timer.isExpired || timer.isPaused) {
       if (frameRef.current !== null) {
         cancelAnimationFrame(frameRef.current);
         frameRef.current = null;
       }
-      setDisplayTime(timer?.isExpired ? { seconds: 0, milliseconds: 0 } : null);
       return;
     }
 
     const updateTime = () => {
-      const elapsed = Date.now() - timer.startTime;
-      const remainingTotal = Math.max(0, timer.durationSeconds * 1000 - elapsed);
+      const currentTimer = timerRef.current;
+      if (!currentTimer || currentTimer.isExpired || currentTimer.isPaused) {
+        if (frameRef.current !== null) {
+          cancelAnimationFrame(frameRef.current);
+          frameRef.current = null;
+        }
+        return;
+      }
+
+      const elapsed = Date.now() - currentTimer.startTime - currentTimer.pausedElapsed;
+      const remainingTotal = Math.max(0, currentTimer.durationSeconds * 1000 - elapsed);
       const seconds = Math.floor(remainingTotal / 1000);
       const milliseconds = Math.floor((remainingTotal % 1000) / 10);
 
@@ -52,19 +83,25 @@ function useSmoothTimer(timer: { startTime: number; durationSeconds: number; isE
         frameRef.current = null;
       }
     };
-  }, [timer?.startTime, timer?.durationSeconds, timer?.isExpired]);
+  }, [timer, timer?.startTime, timer?.durationSeconds, timer?.isExpired, timer?.isPaused, timer?.pausedElapsed]);
 
-  return displayTime;
+  // Restituisce il valore statico se disponibile, altrimenti il valore animato
+  return staticTime !== null ? staticTime : displayTime;
 }
 
 /**
  * Componente per mostrare il timer attivo in alto a destra.
  */
 export function TimerDisplay() {
-  const { timer, stopTimer, stopNotificationSound } = useTimer();
+  const { timer, stopTimer, pauseTimer, resumeTimer, stopNotificationSound } = useTimer();
   const smoothTime = useSmoothTimer(timer);
 
-  if (!timer || !smoothTime) {
+  // Quando è in pausa, usa i valori direttamente dal timer
+  const displayTime = timer?.isPaused 
+    ? { seconds: timer.remainingSeconds, milliseconds: timer.remainingMilliseconds }
+    : smoothTime;
+
+  if (!timer || !displayTime) {
     return null;
   }
 
@@ -73,9 +110,19 @@ export function TimerDisplay() {
     stopNotificationSound();
   };
 
+  const handlePauseResume = () => {
+    if (timer.isPaused) {
+      resumeTimer();
+    } else {
+      pauseTimer();
+    }
+  };
+
   const percentage = timer.isExpired
     ? 0
-    : (smoothTime.seconds / timer.durationSeconds) * 100;
+    : timer.durationSeconds > 0
+    ? Math.max(0, Math.min(100, (displayTime.seconds / timer.durationSeconds) * 100))
+    : 0;
 
   return (
     <div className="glass absolute right-6 top-6 z-10 rounded-lg px-4 py-3 shadow-lg">
@@ -102,10 +149,10 @@ export function TimerDisplay() {
         <div className="flex min-w-[140px] flex-col">
           <span
             className={`text-3xl font-semibold tabular-nums ${
-              timer.isExpired ? "text-red-400" : "text-foreground"
+              timer.isExpired ? "text-red-400" : timer.isPaused ? "text-yellow-400" : "text-foreground"
             }`}
           >
-            {formatTime(smoothTime.seconds, smoothTime.milliseconds)}
+            {formatTime(displayTime.seconds, displayTime.milliseconds)}
           </span>
           {/* Barra di progresso */}
           <div className="mt-2 h-1 w-full overflow-hidden rounded-full bg-white/10">
@@ -117,6 +164,57 @@ export function TimerDisplay() {
             />
           </div>
         </div>
+
+        {/* Pulsante pausa/ripresa */}
+        {!timer.isExpired && (
+          <button
+            onClick={handlePauseResume}
+            className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/10 transition-colors hover:bg-white/20 ${
+              timer.isPaused 
+                ? "text-yellow-400 hover:text-yellow-300" 
+                : "text-muted hover:text-foreground"
+            }`}
+            aria-label={timer.isPaused ? "Riprendi timer" : "Metti in pausa timer"}
+          >
+            {timer.isPaused ? (
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-5 w-5"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"
+                />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
+              </svg>
+            ) : (
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-5 w-5"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
+              </svg>
+            )}
+          </button>
+        )}
 
         {/* Pulsante stop */}
         <button

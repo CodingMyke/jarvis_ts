@@ -6,6 +6,8 @@ import { timerManager, type TimerState } from "@/app/lib/timer";
 interface TimerContextValue {
   timer: TimerState | null;
   stopTimer: () => void;
+  pauseTimer: () => void;
+  resumeTimer: () => void;
   stopNotificationSound: () => void;
 }
 
@@ -28,12 +30,24 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
     }
   }, [timer]);
 
+  const pauseTimer = useCallback(() => {
+    if (timer && !timer.isPaused && !timer.isExpired) {
+      timerManager.pauseTimer(timer.id);
+    }
+  }, [timer]);
+
+  const resumeTimer = useCallback(() => {
+    if (timer && timer.isPaused && !timer.isExpired) {
+      timerManager.resumeTimer(timer.id);
+    }
+  }, [timer]);
+
   const stopNotificationSound = useCallback(() => {
     timerManager.stopNotificationSound();
   }, []);
 
   return (
-    <TimerContext.Provider value={{ timer, stopTimer, stopNotificationSound }}>
+    <TimerContext.Provider value={{ timer, stopTimer, pauseTimer, resumeTimer, stopNotificationSound }}>
       {children}
     </TimerContext.Provider>
   );

@@ -11,6 +11,9 @@ export interface TimerState {
   startTime: number;
   isActive: boolean;
   isExpired: boolean;
+  isPaused: boolean;
+  pausedAt: number | null;
+  pausedElapsed: number;
 }
 
 type TimerCallback = (state: TimerState | null) => void;
@@ -45,6 +48,9 @@ class TimerManager {
       startTime,
       isActive: true,
       isExpired: false,
+      isPaused: false,
+      pausedAt: null,
+      pausedElapsed: 0,
     };
 
     this.timers.set(id, state);
@@ -58,8 +64,16 @@ class TimerManager {
         return;
       }
 
-      const elapsed = Date.now() - timer.startTime;
-      const remainingTotal = Math.max(0, timer.durationSeconds * 1000 - elapsed);
+      // Se il timer è in pausa, non aggiornare
+      if (timer.isPaused) {
+        const frameId = requestAnimationFrame(updateTimer);
+        this.animationFrames.set(id, frameId);
+        return;
+      }
+
+      // Calcola il tempo trascorso considerando le pause
+      const currentElapsed = Date.now() - timer.startTime - timer.pausedElapsed;
+      const remainingTotal = Math.max(0, timer.durationSeconds * 1000 - currentElapsed);
       const remainingSeconds = Math.floor(remainingTotal / 1000);
       const remainingMilliseconds = Math.floor((remainingTotal % 1000) / 10); // Centesimi di secondo
 
@@ -129,6 +143,50 @@ class TimerManager {
     for (const [id] of this.animationFrames) {
       this.stopTimer(id);
     }
+  }
+
+  /**
+   * Mette in pausa un timer specifico.
+   */
+  pauseTimer(id: string): boolean {
+    const timer = this.timers.get(id);
+    if (!timer || timer.isPaused || timer.isExpired) {
+      return false;
+    }
+
+    // Aggiorna i valori rimanenti prima di mettere in pausa
+    const currentElapsed = Date.now() - timer.startTime - timer.pausedElapsed;
+    const remainingTotal = Math.max(0, timer.durationSeconds * 1000 - currentElapsed);
+    timer.remainingSeconds = Math.floor(remainingTotal / 1000);
+    timer.remainingMilliseconds = Math.floor((remainingTotal % 1000) / 10);
+
+    timer.isPaused = true;
+    timer.pausedAt = Date.now();
+    this.timers.set(id, timer);
+    this.notifyListeners();
+    return true;
+  }
+
+  /**
+   * Riprende un timer in pausa.
+   */
+  resumeTimer(id: string): boolean {
+    const timer = this.timers.get(id);
+    if (!timer || !timer.isPaused || timer.isExpired) {
+      return false;
+    }
+
+    // Calcola quanto tempo è passato durante la pausa e aggiungilo a pausedElapsed
+    if (timer.pausedAt) {
+      const pauseDuration = Date.now() - timer.pausedAt;
+      timer.pausedElapsed += pauseDuration;
+      timer.pausedAt = null;
+    }
+
+    timer.isPaused = false;
+    this.timers.set(id, timer);
+    this.notifyListeners();
+    return true;
   }
 
   /**

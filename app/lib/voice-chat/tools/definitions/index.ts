@@ -26,3 +26,13 @@ export {
   getTimerStatusTool,
   GET_TIMER_STATUS_TOOL_NAME,
 } from "./get-timer-status.tool";
+
+export {
+  pauseTimerTool,
+  PAUSE_TIMER_TOOL_NAME,
+} from "./pause-timer.tool";
+
+export {
+  resumeTimerTool,
+  RESUME_TIMER_TOOL_NAME,
+} from "./resume-timer.tool";
