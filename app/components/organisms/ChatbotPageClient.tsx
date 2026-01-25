@@ -2,7 +2,7 @@
 
 import { useCallback, useMemo } from "react";
 import { VoiceOrb } from "@/app/components";
-import { FloatingChat, UpcomingEvents, TimerDisplay } from "@/app/components/organisms";
+import { FloatingChat, UpcomingEvents, TimerDisplay, TodoList } from "@/app/components/organisms";
 import { useVoiceChat } from "@/app/hooks/useVoiceChat";
 import type { UIDayEvents } from "@/app/lib/calendar/actions";
 import { useDateTime, useOrbState } from "./ChatbotPageClient.hooks";
@@ -61,6 +61,9 @@ export function ChatbotPageClient({ initialEvents }: ChatbotPageClientProps) {
     <div className="fixed inset-0 overflow-hidden bg-background p-6">
       {/* Timer Display - Top Right */}
       <TimerDisplay />
+
+      {/* Todo List - Top Right (below timer if present) */}
+      <TodoList />
 
       {/* Top bar */}
       <div className="flex items-start justify-between">

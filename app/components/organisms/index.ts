@@ -6,3 +6,5 @@ export { UpcomingEvents } from "./UpcomingEvents";
 export { ChatbotPageClient } from "./ChatbotPageClient";
 export { TimerProvider, useTimer } from "./TimerContext";
 export { TimerDisplay } from "./TimerDisplay";
+export { TodoProvider, useTodos } from "./TodoContext";
+export { TodoList } from "./TodoList";
