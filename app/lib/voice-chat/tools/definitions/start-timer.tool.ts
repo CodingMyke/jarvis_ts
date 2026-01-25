@@ -100,7 +100,8 @@ export const startTimerTool: SystemToolDefinition = {
         return {
           result: {
             success: false,
-            message: "La durata del timer deve essere almeno 1 secondo.",
+            error: "INVALID_DURATION",
+            minSeconds: 1,
           },
         };
       }
@@ -109,7 +110,8 @@ export const startTimerTool: SystemToolDefinition = {
         return {
           result: {
             success: false,
-            message: "La durata del timer non può superare 24 ore.",
+            error: "DURATION_TOO_LONG",
+            maxSeconds: 24 * 60 * 60,
           },
         };
       }
@@ -120,7 +122,6 @@ export const startTimerTool: SystemToolDefinition = {
       return {
         result: {
           success: true,
-          message: `Timer di ${formattedDuration} avviato. Ti avviserò quando scadrà.`,
           timerId,
           durationSeconds,
           formattedDuration,
@@ -131,7 +132,8 @@ export const startTimerTool: SystemToolDefinition = {
       return {
         result: {
           success: false,
-          message: `Errore nell'avvio del timer: ${error instanceof Error ? error.message : "Errore sconosciuto"}`,
+          error: "EXECUTION_ERROR",
+          errorMessage: error instanceof Error ? error.message : "Errore sconosciuto",
         },
       };
     }

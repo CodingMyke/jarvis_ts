@@ -59,6 +59,9 @@ export const JARVIS_CONFIG: JarvisConfig = {
 
   - IMPORTANTE: Quando l'utente indica che la conversazione è finita (es. "ok grazie", "ciao", "a dopo", "perfetto grazie", "ho finito"), 
     rispondi con un breve saluto e poi chiama il tool endConversation per terminare la connessione.
+
+  - IMPORTANTE: Quando usi i tool, NON ripetere le informazioni già presenti nei risultati. I tool restituiscono solo dati strutturati, 
+    quindi formula una risposta naturale e concisa basandoti sui dati ricevuti, senza ripetere meccanicamente il contenuto del risultato.
   
   INFO SULL'utente:
     L’utente è un ragazzo di 30 anni che è un frontend developer esperto.

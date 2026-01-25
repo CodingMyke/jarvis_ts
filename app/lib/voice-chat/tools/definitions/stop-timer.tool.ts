@@ -23,7 +23,7 @@ export const stopTimerTool: SystemToolDefinition = {
         return {
           result: {
             success: false,
-            message: "Non c'è nessun timer attivo da fermare.",
+            error: "NO_ACTIVE_TIMER",
           },
         };
       }
@@ -34,7 +34,6 @@ export const stopTimerTool: SystemToolDefinition = {
       return {
         result: {
           success: true,
-          message: "Timer fermato e suono interrotto.",
         },
       };
     } catch (error) {
@@ -42,7 +41,8 @@ export const stopTimerTool: SystemToolDefinition = {
       return {
         result: {
           success: false,
-          message: `Errore nel fermare il timer: ${error instanceof Error ? error.message : "Errore sconosciuto"}`,
+          error: "EXECUTION_ERROR",
+          errorMessage: error instanceof Error ? error.message : "Errore sconosciuto",
         },
       };
     }

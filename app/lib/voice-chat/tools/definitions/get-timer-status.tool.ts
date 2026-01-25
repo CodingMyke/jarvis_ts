@@ -35,7 +35,7 @@ export const getTimerStatusTool: SystemToolDefinition = {
     "Esempi: 'quanto tempo manca?', 'quando scade il timer?', 'quanto è rimasto?', " +
     "'stato del timer', 'tempo rimanente'.",
 
-  execute: async (_args) => {
+  execute: async () => {
     try {
       const activeTimer = timerManager.getActiveTimer();
 
@@ -43,7 +43,7 @@ export const getTimerStatusTool: SystemToolDefinition = {
         return {
           result: {
             success: false,
-            message: "Non c'è nessun timer attivo al momento.",
+            error: "NO_ACTIVE_TIMER",
           },
         };
       }
@@ -51,19 +51,9 @@ export const getTimerStatusTool: SystemToolDefinition = {
       const remainingFormatted = formatDuration(activeTimer.remainingSeconds);
       const totalFormatted = formatDuration(activeTimer.durationSeconds);
 
-      let statusMessage: string;
-      if (activeTimer.isExpired) {
-        statusMessage = `Il timer è scaduto. Era impostato per ${totalFormatted}.`;
-      } else if (activeTimer.isActive) {
-        statusMessage = `Il timer è attivo. Mancano ${remainingFormatted} su una durata totale di ${totalFormatted}.`;
-      } else {
-        statusMessage = `Il timer non è più attivo. Era impostato per ${totalFormatted}.`;
-      }
-
       return {
         result: {
           success: true,
-          message: statusMessage,
           timerId: activeTimer.id,
           remainingSeconds: activeTimer.remainingSeconds,
           remainingFormatted,
@@ -78,7 +68,8 @@ export const getTimerStatusTool: SystemToolDefinition = {
       return {
         result: {
           success: false,
-          message: `Errore nel recuperare lo stato del timer: ${error instanceof Error ? error.message : "Errore sconosciuto"}`,
+          error: "EXECUTION_ERROR",
+          errorMessage: error instanceof Error ? error.message : "Errore sconosciuto",
         },
       };
     }
