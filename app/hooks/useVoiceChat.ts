@@ -4,7 +4,7 @@ import { useState, useRef, useCallback, useEffect } from "react";
 import type { Message } from "@/app/lib/speech/types";
 import {
   VoiceChatClient,
-  createGeminiProvider,
+  GeminiProvider,
   VoiceChatError,
   WakeWordManager,
   ConversationStorage,
@@ -161,7 +161,7 @@ export function useVoiceChat(): UseVoiceChatReturn {
     setError(null);
 
     try {
-      const provider = createGeminiProvider();
+      const provider = new GeminiProvider();
 
       const client = new VoiceChatClient({
         provider,
@@ -225,7 +225,8 @@ export function useVoiceChat(): UseVoiceChatReturn {
       // Aggiungi il messaggio utente alla lista
       const messageId = `${Date.now()}-user`;
       setMessages((prev) => [...prev, { id: messageId, text: initialMessage, isUser: true }]);
-      currentMessageIdRef.current.user = null; // Reset per evitare concatenazioni
+      // Reset entrambi per evitare concatenazioni con messaggi della sessione precedente
+      currentMessageIdRef.current = { user: null, ai: null };
       
       client.sendText(initialMessage);
       

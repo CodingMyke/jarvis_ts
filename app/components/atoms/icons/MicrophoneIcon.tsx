@@ -1,6 +1,4 @@
-interface IconProps {
-  className?: string;
-}
+import type { IconProps } from "./index";
 
 export function MicrophoneIcon({ className = "h-5 w-5" }: IconProps) {
   return (

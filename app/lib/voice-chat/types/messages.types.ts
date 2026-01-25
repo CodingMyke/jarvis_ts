@@ -1,3 +1,8 @@
+import type { ParameterProperty, FunctionCall, FunctionResponse } from './tools.types';
+
+// Re-export per retrocompatibilità
+export type { ParameterProperty, FunctionCall, FunctionResponse };
+
 // ============================================
 // Client -> Server Messages
 // ============================================
@@ -37,12 +42,6 @@ export interface FunctionDeclaration {
   };
 }
 
-export interface ParameterProperty {
-  type: string;
-  description: string;
-  enum?: string[];
-}
-
 export interface SessionConfig {
   model: string;
   generationConfig: GenerationConfig;
@@ -73,15 +72,6 @@ export interface ToolResponseMessage {
   };
 }
 
-export interface FunctionResponse {
-  id: string;
-  name: string;
-  response: {
-    result: string;
-    error?: string;
-  };
-}
-
 export type ClientMessage = SetupMessage | RealtimeInputMessage | ToolResponseMessage;
 
 // ============================================
@@ -108,12 +98,6 @@ export interface ServerContent {
   generationComplete?: boolean;
   inputTranscription?: { text: string };
   outputTranscription?: { text: string };
-}
-
-export interface FunctionCall {
-  id: string;
-  name: string;
-  args: Record<string, unknown>;
 }
 
 export interface ToolCall {

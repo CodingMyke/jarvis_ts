@@ -1,8 +1,6 @@
-export interface ParameterProperty {
-  type: "string" | "number" | "boolean" | "array" | "object";
-  description: string;
-  enum?: string[];
-}
+import type { ParameterProperty } from "../types/tools.types";
+
+export type { ParameterProperty };
 
 /**
  * Contesto passato all'execute di un tool.

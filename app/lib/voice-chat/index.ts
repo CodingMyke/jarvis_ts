@@ -2,7 +2,7 @@
 export { VoiceChatClient } from './client';
 
 // Providers
-export { createGeminiProvider, GeminiProvider } from './providers/gemini';
+export { GeminiProvider } from './providers/gemini';
 export type { VoiceChatProvider, ProviderEvent, ProviderEventData } from './providers/base.provider';
 
 // Types

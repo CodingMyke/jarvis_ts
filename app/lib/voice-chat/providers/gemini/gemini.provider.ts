@@ -243,10 +243,3 @@ export class GeminiProvider implements VoiceChatProvider {
     }
   }
 }
-
-/**
- * Factory function per creare un provider Gemini
- */
-export function createGeminiProvider(): GeminiProvider {
-  return new GeminiProvider();
-}

@@ -9,7 +9,6 @@ import { AUDIO_INPUT_SAMPLE_RATE } from '../config';
 export class AudioInputManager {
   private audioContext: AudioContext | null = null;
   private mediaStream: MediaStream | null = null;
-  private workletNode: AudioWorkletNode | null = null;
   private sourceNode: MediaStreamAudioSourceNode | null = null;
   private processorNode: ScriptProcessorNode | null = null;
   
@@ -147,11 +146,6 @@ export class AudioInputManager {
     if (this.processorNode) {
       this.processorNode.disconnect();
       this.processorNode = null;
-    }
-    
-    if (this.workletNode) {
-      this.workletNode.disconnect();
-      this.workletNode = null;
     }
     
     if (this.sourceNode) {
