@@ -1,3 +1,4 @@
+import { memo, useMemo } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import type { Components } from "react-markdown";
@@ -53,8 +54,22 @@ const markdownComponents: Components = {
   ),
 };
 
-export function ChatBubble({ message }: ChatBubbleProps) {
+function ChatBubbleComponent({ message }: ChatBubbleProps) {
   const isUser = message.isUser;
+
+  const content = useMemo(() => {
+    if (!message.text) return null;
+    
+    if (isUser) {
+      return <p className="text-sm">{message.text}</p>;
+    }
+    
+    return (
+      <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
+        {message.text}
+      </ReactMarkdown>
+    );
+  }, [message.text, isUser]);
 
   return (
     <div className={`flex ${isUser ? "justify-end" : "justify-start"}`}>
@@ -73,15 +88,17 @@ export function ChatBubble({ message }: ChatBubbleProps) {
             </p>
           </details>
         )}
-        {message.text &&
-          (isUser ? (
-            <p className="text-sm">{message.text}</p>
-          ) : (
-            <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
-              {message.text}
-            </ReactMarkdown>
-          ))}
+        {content}
       </div>
     </div>
   );
 }
+
+export const ChatBubble = memo(ChatBubbleComponent, (prev, next) => {
+  return (
+    prev.message.id === next.message.id &&
+    prev.message.text === next.message.text &&
+    prev.message.thinking === next.message.thinking &&
+    prev.message.isUser === next.message.isUser
+  );
+});

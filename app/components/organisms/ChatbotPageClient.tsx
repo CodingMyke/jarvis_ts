@@ -1,5 +1,6 @@
 "use client";
 
+import { useCallback, useMemo } from "react";
 import { VoiceOrb } from "@/app/components";
 import { FloatingChat, UpcomingEvents, TimerDisplay } from "@/app/components/organisms";
 import { useVoiceChat } from "@/app/hooks/useVoiceChat";
@@ -23,17 +24,17 @@ export function ChatbotPageClient({ initialEvents }: ChatbotPageClientProps) {
   } = useVoiceChat();
 
   const orbState = useOrbState(listeningMode);
-  const { day, date, time } = useDateTime();
+  const { day, date, time, refs } = useDateTime();
 
-  const handleMicrophoneClick = () => {
+  const handleMicrophoneClick = useCallback(() => {
     if (isListening) {
       stopListening();
     } else {
       startListening();
     }
-  };
+  }, [isListening, stopListening, startListening]);
 
-  const getStatusConfig = () => {
+  const status = useMemo(() => {
     switch (listeningMode) {
       case "wake_word":
         return {
@@ -54,9 +55,7 @@ export function ChatbotPageClient({ initialEvents }: ChatbotPageClientProps) {
           dotColor: "bg-muted",
         };
     }
-  };
-
-  const status = getStatusConfig();
+  }, [listeningMode]);
 
   return (
     <div className="fixed inset-0 overflow-hidden bg-background p-6">
@@ -70,8 +69,10 @@ export function ChatbotPageClient({ initialEvents }: ChatbotPageClientProps) {
 
         {/* Date/Time - Top Center */}
         <div className="absolute left-1/2 top-6 -translate-x-1/2 flex flex-col items-center">
-          <span className="text-7xl font-semibold text-foreground">{time}</span>
-          <span className="text-3xl text-muted">{day}, {date}</span>
+          <span ref={refs.timeRef} className="text-7xl font-semibold text-foreground">{time}</span>
+          <span className="text-3xl text-muted">
+            <span ref={refs.dayRef}>{day}</span>, <span ref={refs.dateRef}>{date}</span>
+          </span>
         </div>
 
         {/* Spacer for balance */}

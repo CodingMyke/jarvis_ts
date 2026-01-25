@@ -22,14 +22,23 @@ function useEventsScroll(expandedEventId: string | null) {
   }, [scrollOffset]);
 
   useEffect(() => {
-    const frameId = requestAnimationFrame(() => {
-      // Se nessun evento è espanso, torna a offset 0
-      if (!expandedEventId) {
-        setScrollOffset(0);
-        return;
-      }
+    let frameId: number | null = null;
+    let timeoutId: ReturnType<typeof setTimeout> | null = null;
 
-      if (!containerRef.current || !contentRef.current) return;
+    // Se nessun evento è espanso, reset dell'offset nel prossimo frame
+    if (!expandedEventId) {
+      frameId = requestAnimationFrame(() => {
+        setScrollOffset(0);
+      });
+      return () => {
+        if (frameId !== null) {
+          cancelAnimationFrame(frameId);
+        }
+      };
+    }
+
+    const calculateScroll = () => {
+      if (!expandedEventId || !containerRef.current || !contentRef.current) return;
 
       const expandedElement = contentRef.current.querySelector(
         `[data-event-id="${expandedEventId}"]`,
@@ -41,7 +50,7 @@ function useEventsScroll(expandedEventId: string | null) {
       const containerRect = container.getBoundingClientRect();
       const elementRect = expandedElement.getBoundingClientRect();
 
-      // Compensa per l'offset attuale (il transform sposta visivamente gli elementi)
+      // Calcola la posizione originale senza offset (prima del transform)
       const originalTop = elementRect.top + currentOffsetRef.current;
       const originalBottom = elementRect.bottom + currentOffsetRef.current;
 
@@ -62,10 +71,27 @@ function useEventsScroll(expandedEventId: string | null) {
       const maxScroll = originalTop - containerRect.top;
 
       // Applica lo scroll minimo necessario
-      setScrollOffset(Math.min(overflow, maxScroll));
+      const newOffset = Math.max(0, Math.min(overflow, maxScroll));
+      setScrollOffset(newOffset);
+    };
+
+    // Calcola dopo che il DOM si è aggiornato e l'animazione è iniziata
+    // Doppio RAF per assicurarsi che il layout sia completamente aggiornato
+    frameId = requestAnimationFrame(() => {
+      frameId = requestAnimationFrame(() => {
+        // Piccolo delay per permettere all'animazione CSS di iniziare
+        timeoutId = setTimeout(calculateScroll, 50);
+      });
     });
 
-    return () => cancelAnimationFrame(frameId);
+    return () => {
+      if (frameId !== null) {
+        cancelAnimationFrame(frameId);
+      }
+      if (timeoutId !== null) {
+        clearTimeout(timeoutId);
+      }
+    };
   }, [expandedEventId]);
 
   return { containerRef, contentRef, scrollOffset };

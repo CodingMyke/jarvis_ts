@@ -67,6 +67,10 @@ body {
   color: var(--foreground);
   font-family: system-ui, -apple-system, sans-serif;
   overflow: hidden;
+  /* Ottimizzazioni performance */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
 }
 
 /* Glassmorphism utility */
@@ -156,6 +160,10 @@ body {
   height: 400px;
   user-select: none;
   -webkit-tap-highlight-color: transparent;
+  /* Ottimizzazioni GPU */
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  contain: layout style paint;
 }
 
 /* Focus ring per accessibilità */
@@ -293,6 +301,9 @@ body {
   background: transparent;
   border: 1px solid transparent;
   box-shadow: none;
+  /* Ottimizzazioni GPU */
+  transform: translateZ(0);
+  backface-visibility: hidden;
   will-change: transform, background-color, border-color, max-width, padding;
   transition: 
     transform var(--transition-medium) var(--easing-smooth),

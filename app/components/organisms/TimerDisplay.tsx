@@ -66,7 +66,13 @@ function useSmoothTimer(timer: { startTime: number; durationSeconds: number; rem
       const seconds = Math.floor(remainingTotal / 1000);
       const milliseconds = Math.floor((remainingTotal % 1000) / 10);
 
-      setDisplayTime({ seconds, milliseconds });
+      // Evita setState se il valore non è cambiato (ottimizzazione)
+      setDisplayTime((prev) => {
+        if (prev && prev.seconds === seconds && prev.milliseconds === milliseconds) {
+          return prev;
+        }
+        return { seconds, milliseconds };
+      });
 
       if (remainingTotal > 0) {
         frameRef.current = requestAnimationFrame(updateTime);

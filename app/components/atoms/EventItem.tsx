@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useEffect, useCallback } from "react";
+import { memo, useRef, useEffect, useCallback, useMemo } from "react";
 
 export interface CalendarEvent {
   id: string;
@@ -83,12 +83,15 @@ function useEventItem(
   };
 }
 
-export function EventItem({ event, isExpanded, onToggle }: EventItemProps) {
-  const accentColor = event.color || "var(--accent)";
+function EventItemComponent({ event, isExpanded, onToggle }: EventItemProps) {
+  const accentColor = useMemo(() => event.color || "var(--accent)", [event.color]);
   const { containerRef, handleMouseDown, handleMouseUp, handleMouseLeave, handleClick } =
     useEventItem(event, isExpanded, onToggle);
 
-  const hasDetails = event.location || (event.attendees && event.attendees.length > 0);
+  const hasDetails = useMemo(
+    () => event.location || (event.attendees && event.attendees.length > 0),
+    [event.location, event.attendees]
+  );
 
   return (
     <div
@@ -225,3 +228,18 @@ export function EventItem({ event, isExpanded, onToggle }: EventItemProps) {
     </div>
   );
 }
+
+export const EventItem = memo(EventItemComponent, (prev, next) => {
+  return (
+    prev.event.id === next.event.id &&
+    prev.event.title === next.event.title &&
+    prev.event.time === next.event.time &&
+    prev.event.endTime === next.event.endTime &&
+    prev.event.description === next.event.description &&
+    prev.event.location === next.event.location &&
+    prev.event.color === next.event.color &&
+    prev.event.attendees?.length === next.event.attendees?.length &&
+    prev.isExpanded === next.isExpanded &&
+    prev.onToggle === next.onToggle
+  );
+});

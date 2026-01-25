@@ -1,3 +1,4 @@
+import { memo, useMemo } from "react";
 import { EventItem, type CalendarEvent } from "@/app/components/atoms/EventItem";
 
 export interface DayEventsData {
@@ -29,15 +30,17 @@ function formatDayLabel(date: Date): string {
   return `${weekday.charAt(0).toUpperCase() + weekday.slice(1)} ${day} ${month}`;
 }
 
-export function DayEvents({ data, expandedEventId, onToggleEvent }: DayEventsProps) {
+function DayEventsComponent({ data, expandedEventId, onToggleEvent }: DayEventsProps) {
   const { date, events } = data;
+
+  const dayLabel = useMemo(() => formatDayLabel(date), [date]);
 
   if (events.length === 0) return null;
 
   return (
     <div className="space-y-2">
       <h3 className="text-sm font-medium uppercase tracking-wide text-muted">
-        {formatDayLabel(date)}
+        {dayLabel}
       </h3>
       <div className="space-y-2">
         {events.map((event) => (
@@ -52,3 +55,13 @@ export function DayEvents({ data, expandedEventId, onToggleEvent }: DayEventsPro
     </div>
   );
 }
+
+export const DayEvents = memo(DayEventsComponent, (prev, next) => {
+  return (
+    prev.data.date.getTime() === next.data.date.getTime() &&
+    prev.data.events.length === next.data.events.length &&
+    prev.data.events.every((e, i) => e.id === next.data.events[i]?.id) &&
+    prev.expandedEventId === next.expandedEventId &&
+    prev.onToggleEvent === next.onToggleEvent
+  );
+});

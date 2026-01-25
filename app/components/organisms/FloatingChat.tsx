@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useEffect, useState, RefObject } from "react";
+import { memo, useRef, useEffect, useState, RefObject } from "react";
 import { ChatBubble } from "@/app/components/molecules";
 import { Message } from "@/app/lib/speech";
 import { ChevronUpIcon, ChevronDownIcon, TrashIcon } from "@/app/components/atoms/icons";
@@ -31,17 +31,25 @@ function useAutoScroll(messages: Message[], isExpanded: boolean) {
     // Scroll immediately
     container.scrollTop = container.scrollHeight;
 
-    // Keep scrolling during the animation
-    const interval = setInterval(() => {
-      container.scrollTop = container.scrollHeight;
-    }, 16);
+    // Usa requestAnimationFrame invece di setInterval per performance migliori
+    let frameId: number | null = null;
+    const startTime = Date.now();
+    const duration = 1000; // 1 secondo
 
-    // Stop after animation completes
-    const timeout = setTimeout(() => clearInterval(interval), 1000);
+    const scrollLoop = () => {
+      const elapsed = Date.now() - startTime;
+      if (elapsed < duration) {
+        container.scrollTop = container.scrollHeight;
+        frameId = requestAnimationFrame(scrollLoop);
+      }
+    };
+
+    frameId = requestAnimationFrame(scrollLoop);
 
     return () => {
-      clearInterval(interval);
-      clearTimeout(timeout);
+      if (frameId !== null) {
+        cancelAnimationFrame(frameId);
+      }
     };
   }, [isExpanded]);
 
@@ -92,7 +100,7 @@ function useFloatingChat(onReset?: () => void) {
   };
 }
 
-export function FloatingChat({ messages, onReset }: FloatingChatProps) {
+function FloatingChatComponent({ messages, onReset }: FloatingChatProps) {
   const {
     isExpanded,
     showControls,
@@ -230,3 +238,20 @@ export function FloatingChat({ messages, onReset }: FloatingChatProps) {
     </>
   );
 }
+
+export const FloatingChat = memo(FloatingChatComponent, (prev, next) => {
+  // Confronta solo la lunghezza e gli ID dei messaggi per performance
+  if (prev.messages.length !== next.messages.length) return false;
+  
+  // Confronta gli ultimi messaggi (più probabili a cambiare)
+  const lastIndex = prev.messages.length - 1;
+  if (lastIndex >= 0) {
+    const prevLast = prev.messages[lastIndex];
+    const nextLast = next.messages[lastIndex];
+    if (prevLast.id !== nextLast.id || prevLast.text !== nextLast.text) {
+      return false;
+    }
+  }
+  
+  return prev.onReset === next.onReset;
+});
