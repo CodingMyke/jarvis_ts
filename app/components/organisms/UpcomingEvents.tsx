@@ -154,14 +154,15 @@ export function UpcomingEvents() {
     <div
       ref={containerRef}
       className={`
-        mt-12 max-w-xs
-        max-h-[calc(100vh-220px)] overflow-hidden
+        mt-12
+        max-h-[calc(100vh-220px)]
         ${isScrolled ? "events-fade-top" : ""}
       `}
+      style={{ clipPath: "inset(0 -10rem 0 0)" }}
     >
       <div
         ref={contentRef}
-        className="space-y-4 pr-2 transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]"
+        className="space-y-4 pr-2 max-w-xs transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]"
         style={{ transform: `translateY(-${scrollOffset}px)` }}
       >
         {days.map((dayData) => (
