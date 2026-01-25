@@ -89,12 +89,10 @@ export class VoiceChatClient {
       },
       onLevelChange: (level) => {
         this.options.onAudioLevel?.(level);
-        
-        // Interrompi immediatamente la riproduzione se l'utente sta parlando
-        // Soglia di 0.05 per evitare falsi positivi dal rumore di fondo
-        if (level > 0.05 && this.audioOutput?.playing) {
-          this.audioOutput.clear();
-        }
+        // Non interrompiamo qui basandoci sull'audio level perché:
+        // 1. Il microfono può rilevare l'audio dell'altoparlante (feedback)
+        // 2. Gemini invia l'evento "interrupted" quando rileva speech dell'utente
+        // L'interruzione viene gestita dal listener "interrupted" del provider
       },
     });
 

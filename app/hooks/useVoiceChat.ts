@@ -176,6 +176,30 @@ export function useVoiceChat(): UseVoiceChatReturn {
         onStateChange: (state: ConnectionState) => {
           console.log('[useVoiceChat] state changed:', state);
           setConnectionState(state);
+          
+          // Gestisci disconnessione inattesa (es. errore WebSocket)
+          if (state === 'disconnected' && clientRef.current) {
+            console.log('[useVoiceChat] unexpected disconnection, cleaning up...');
+            
+            // Salva la conversazione prima di pulire
+            saveConversation(messagesRef.current);
+            
+            // Salva ref e resetta PRIMA del dispose per evitare loop
+            const client = clientRef.current;
+            clientRef.current = null;
+            
+            // Cleanup client
+            client.dispose();
+            setIsMuted(false);
+            setAudioLevel(0);
+            
+            // Reset message refs
+            currentMessageIdRef.current = { user: null, ai: null };
+            
+            // Torna in modalità wake word per permettere di riprovare
+            setListeningMode('wake_word');
+            wakeWordRef.current?.resume();
+          }
         },
         onError: (err: VoiceChatError) => {
           console.error('[useVoiceChat] error:', err);
@@ -188,9 +212,12 @@ export function useVoiceChat(): UseVoiceChatReturn {
           // Salva la conversazione prima di pulire
           saveConversation(messagesRef.current);
           
-          // Cleanup client Gemini
-          clientRef.current?.dispose();
+          // Salva ref e resetta PRIMA del dispose per evitare loop
+          const client = clientRef.current;
           clientRef.current = null;
+          
+          // Cleanup client Gemini
+          client?.dispose();
           setIsMuted(false);
           setAudioLevel(0);
           setConnectionState('disconnected');
