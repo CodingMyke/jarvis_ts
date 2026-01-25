@@ -184,7 +184,7 @@ function FloatingChatComponent({ messages, onReset }: FloatingChatProps) {
             >
               <div className="mt-auto" />
               {messages.map((message) => (
-                <ChatBubble key={message.id} message={message} />
+                <ChatBubble key={message.id} message={message} isExpanded={isExpanded} />
               ))}
             </div>
           </div>

@@ -6,6 +6,7 @@ import { Message } from "@/app/lib/speech";
 
 interface ChatBubbleProps {
   message: Message;
+  isExpanded?: boolean;
 }
 
 const markdownComponents: Components = {
@@ -54,7 +55,7 @@ const markdownComponents: Components = {
   ),
 };
 
-function ChatBubbleComponent({ message }: ChatBubbleProps) {
+function ChatBubbleComponent({ message, isExpanded = false }: ChatBubbleProps) {
   const isUser = message.isUser;
 
   const content = useMemo(() => {
@@ -74,9 +75,21 @@ function ChatBubbleComponent({ message }: ChatBubbleProps) {
   return (
     <div className={`flex ${isUser ? "justify-end" : "justify-start"}`}>
       <div
-        className={`max-w-[86%] wrap-break-word px-1 py-1 ${
-          isUser ? "text-foreground" : "text-foreground"
-        }`}
+        className="max-w-[86%] wrap-break-word text-foreground px-4 py-2.5 transition-[background-color,border-color] duration-(--transition-medium) ease-(--easing-smooth)"
+        style={{
+          borderRadius: isUser
+            ? "1rem 1rem 0.25rem 1rem"
+            : "1rem 1rem 1rem 0.25rem",
+          borderStyle: "solid",
+          borderWidth: !isUser ? "1px" : "0",
+          borderColor: isExpanded && !isUser ? "rgba(255, 255, 255, 0.1)" : "transparent",
+          backgroundColor: isExpanded
+            ? isUser
+              ? "rgba(0, 240, 255, 0.2)"
+              : "rgba(255, 255, 255, 0.05)"
+            : "transparent",
+          boxSizing: "border-box",
+        }}
       >
         {!isUser && message.thinking && (
           <details className="mb-2">
@@ -99,6 +112,7 @@ export const ChatBubble = memo(ChatBubbleComponent, (prev, next) => {
     prev.message.id === next.message.id &&
     prev.message.text === next.message.text &&
     prev.message.thinking === next.message.thinking &&
-    prev.message.isUser === next.message.isUser
+    prev.message.isUser === next.message.isUser &&
+    prev.isExpanded === next.isExpanded
   );
 });
