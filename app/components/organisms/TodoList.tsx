@@ -119,10 +119,10 @@ export function TodoList() {
   // Calcola l'altezza massima considerando:
   // - Lo spazio sopra (topOffset)
   // - Lo spazio per la chat chiusa in basso (220px + 24px bottom = 244px)
-  // - Padding e margini (circa 48px)
+  // - Spazio aggiuntivo per separazione (circa 80px)
   // La chat aperta ha z-index più alto quindi coprirà comunque la todo list
   const topOffsetValue = timer ? 144 : 24;
-  const maxHeight = `calc(100vh - ${topOffsetValue}px - 244px - 48px)`;
+  const maxHeight = `calc(100vh - ${topOffsetValue}px - 244px - 80px)`;
 
   return (
     <div 
