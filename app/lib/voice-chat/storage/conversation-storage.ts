@@ -20,10 +20,17 @@ export class ConversationStorage {
    * Converte i messaggi UI nel formato turns di Gemini.
    */
   messagesToTurns(messages: Message[]): ConversationTurn[] {
-    return messages.map((msg) => ({
-      role: msg.isUser ? 'user' : 'model',
-      parts: [{ text: msg.text }],
-    }));
+    return messages.map((msg) => {
+      const turn: ConversationTurn = {
+        role: msg.isUser ? 'user' : 'model',
+        parts: [{ text: msg.text }],
+      };
+      // Salva il thinking solo per i messaggi del modello
+      if (!msg.isUser && msg.thinking) {
+        turn.thinking = msg.thinking;
+      }
+      return turn;
+    });
   }
 
   /**

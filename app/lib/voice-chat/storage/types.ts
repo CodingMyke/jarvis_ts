@@ -5,6 +5,8 @@
 export interface ConversationTurn {
   role: 'user' | 'model';
   parts: { text: string }[];
+  /** Ragionamento del modello (solo per role 'model') - non inviato a Gemini */
+  thinking?: string;
 }
 
 /**

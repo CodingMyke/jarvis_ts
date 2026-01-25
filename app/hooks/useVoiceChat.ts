@@ -63,6 +63,7 @@ export function useVoiceChat(): UseVoiceChatReturn {
         id: `history-${index}`,
         text: turn.parts.map((p) => p.text).join(' '),
         isUser: turn.role === 'user',
+        thinking: turn.thinking,
       }));
       setMessages(loadedMessages);
       console.log('[useVoiceChat] loaded history:', loadedMessages.length, 'messages');
