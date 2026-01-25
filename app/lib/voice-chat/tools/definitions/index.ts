@@ -21,3 +21,8 @@ export {
   stopTimerTool,
   STOP_TIMER_TOOL_NAME,
 } from "./stop-timer.tool";
+
+export {
+  getTimerStatusTool,
+  GET_TIMER_STATUS_TOOL_NAME,
+} from "./get-timer-status.tool";
