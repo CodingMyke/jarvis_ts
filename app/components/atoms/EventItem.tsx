@@ -98,7 +98,7 @@ export function EventItem({ event, isExpanded, onToggle }: EventItemProps) {
         event-item-container cursor-pointer select-none
         rounded-xl
         transition-all duration-(--transition-medium) ease-(--easing-smooth)
-        ${isExpanded ? "event-expanded p-4 -mx-2 z-10 relative" : "p-0"}
+        ${isExpanded ? "event-expanded p-4 z-10 relative" : "p-0"}
       `}
       onMouseDown={handleMouseDown}
       onMouseUp={handleMouseUp}
