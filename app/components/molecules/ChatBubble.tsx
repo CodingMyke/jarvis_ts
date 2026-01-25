@@ -33,7 +33,7 @@ const markdownComponents: Components = {
     );
   },
   pre: ({ children }) => (
-    <pre className="mb-2 overflow-hidden whitespace-pre-wrap break-words p-2 text-xs text-muted">
+    <pre className="mb-2 overflow-hidden whitespace-pre-wrap wrap-break-word p-2 text-xs text-muted">
       {children}
     </pre>
   ),
@@ -74,7 +74,7 @@ function ChatBubbleComponent({ message }: ChatBubbleProps) {
   return (
     <div className={`flex ${isUser ? "justify-end" : "justify-start"}`}>
       <div
-        className={`max-w-[86%] break-words px-1 py-1 ${
+        className={`max-w-[86%] wrap-break-word px-1 py-1 ${
           isUser ? "text-foreground" : "text-foreground"
         }`}
       >

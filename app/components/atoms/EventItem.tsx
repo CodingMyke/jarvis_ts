@@ -101,7 +101,7 @@ function EventItemComponent({ event, isExpanded, onToggle }: EventItemProps) {
         event-item-container cursor-pointer select-none
         rounded-xl
         transition-[transform,opacity,background-color,border-color,box-shadow,backdrop-filter,max-width,padding] duration-(--transition-medium) ease-(--easing-smooth)
-        ${isExpanded ? "event-expanded p-4 z-10 relative max-w-[26rem]" : "p-0 max-w-full"}
+        ${isExpanded ? "event-expanded p-4 z-10 relative max-w-104" : "p-0 max-w-full"}
       `}
       onMouseDown={handleMouseDown}
       onMouseUp={handleMouseUp}
