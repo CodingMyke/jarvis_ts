@@ -1,10 +1,36 @@
 "use client";
 
-import { Header, MessageList, ChatInput, Button } from "@/app/components";
+import { useState } from "react";
+import { VoiceOrb, Button } from "@/app/components";
+import { MessageList } from "@/app/components/organisms";
 import { useVoiceChat } from "@/app/hooks/useVoiceChat";
 
+function useOrbState(listeningMode: string) {
+  switch (listeningMode) {
+    case "connected":
+      return "speaking" as const;
+    case "wake_word":
+      return "listening" as const;
+    default:
+      return "idle" as const;
+  }
+}
+
 export default function ChatbotPage() {
-  const { isListening, messages, startListening, stopListening, error, listeningMode, clearConversation } = useVoiceChat();
+  const {
+    isListening,
+    messages,
+    startListening,
+    stopListening,
+    error,
+    listeningMode,
+    clearConversation,
+    outputAudioLevel,
+  } = useVoiceChat();
+
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
+  const orbState = useOrbState(listeningMode);
 
   const handleMicrophoneClick = () => {
     if (isListening) {
@@ -14,49 +40,93 @@ export default function ChatbotPage() {
     }
   };
 
-  // Label per mostrare lo stato corrente
-  const getStatusLabel = () => {
+  const getStatusConfig = () => {
     switch (listeningMode) {
-      case 'wake_word':
-        return 'In ascolto... Dì "Jarvis" per iniziare';
-      case 'connected':
-        return 'Connesso con Jarvis';
+      case "wake_word":
+        return {
+          label: 'In ascolto... Dì "Jarvis"',
+          color: "text-yellow-400",
+          dotColor: "bg-yellow-400 shadow-[0_0_10px_rgba(250,204,21,0.5)]",
+        };
+      case "connected":
+        return {
+          label: "Connesso con Jarvis",
+          color: "text-accent",
+          dotColor: "bg-accent shadow-[0_0_10px_var(--accent-glow)]",
+        };
       default:
-        return null;
+        return {
+          label: "Tocca l'orb per iniziare",
+          color: "text-muted",
+          dotColor: "bg-muted",
+        };
     }
   };
 
-  const statusLabel = getStatusLabel();
+  const status = getStatusConfig();
 
   return (
-    <div className="flex h-screen flex-col bg-background">
-      <Header title="Jarvis AI">
-        {messages.length > 0 && (
-          <Button
-            onClick={clearConversation}
-            variant="secondary"
-            className="rounded-lg px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-          >
-            Reset
-          </Button>
+    <div className="fixed inset-0 overflow-hidden bg-background">
+      {/* Main content - Orb centered */}
+      <div className="flex h-full w-full flex-col items-center justify-center">
+        {/* Status indicator - top */}
+        <div className="absolute left-0 right-0 top-0 z-10 flex items-center justify-between p-4">
+          <div className="flex items-center gap-3">
+            <div className={`h-2 w-2 rounded-full ${status.dotColor} ${listeningMode !== "idle" ? "animate-pulse" : ""}`} />
+            <span className={`text-sm ${status.color}`}>{status.label}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            {messages.length > 0 && (
+              <>
+                <Button
+                  onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+                  variant="secondary"
+                  className="glass rounded-lg px-3 py-1.5 text-sm"
+                >
+                  {isSidebarOpen ? "Chiudi" : "Chat"}
+                  {!isSidebarOpen && messages.length > 0 && (
+                    <span className="ml-2 rounded-full bg-accent/20 px-1.5 py-0.5 text-xs text-accent">
+                      {messages.length}
+                    </span>
+                  )}
+                </Button>
+                <Button
+                  onClick={clearConversation}
+                  variant="secondary"
+                  className="glass rounded-lg px-3 py-1.5 text-sm"
+                >
+                  Reset
+                </Button>
+              </>
+            )}
+          </div>
+        </div>
+
+        {/* Error display */}
+        {error && (
+          <div className="absolute left-4 right-4 top-16 z-10 glass rounded-lg px-4 py-2 text-center text-sm text-red-400">
+            {error.message}
+          </div>
         )}
-      </Header>
-      {error && (
-        <div className="mx-4 mt-2 rounded-lg bg-red-100 px-4 py-2 text-sm text-red-700 dark:bg-red-900/30 dark:text-red-400">
-          {error.message}
-        </div>
-      )}
-      {statusLabel && (
-        <div className={`mx-4 mt-2 rounded-lg px-4 py-2 text-center text-sm ${
-          listeningMode === 'connected'
-            ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400'
-            : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
-        }`}>
-          {statusLabel}
-        </div>
-      )}
-      <MessageList messages={messages} />
-      <ChatInput isRecording={isListening} onMicrophoneClick={handleMicrophoneClick} />
+
+        {/* Orb - interactive */}
+        <VoiceOrb
+          state={orbState}
+          audioLevel={outputAudioLevel}
+          onClick={handleMicrophoneClick}
+        />
+      </div>
+
+      {/* Messages sidebar - collapsible */}
+      <aside
+        className={`glass glass-scroll fixed bottom-20 top-16 z-20 w-80 overflow-y-auto rounded-2xl transition-all duration-300 ease-out ${
+          isSidebarOpen
+            ? "right-4 opacity-100"
+            : "pointer-events-none -right-80 opacity-0"
+        }`}
+      >
+        <MessageList messages={messages} />
+      </aside>
     </div>
   );
 }

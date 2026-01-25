@@ -252,6 +252,9 @@ export class VoiceChatClient {
         channels: 1,
         bitDepth: 16,
       },
+      onLevelChange: (level) => {
+        this.options.onOutputAudioLevel?.(level);
+      },
       onError: (error) => {
         this.options.onError?.(
           new VoiceChatError(error.message, "AUDIO_ERROR", true),

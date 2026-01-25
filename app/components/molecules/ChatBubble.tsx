@@ -8,19 +8,23 @@ interface ChatBubbleProps {
 }
 
 const markdownComponents: Components = {
-  p: ({ children }) => <p className="text-sm mb-2 last:mb-0">{children}</p>,
+  p: ({ children }) => <p className="mb-2 text-sm last:mb-0">{children}</p>,
   strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
   em: ({ children }) => <em className="italic">{children}</em>,
-  h1: ({ children }) => <h1 className="text-lg font-bold mb-2">{children}</h1>,
-  h2: ({ children }) => <h2 className="text-base font-bold mb-2">{children}</h2>,
-  h3: ({ children }) => <h3 className="text-sm font-bold mb-1">{children}</h3>,
-  ul: ({ children }) => <ul className="list-disc list-inside mb-2 text-sm space-y-1">{children}</ul>,
-  ol: ({ children }) => <ol className="list-decimal list-inside mb-2 text-sm space-y-1">{children}</ol>,
+  h1: ({ children }) => <h1 className="mb-2 text-base font-bold">{children}</h1>,
+  h2: ({ children }) => <h2 className="mb-2 text-sm font-bold">{children}</h2>,
+  h3: ({ children }) => <h3 className="mb-1 text-sm font-bold">{children}</h3>,
+  ul: ({ children }) => (
+    <ul className="mb-2 list-inside list-disc space-y-1 text-sm">{children}</ul>
+  ),
+  ol: ({ children }) => (
+    <ol className="mb-2 list-inside list-decimal space-y-1 text-sm">{children}</ol>
+  ),
   li: ({ children }) => <li>{children}</li>,
   code: ({ className, children }) => {
     const isInline = !className;
     return isInline ? (
-      <code className="bg-zinc-200 dark:bg-zinc-700 px-1 py-0.5 rounded text-xs font-mono">
+      <code className="rounded bg-white/10 px-1 py-0.5 font-mono text-xs text-accent">
         {children}
       </code>
     ) : (
@@ -28,50 +32,57 @@ const markdownComponents: Components = {
     );
   },
   pre: ({ children }) => (
-    <pre className="bg-zinc-200 dark:bg-zinc-700 p-2 rounded-lg mb-2 overflow-x-auto text-xs">
+    <pre className="mb-2 overflow-x-auto rounded-lg bg-white/5 p-2 text-xs">
       {children}
     </pre>
   ),
   a: ({ href, children }) => (
-    <a href={href} className="text-blue-600 dark:text-blue-400 underline" target="_blank" rel="noopener noreferrer">
+    <a
+      href={href}
+      className="text-accent underline transition-colors hover:text-accent-secondary"
+      target="_blank"
+      rel="noopener noreferrer"
+    >
       {children}
     </a>
   ),
   blockquote: ({ children }) => (
-    <blockquote className="border-l-2 border-zinc-400 pl-2 italic text-sm mb-2">
+    <blockquote className="mb-2 border-l-2 border-accent/50 pl-2 text-sm italic text-muted">
       {children}
     </blockquote>
   ),
 };
 
 export function ChatBubble({ message }: ChatBubbleProps) {
-  const alignmentClass = message.isUser ? "justify-end" : "justify-start";
-  const bubbleClass = message.isUser
-    ? "rounded-tr-sm bg-blue-500 text-white"
-    : "rounded-tl-sm bg-zinc-100 text-foreground dark:bg-zinc-800";
+  const isUser = message.isUser;
 
   return (
-    <div className={`flex ${alignmentClass}`}>
-      <div className={`max-w-[80%] rounded-2xl px-4 py-2 ${bubbleClass}`}>
-        {!message.isUser && message.thinking && (
+    <div className={`flex ${isUser ? "justify-end" : "justify-start"}`}>
+      <div
+        className={`max-w-[90%] rounded-xl px-3 py-2 ${
+          isUser
+            ? "rounded-tr-sm bg-accent/20 text-foreground"
+            : "rounded-tl-sm bg-white/5 text-foreground"
+        }`}
+      >
+        {!isUser && message.thinking && (
           <details className="mb-2">
-            <summary className="cursor-pointer text-xs text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300">
+            <summary className="cursor-pointer text-xs text-muted hover:text-foreground">
               💭 Ragionamento
             </summary>
-            <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400 italic border-l-2 border-zinc-300 dark:border-zinc-600 pl-2">
+            <p className="mt-1 border-l-2 border-accent/30 pl-2 text-xs italic text-muted">
               {message.thinking}
             </p>
           </details>
         )}
-        {message.text && (
-          message.isUser ? (
+        {message.text &&
+          (isUser ? (
             <p className="text-sm">{message.text}</p>
           ) : (
             <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
               {message.text}
             </ReactMarkdown>
-          )
-        )}
+          ))}
       </div>
     </div>
   );

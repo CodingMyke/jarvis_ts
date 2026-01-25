@@ -21,5 +21,6 @@ export interface AudioOutputManagerOptions {
   format: AudioFormat;
   onPlaybackStart?: () => void;
   onPlaybackEnd?: () => void;
+  onLevelChange?: (level: number) => void;
   onError: (error: Error) => void;
 }

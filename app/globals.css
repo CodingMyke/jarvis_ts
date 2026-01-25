@@ -1,24 +1,255 @@
 @import "tailwindcss";
 
+/* Registra custom properties per transizioni colore */
+@property --orb-color-core {
+  syntax: '<color>';
+  initial-value: rgba(100, 100, 120, 0.8);
+  inherits: false;
+}
+
+@property --orb-color-mid {
+  syntax: '<color>';
+  initial-value: rgba(60, 60, 80, 0.6);
+  inherits: false;
+}
+
+@property --orb-color-glow {
+  syntax: '<color>';
+  initial-value: rgba(100, 100, 120, 0.3);
+  inherits: false;
+}
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Background */
+  --background: #050510;
+  --background-secondary: rgba(255, 255, 255, 0.03);
+  
+  /* Foreground */
+  --foreground: #e0e0e0;
+  --foreground-muted: rgba(255, 255, 255, 0.5);
+  
+  /* Accent colors */
+  --accent-primary: #00f0ff;
+  --accent-secondary: #0066ff;
+  --accent-glow: rgba(0, 240, 255, 0.4);
+  
+  /* Glass effect */
+  --glass-bg: rgba(255, 255, 255, 0.05);
+  --glass-border: rgba(255, 255, 255, 0.1);
+  
+  /* Orb colors */
+  --orb-core: #00f0ff;
+  --orb-mid: #0066ff;
+  --orb-outer: #1a0033;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --color-accent: var(--accent-primary);
+  --color-accent-secondary: var(--accent-secondary);
+  --color-muted: var(--foreground-muted);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: system-ui, -apple-system, sans-serif;
+  overflow: hidden;
+}
+
+/* Glassmorphism utility */
+.glass {
+  background: var(--glass-bg);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--glass-border);
+}
+
+/* Custom scrollbar for glass panels */
+.glass-scroll::-webkit-scrollbar {
+  width: 4px;
+}
+
+.glass-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.glass-scroll::-webkit-scrollbar-thumb {
+  background: var(--glass-border);
+  border-radius: 2px;
+}
+
+.glass-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* Orb animations - usa filter invece di transform per non interferire */
+@keyframes orb-pulse {
+  0%, 100% {
+    filter: brightness(1);
+  }
+  50% {
+    filter: brightness(1.1);
+  }
+}
+
+@keyframes orb-rotate {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes glow-pulse {
+  0%, 100% {
+    opacity: 0.4;
+    filter: blur(60px);
+  }
+  50% {
+    opacity: 0.6;
+    filter: blur(80px);
+  }
+}
+
+
+/* Orb base styles */
+.orb-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 400px;
+  height: 400px;
+  cursor: pointer;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  outline: none;
+}
+
+/* Focus ring per accessibilità */
+.orb-container:focus-visible .orb-core {
+  box-shadow:
+    0 0 0 3px var(--background),
+    0 0 0 5px var(--orb-color-glow),
+    0 0 40px var(--orb-color-glow),
+    0 0 80px var(--orb-color-mid),
+    inset 0 0 40px var(--orb-color-glow);
+}
+
+.orb-glow {
+  position: absolute;
+  width: 300px;
+  height: 300px;
+  --orb-color-core: rgba(100, 100, 120, 0.8);
+  --orb-color-mid: rgba(60, 60, 80, 0.6);
+  background: radial-gradient(
+    circle,
+    var(--orb-color-core) 0%,
+    var(--orb-color-mid) 30%,
+    transparent 70%
+  );
+  filter: blur(60px);
+  pointer-events: none;
+  transition: 
+    --orb-color-core 0.6s ease-in-out,
+    --orb-color-mid 0.6s ease-in-out,
+    opacity 0.15s ease-out,
+    transform 0.15s ease-out,
+    filter 0.15s ease-out;
+}
+
+.orb-core {
+  position: relative;
+  width: 180px;
+  height: 180px;
+  --orb-color-core: rgba(100, 100, 120, 0.8);
+  --orb-color-mid: rgba(60, 60, 80, 0.6);
+  --orb-color-glow: rgba(100, 100, 120, 0.3);
+  background: radial-gradient(
+    circle at 30% 30%,
+    rgba(255, 255, 255, 0.9) 0%,
+    var(--orb-color-core) 25%,
+    var(--orb-color-mid) 60%,
+    rgba(10, 10, 30, 0.8) 100%
+  );
+  border-radius: 50%;
+  box-shadow:
+    0 0 40px var(--orb-color-glow),
+    0 0 80px var(--orb-color-mid),
+    inset 0 0 40px var(--orb-color-glow);
+  animation: orb-pulse 4s ease-in-out infinite;
+  transition: 
+    --orb-color-core 0.6s ease-in-out,
+    --orb-color-mid 0.6s ease-in-out,
+    --orb-color-glow 0.6s ease-in-out,
+    transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), 
+    box-shadow 0.3s ease-out;
+}
+
+/* Feedback tattile premium - press più veloce */
+.orb-core.pressed {
+  transition: transform 0.06s cubic-bezier(0.4, 0, 1, 1);
+}
+
+/* Stato listening */
+.orb-glow.listening {
+  --orb-color-core: rgba(250, 204, 21, 0.9);
+  --orb-color-mid: rgba(234, 179, 8, 0.7);
+}
+
+.orb-core.listening {
+  --orb-color-core: rgba(250, 204, 21, 0.9);
+  --orb-color-mid: rgba(234, 179, 8, 0.7);
+  --orb-color-glow: rgba(250, 204, 21, 0.5);
+}
+
+/* Stato speaking */
+.orb-glow.speaking {
+  --orb-color-core: rgba(0, 240, 255, 0.9);
+  --orb-color-mid: rgba(0, 102, 255, 0.7);
+}
+
+.orb-core.speaking {
+  --orb-color-core: rgba(0, 240, 255, 0.9);
+  --orb-color-mid: rgba(0, 102, 255, 0.7);
+  --orb-color-glow: rgba(0, 240, 255, 0.5);
+}
+
+.orb-core.active {
+  box-shadow:
+    0 0 60px var(--orb-color-glow),
+    0 0 120px var(--orb-color-mid),
+    inset 0 0 60px var(--orb-color-glow);
+}
+
+.orb-core.listening-pulse {
+  animation: listening-pulse 2s ease-in-out infinite;
+}
+
+@keyframes listening-pulse {
+  0%, 100% {
+    filter: brightness(1);
+  }
+  50% {
+    filter: brightness(1.15);
+  }
+}
+
+/* Status indicator styles */
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent-primary);
+  box-shadow: 0 0 10px var(--accent-glow);
+  animation: orb-pulse 2s ease-in-out infinite;
+}
+
+.status-dot.idle {
+  background: var(--foreground-muted);
+  box-shadow: none;
+  animation: none;
 }

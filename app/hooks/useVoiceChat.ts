@@ -22,6 +22,7 @@ export interface UseVoiceChatReturn {
   isMuted: boolean;
   messages: Message[];
   audioLevel: number;
+  outputAudioLevel: number;
   error: VoiceChatError | null;
   connectionState: ConnectionState;
   listeningMode: ListeningMode;
@@ -48,6 +49,7 @@ export function useVoiceChat(): UseVoiceChatReturn {
   const [isMuted, setIsMuted] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [audioLevel, setAudioLevel] = useState(0);
+  const [outputAudioLevel, setOutputAudioLevel] = useState(0);
   const [error, setError] = useState<VoiceChatError | null>(null);
 
   // Mantieni messagesRef sincronizzato con lo state
@@ -192,6 +194,7 @@ export function useVoiceChat(): UseVoiceChatReturn {
             client.dispose();
             setIsMuted(false);
             setAudioLevel(0);
+            setOutputAudioLevel(0);
             
             // Reset message refs
             currentMessageIdRef.current = { user: null, ai: null };
@@ -206,6 +209,7 @@ export function useVoiceChat(): UseVoiceChatReturn {
           setError(err);
         },
         onAudioLevel: setAudioLevel,
+        onOutputAudioLevel: setOutputAudioLevel,
         onEndConversation: () => {
           console.log('[useVoiceChat] conversation ended by assistant');
           
@@ -220,6 +224,7 @@ export function useVoiceChat(): UseVoiceChatReturn {
           client?.dispose();
           setIsMuted(false);
           setAudioLevel(0);
+          setOutputAudioLevel(0);
           setConnectionState('disconnected');
           
           // Reset message refs per la prossima conversazione
@@ -327,6 +332,7 @@ export function useVoiceChat(): UseVoiceChatReturn {
     setListeningMode('idle');
     setIsMuted(false);
     setAudioLevel(0);
+    setOutputAudioLevel(0);
     setConnectionState('disconnected');
   }, []);
 
@@ -362,6 +368,7 @@ export function useVoiceChat(): UseVoiceChatReturn {
     isMuted,
     messages,
     audioLevel,
+    outputAudioLevel,
     error,
     connectionState,
     listeningMode,

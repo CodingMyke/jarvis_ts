@@ -5,6 +5,9 @@ import { int16ToFloat32 } from './audio-utils';
 // A 24kHz: 4800 campioni = 200ms di audio
 const MIN_BUFFER_SAMPLES = 4800;
 
+// Intervallo per aggiornamento livello audio (ms)
+const LEVEL_UPDATE_INTERVAL_MS = 50;
+
 /**
  * Gestisce la riproduzione audio streaming con buffering.
  * Riceve chunk PCM 16-bit 24kHz e li riproduce in sequenza senza gap.
@@ -13,9 +16,11 @@ const MIN_BUFFER_SAMPLES = 4800;
 export class AudioOutputManager {
   private audioContext: AudioContext | null = null;
   private gainNode: GainNode | null = null;
+  private analyserNode: AnalyserNode | null = null;
   private scheduledSources: AudioBufferSourceNode[] = [];
   private nextPlayTime = 0;
   private isPlaying = false;
+  private levelIntervalId: ReturnType<typeof setInterval> | null = null;
   
   // Accumulator per raggruppare chunk piccoli
   private accumulator: Float32Array[] = [];
@@ -41,9 +46,59 @@ export class AudioOutputManager {
       sampleRate: this.options.format.sampleRate,
     });
     
+    // AnalyserNode per rilevare il livello audio
+    this.analyserNode = this.audioContext.createAnalyser();
+    this.analyserNode.fftSize = 256;
+    this.analyserNode.smoothingTimeConstant = 0.3;
+    
     // GainNode per controllo volume e fade globali
     this.gainNode = this.audioContext.createGain();
-    this.gainNode.connect(this.audioContext.destination);
+    this.gainNode.connect(this.analyserNode);
+    this.analyserNode.connect(this.audioContext.destination);
+    
+    // Avvia il monitoraggio del livello
+    this.startLevelMonitoring();
+  }
+  
+  /**
+   * Avvia il monitoraggio del livello audio dell'output
+   */
+  private startLevelMonitoring(): void {
+    if (!this.options.onLevelChange || this.levelIntervalId) return;
+    
+    const dataArray = new Uint8Array(this.analyserNode!.frequencyBinCount);
+    
+    this.levelIntervalId = setInterval(() => {
+      if (!this.analyserNode || !this.isPlaying) {
+        this.options.onLevelChange?.(0);
+        return;
+      }
+      
+      this.analyserNode.getByteFrequencyData(dataArray);
+      
+      // Calcola RMS del segnale
+      let sum = 0;
+      for (let i = 0; i < dataArray.length; i++) {
+        sum += dataArray[i] * dataArray[i];
+      }
+      const rms = Math.sqrt(sum / dataArray.length);
+      
+      // Normalizza a 0-1 (255 è il max per Uint8Array)
+      const level = Math.min(1, rms / 128);
+      
+      this.options.onLevelChange?.(level);
+    }, LEVEL_UPDATE_INTERVAL_MS);
+  }
+  
+  /**
+   * Ferma il monitoraggio del livello audio
+   */
+  private stopLevelMonitoring(): void {
+    if (this.levelIntervalId) {
+      clearInterval(this.levelIntervalId);
+      this.levelIntervalId = null;
+    }
+    this.options.onLevelChange?.(0);
   }
 
   /**
@@ -192,11 +247,13 @@ export class AudioOutputManager {
    */
   dispose(): void {
     this.clear();
+    this.stopLevelMonitoring();
     
     if (this.audioContext) {
       this.audioContext.close();
       this.audioContext = null;
       this.gainNode = null;
+      this.analyserNode = null;
     }
   }
 

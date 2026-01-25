@@ -9,11 +9,11 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 
 const variantStyles: Record<ButtonVariant, string> = {
   primary:
-    "bg-blue-500 text-white hover:bg-blue-600 focus:ring-blue-500/20",
+    "border-accent/50 bg-accent/20 text-accent hover:bg-accent/30 focus:ring-accent/20",
   secondary:
-    "border-zinc-300 bg-white text-foreground hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800 dark:hover:bg-zinc-700",
+    "border-white/10 bg-white/5 text-muted hover:bg-white/10 hover:text-foreground",
   recording:
-    "border-red-500 bg-red-500 text-white hover:bg-red-600 dark:border-red-600 dark:bg-red-600 dark:hover:bg-red-700",
+    "border-accent bg-accent/30 text-accent shadow-[0_0_20px_rgba(0,240,255,0.3)] hover:bg-accent/40",
 };
 
 export function Button({
@@ -23,7 +23,7 @@ export function Button({
   ...props
 }: ButtonProps) {
   const baseStyles =
-    "cursor-pointer flex items-center justify-center rounded-lg border px-3 py-2 transition-colors focus:outline-none focus:ring-2 disabled:opacity-50";
+    "cursor-pointer flex items-center justify-center rounded-xl border px-3 py-2 transition-all duration-200 focus:outline-none focus:ring-2 disabled:opacity-50";
 
   return (
     <button
