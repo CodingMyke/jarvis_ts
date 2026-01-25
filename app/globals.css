@@ -117,13 +117,13 @@ body {
   -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 15%);
 }
 
-/* Orb animations - usa filter invece di transform per non interferire */
+/* Orb animations - ottimizzate per GPU con opacity e transform */
 @keyframes orb-pulse {
   0%, 100% {
-    filter: brightness(1);
+    opacity: 1;
   }
   50% {
-    filter: brightness(1.1);
+    opacity: 1.1;
   }
 }
 
@@ -139,11 +139,9 @@ body {
 @keyframes glow-pulse {
   0%, 100% {
     opacity: 0.4;
-    filter: blur(60px);
   }
   50% {
     opacity: 0.6;
-    filter: blur(80px);
   }
 }
 
@@ -184,12 +182,13 @@ body {
   );
   filter: blur(60px);
   pointer-events: none;
+  will-change: transform, opacity, filter;
   transition: 
     --orb-color-core var(--transition-medium) ease-in-out,
     --orb-color-mid var(--transition-medium) ease-in-out,
     opacity var(--transition-instant) ease-out,
-    transform var(--transition-instant) ease-out,
-    filter var(--transition-instant) ease-out;
+    transform var(--transition-instant) ease-out;
+  /* Rimossa transizione su filter per performance - blur è costoso */
 }
 
 .orb-core {
@@ -214,12 +213,13 @@ body {
     0 0 80px var(--orb-color-mid),
     inset 0 0 40px var(--orb-color-glow);
   animation: orb-pulse 4s ease-in-out infinite;
+  will-change: transform;
   transition: 
     --orb-color-core var(--transition-medium) ease-in-out,
     --orb-color-mid var(--transition-medium) ease-in-out,
     --orb-color-glow var(--transition-medium) ease-in-out,
-    transform var(--transition-fast) var(--easing-standard), 
-    box-shadow var(--transition-fast) ease-out;
+    transform var(--transition-fast) var(--easing-standard);
+  /* Rimossa transizione su box-shadow per performance */
 }
 
 /* Feedback tattile premium - press più veloce */
@@ -264,10 +264,10 @@ body {
 
 @keyframes listening-pulse {
   0%, 100% {
-    filter: brightness(1);
+    opacity: 1;
   }
   50% {
-    filter: brightness(1.15);
+    opacity: 1.15;
   }
 }
 
@@ -287,20 +287,23 @@ body {
   animation: none;
 }
 
-/* Event item interactions */
+/* Event item interactions - ottimizzato con transizioni complete per fluidità */
 .event-item-container {
   transform: scale(1);
   background: transparent;
   border: 1px solid transparent;
   box-shadow: none;
+  will-change: transform, background-color, border-color, max-width, padding;
   transition: 
     transform var(--transition-medium) var(--easing-smooth),
-    background var(--transition-medium) var(--easing-smooth),
+    background-color var(--transition-medium) var(--easing-smooth),
     border-color var(--transition-medium) var(--easing-smooth),
     box-shadow var(--transition-medium) var(--easing-smooth),
-    backdrop-filter var(--transition-medium) var(--easing-smooth),
-    padding var(--transition-medium) var(--easing-smooth),
-    margin var(--transition-medium) var(--easing-smooth);
+    opacity var(--transition-medium) var(--easing-smooth),
+    backdrop-filter var(--transition-fast) ease-out,
+    max-width var(--transition-medium) var(--easing-smooth),
+    padding var(--transition-medium) var(--easing-smooth);
+  /* Manteniamo le transizioni visive importanti per fluidità */
 }
 
 .event-item-container.event-pressed {

@@ -15,7 +15,7 @@ export function MicrophoneButton({ isRecording, onClick }: MicrophoneButtonProps
       aria-label={isRecording ? "Ferma chat vocale" : "Avvia chat vocale"}
       className={`
         flex h-14 w-14 cursor-pointer items-center justify-center rounded-full border
-        transition-all duration-(--transition-fast) focus:outline-none
+        transition-[background-color,border-color,text-color,opacity,transform,box-shadow] duration-(--transition-fast) focus:outline-none
         ${
           isRecording
             ? "border-accent bg-accent/20 text-accent shadow-[0_0_30px_rgba(0,240,255,0.4)]"

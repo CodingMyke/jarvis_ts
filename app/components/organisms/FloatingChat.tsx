@@ -113,20 +113,24 @@ export function FloatingChat({ messages, onReset }: FloatingChatProps) {
     <>
       <div
         className="floating-chat fixed bottom-6 right-6 z-20 w-md transition-[height] duration-(--transition-medium) ease-(--easing-smooth)"
-        style={{ height: isExpanded ? "calc(100vh - 48px)" : "256px" }}
+        style={{ 
+          height: isExpanded ? "calc(100vh - 48px)" : "256px",
+          willChange: "height"
+        }}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
       >
         <div
-          className={`relative flex h-full flex-col overflow-hidden rounded-2xl border transition-[border-color,background-color,backdrop-filter] duration-(--transition-medium) ease-(--easing-smooth) ${
+          className={`relative flex h-full flex-col overflow-hidden rounded-2xl border transition-[border-color,background-color,opacity] duration-(--transition-medium) ease-(--easing-smooth) ${
             isExpanded
               ? "border-white/20 bg-black/40 backdrop-blur-xl"
               : "border-transparent bg-transparent backdrop-blur-0"
           }`}
+          style={{ willChange: isExpanded ? "backdrop-filter" : "auto" }}
         >
           {/* Header */}
           <div
-            className={`flex h-10 shrink-0 items-center border-b transition-[border-color] duration-(--transition-medium) ${
+            className={`flex h-10 shrink-0 items-center border-b transition-[border-color,opacity] duration-(--transition-medium) ${
               isExpanded ? "border-white/10" : "border-transparent"
             }`}
           >
@@ -180,21 +184,23 @@ export function FloatingChat({ messages, onReset }: FloatingChatProps) {
       </div>
 
       {/* Reset confirmation dialog */}
-      {isDialogVisible && (
+          {isDialogVisible && (
         <div
-          className={`fixed inset-0 z-50 flex items-center justify-center transition-all duration-(--transition-fast) ${
+          className={`fixed inset-0 z-50 flex items-center justify-center transition-[background-color,backdrop-filter] duration-(--transition-fast) ${
             isDialogAnimatedIn
               ? "bg-black/60 backdrop-blur-sm"
               : "bg-black/0 backdrop-blur-0"
           }`}
+          style={{ willChange: isDialogAnimatedIn ? "backdrop-filter" : "auto" }}
           onClick={closeResetDialog}
         >
           <div
-            className={`mx-4 w-full max-w-sm rounded-2xl border border-white/20 bg-black/80 p-6 backdrop-blur-xl transition-all duration-(--transition-fast) ${
+            className={`mx-4 w-full max-w-sm rounded-2xl border border-white/20 bg-black/80 p-6 backdrop-blur-xl transition-[transform,opacity] duration-(--transition-fast) ${
               isDialogAnimatedIn
                 ? "scale-100 opacity-100"
                 : "scale-95 opacity-0"
             }`}
+            style={{ willChange: isDialogAnimatedIn ? "transform, opacity" : "auto" }}
             onClick={(e) => e.stopPropagation()}
           >
             <h3 className="mb-2 text-lg font-semibold text-foreground">

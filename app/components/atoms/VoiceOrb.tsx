@@ -65,11 +65,13 @@ function useOrbStyles(state: OrbState, audioLevel: number, isPressed: boolean) {
   return {
     core: {
       transform: `scale(${coreScale})`,
+      willChange: "transform",
     },
     glow: {
       opacity: glowOpacity,
       transform: `scale(${glowScale})`,
       filter: `blur(${glowBlur}px)`,
+      willChange: state === "speaking" ? "transform, opacity, filter" : "transform, opacity",
     },
   };
 }

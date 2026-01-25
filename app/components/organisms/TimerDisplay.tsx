@@ -157,7 +157,7 @@ export function TimerDisplay() {
           {/* Barra di progresso */}
           <div className="mt-2 h-1 w-full overflow-hidden rounded-full bg-white/10">
             <div
-              className={`h-full transition-all duration-100 ${
+              className={`h-full transition-[width,background-color] duration-100 ${
                 timer.isExpired ? "bg-red-500" : "bg-accent"
               }`}
               style={{ width: `${percentage}%` }}

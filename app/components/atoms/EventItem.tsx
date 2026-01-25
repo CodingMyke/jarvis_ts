@@ -97,8 +97,8 @@ export function EventItem({ event, isExpanded, onToggle }: EventItemProps) {
       className={`
         event-item-container cursor-pointer select-none
         rounded-xl
-        transition-all duration-(--transition-medium) ease-(--easing-smooth)
-        ${isExpanded ? "event-expanded p-4 z-10 relative w-[26rem]" : "p-0"}
+        transition-[transform,opacity,background-color,border-color,box-shadow,backdrop-filter,max-width,padding] duration-(--transition-medium) ease-(--easing-smooth)
+        ${isExpanded ? "event-expanded p-4 z-10 relative max-w-[26rem]" : "p-0 max-w-full"}
       `}
       onMouseDown={handleMouseDown}
       onMouseUp={handleMouseUp}
@@ -112,7 +112,7 @@ export function EventItem({ event, isExpanded, onToggle }: EventItemProps) {
         <div
           className={`
             shrink-0 rounded-full
-            transition-all duration-(--transition-medium) ease-(--easing-smooth)
+            transition-[width,height,margin-top,opacity] duration-(--transition-medium) ease-(--easing-smooth)
             ${isExpanded ? "h-3 w-3 mt-1" : "h-2 w-2 mt-1.5"}
           `}
           style={{ backgroundColor: accentColor }}
@@ -122,14 +122,14 @@ export function EventItem({ event, isExpanded, onToggle }: EventItemProps) {
           {/* Header: tempo e titolo */}
           <div
             className={`
-              transition-all duration-(--transition-medium) ease-(--easing-smooth)
+              transition-[opacity,gap] duration-(--transition-medium) ease-(--easing-smooth)
               ${isExpanded ? "flex flex-col gap-1" : "flex items-baseline gap-2"}
             `}
           >
             <span
               className={`
                 shrink-0 text-muted
-                transition-all duration-(--transition-medium) ease-(--easing-smooth)
+                transition-[font-size,opacity] duration-(--transition-medium) ease-(--easing-smooth)
                 ${isExpanded ? "text-base font-medium" : "text-sm"}
               `}
             >
@@ -139,7 +139,7 @@ export function EventItem({ event, isExpanded, onToggle }: EventItemProps) {
             <span
               className={`
                 text-foreground
-                transition-all duration-(--transition-medium) ease-(--easing-smooth)
+                transition-[font-size,opacity] duration-(--transition-medium) ease-(--easing-smooth)
                 ${isExpanded ? "text-lg font-semibold" : "text-base truncate"}
               `}
             >
@@ -152,7 +152,7 @@ export function EventItem({ event, isExpanded, onToggle }: EventItemProps) {
             <p
               className={`
                 text-muted/80
-                transition-all duration-(--transition-medium) ease-(--easing-smooth)
+                transition-[font-size,margin-top,opacity] duration-(--transition-medium) ease-(--easing-smooth)
                 ${isExpanded ? "mt-3 text-base line-clamp-none" : "mt-0.5 text-sm line-clamp-2"}
               `}
             >
@@ -164,7 +164,7 @@ export function EventItem({ event, isExpanded, onToggle }: EventItemProps) {
           <div
             className={`
               overflow-hidden
-              transition-all duration-(--transition-medium) ease-(--easing-smooth)
+              transition-[max-height,margin-top,opacity] duration-(--transition-medium) ease-(--easing-smooth)
               ${isExpanded ? "max-h-40 opacity-100 mt-2" : "max-h-0 opacity-0 mt-0"}
             `}
           >
