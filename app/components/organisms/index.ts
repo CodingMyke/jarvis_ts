@@ -3,3 +3,4 @@ export { MessageList } from "./MessageList";
 export { ChatInput } from "./ChatInput";
 export { FloatingChat } from "./FloatingChat";
 export { UpcomingEvents } from "./UpcomingEvents";
+export { ChatbotPageClient } from "./ChatbotPageClient";

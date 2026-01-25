@@ -5,6 +5,7 @@ import {
   DayEvents,
   type DayEventsData,
 } from "@/app/components/molecules/DayEvents";
+import type { UIDayEvents } from "@/app/lib/calendar/actions";
 
 // Stima l'altezza extra necessaria quando un evento si espande
 const EXPANSION_HEIGHT_ESTIMATE = 80; // px - margine minimo per l'espansione
@@ -70,99 +71,26 @@ function useEventsScroll(expandedEventId: string | null) {
   return { containerRef, contentRef, scrollOffset };
 }
 
-// Crea una data stabile (solo giorno, senza ore/minuti/secondi)
-function createStableDate(daysOffset: number = 0): Date {
-  const date = new Date();
-  date.setDate(date.getDate() + daysOffset);
-  date.setHours(0, 0, 0, 0);
-  return date;
+/**
+ * Props per il componente UpcomingEvents.
+ */
+interface UpcomingEventsProps {
+  /** Eventi raggruppati per giorno (da SSR) */
+  initialEvents?: UIDayEvents[];
 }
 
-// Fake data per testing UI
-function useFakeEvents(): DayEventsData[] {
-  return useMemo(() => {
-    const today = createStableDate(0);
-    const tomorrow = createStableDate(1);
-    const dayAfter = createStableDate(3);
-
-    const fakeEvents: DayEventsData[] = [
-      {
-        date: today,
-        events: [
-          {
-            id: "1",
-            title: "Daily standup",
-            time: "09:30",
-            endTime: "10:00",
-            color: "#4285f4",
-            description: "Sincronizzazione giornaliera del team di sviluppo",
-          },
-          {
-            id: "2",
-            title:
-              "Pranzo con Marco per discutere del nuovo progetto di intelligenza artificiale",
-            time: "13:00",
-            color: "#34a853",
-            description: "Portare i documenti del contratto.",
-            location: "Ristorante Da Luigi, Via Roma 42",
-            attendees: ["Marco Rossi", "Giulia Bianchi"],
-          },
-        ],
-      },
-      {
-        date: tomorrow,
-        events: [
-          {
-            id: "3",
-            title: "Review del progetto",
-            time: "11:00",
-            endTime: "12:00",
-            color: "#ea4335",
-            description:
-              "Presentazione dello stato di avanzamento al product owner",
-          },
-          {
-            id: "4",
-            title:
-              "Call con cliente internazionale per la definizione dei requisiti della fase 2.",
-            time: "15:30",
-            endTime: "16:00",
-            color: "#fbbc04",
-            description:
-              "Link Zoom nel calendario. Preparare slides con mockup. Portare i documenti del contratto e assicurarsi che il cliente abbia ricevuto l'invito. Cerchiamo di chiuderlo prima possibile perché ne va della mia mensilità.",
-            location: "Zoom Meeting",
-            attendees: ["John Smith", "Sarah Johnson", "Marco Rossi"],
-          },
-          {
-            id: "5",
-            title: "Palestra",
-            time: "19:00",
-            color: "#9c27b0",
-          },
-        ],
-      },
-      {
-        date: dayAfter,
-        events: [
-          {
-            id: "6",
-            title: "Dentista",
-            time: "10:00",
-            color: "#00bcd4",
-            description:
-              "Controllo semestrale e pulizia dei denti. Ricordarsi di portare la tessera sanitaria e i referti delle ultime radiografie panoramiche. Chiedere al dottore informazioni sulla possibilità di installare un apparecchio invisibile per correggere il leggero disallineamento dei denti anteriori.",
-            location: "Studio Dentistico Bianchi",
-          },
-        ],
-      },
-    ];
-
-    return fakeEvents.filter((day) => day.events.length > 0);
-  }, []);
+/**
+ * Converte UIDayEvents (serializzabile) in DayEventsData (con Date).
+ */
+function toDayEventsData(uiDays: UIDayEvents[]): DayEventsData[] {
+  return uiDays.map((day) => ({
+    date: new Date(day.dateISO),
+    events: day.events,
+  }));
 }
 
-export function UpcomingEvents() {
-  const days = useFakeEvents();
+export function UpcomingEvents({ initialEvents = [] }: UpcomingEventsProps) {
+  const days = useMemo(() => toDayEventsData(initialEvents), [initialEvents]);
   const [expandedEventId, setExpandedEventId] = useState<string | null>(null);
   const { containerRef, contentRef, scrollOffset } =
     useEventsScroll(expandedEventId);
