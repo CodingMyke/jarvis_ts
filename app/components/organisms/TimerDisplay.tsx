@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState, useRef } from "react";
 import { useTimer } from "./TimerContext";
 
 /**
@@ -12,12 +13,58 @@ function formatTime(seconds: number, milliseconds: number): string {
 }
 
 /**
+ * Hook per calcolare il tempo rimanente in modo fluido usando requestAnimationFrame.
+ */
+function useSmoothTimer(timer: { startTime: number; durationSeconds: number; isExpired: boolean } | null) {
+  const [displayTime, setDisplayTime] = useState<{ seconds: number; milliseconds: number } | null>(null);
+  const frameRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (!timer || timer.isExpired) {
+      if (frameRef.current !== null) {
+        cancelAnimationFrame(frameRef.current);
+        frameRef.current = null;
+      }
+      setDisplayTime(timer?.isExpired ? { seconds: 0, milliseconds: 0 } : null);
+      return;
+    }
+
+    const updateTime = () => {
+      const elapsed = Date.now() - timer.startTime;
+      const remainingTotal = Math.max(0, timer.durationSeconds * 1000 - elapsed);
+      const seconds = Math.floor(remainingTotal / 1000);
+      const milliseconds = Math.floor((remainingTotal % 1000) / 10);
+
+      setDisplayTime({ seconds, milliseconds });
+
+      if (remainingTotal > 0) {
+        frameRef.current = requestAnimationFrame(updateTime);
+      } else {
+        frameRef.current = null;
+      }
+    };
+
+    frameRef.current = requestAnimationFrame(updateTime);
+
+    return () => {
+      if (frameRef.current !== null) {
+        cancelAnimationFrame(frameRef.current);
+        frameRef.current = null;
+      }
+    };
+  }, [timer?.startTime, timer?.durationSeconds, timer?.isExpired]);
+
+  return displayTime;
+}
+
+/**
  * Componente per mostrare il timer attivo in alto a destra.
  */
 export function TimerDisplay() {
   const { timer, stopTimer, stopNotificationSound } = useTimer();
+  const smoothTime = useSmoothTimer(timer);
 
-  if (!timer) {
+  if (!timer || !smoothTime) {
     return null;
   }
 
@@ -28,7 +75,7 @@ export function TimerDisplay() {
 
   const percentage = timer.isExpired
     ? 0
-    : (timer.remainingSeconds / timer.durationSeconds) * 100;
+    : (smoothTime.seconds / timer.durationSeconds) * 100;
 
   return (
     <div className="glass absolute right-6 top-6 z-10 rounded-lg px-4 py-3 shadow-lg">
@@ -58,7 +105,7 @@ export function TimerDisplay() {
               timer.isExpired ? "text-red-400" : "text-foreground"
             }`}
           >
-            {formatTime(timer.remainingSeconds, timer.remainingMilliseconds)}
+            {formatTime(smoothTime.seconds, smoothTime.milliseconds)}
           </span>
           {/* Barra di progresso */}
           <div className="mt-2 h-1 w-full overflow-hidden rounded-full bg-white/10">

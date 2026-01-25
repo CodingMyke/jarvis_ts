@@ -17,11 +17,12 @@ type TimerCallback = (state: TimerState | null) => void;
 
 class TimerManager {
   private timers: Map<string, TimerState> = new Map();
-  private intervals: Map<string, NodeJS.Timeout> = new Map();
+  private animationFrames: Map<string, number> = new Map();
   private listeners: Set<TimerCallback> = new Set();
   private notificationInterval: NodeJS.Timeout | null = null;
   private audioContext: AudioContext | null = null;
   private isPlayingSound: boolean = false;
+  private lastNotificationTime: Map<string, number> = new Map();
 
   /**
    * Avvia un nuovo timer.
@@ -47,13 +48,13 @@ class TimerManager {
     };
 
     this.timers.set(id, state);
+    this.lastNotificationTime.set(id, Date.now());
     this.notifyListeners();
 
-    // Avvia l'interval per aggiornare il timer (ogni 10ms per millisecondi precisi)
-    const interval = setInterval(() => {
+    // Usa requestAnimationFrame per aggiornamenti fluidi sincronizzati con il refresh rate
+    const updateTimer = () => {
       const timer = this.timers.get(id);
       if (!timer) {
-        clearInterval(interval);
         return;
       }
 
@@ -71,17 +72,29 @@ class TimerManager {
         this.timers.set(id, timer);
         this.notifyListeners();
         this.playNotificationSound();
-        clearInterval(interval);
-        this.intervals.delete(id);
+        this.animationFrames.delete(id);
+        this.lastNotificationTime.delete(id);
       } else {
         timer.remainingSeconds = remainingSeconds;
         timer.remainingMilliseconds = remainingMilliseconds;
         this.timers.set(id, timer);
-        this.notifyListeners();
+        
+        // Notifica i listener solo ogni ~100ms per evitare troppi re-render
+        const now = Date.now();
+        const lastNotification = this.lastNotificationTime.get(id) || 0;
+        if (now - lastNotification >= 100) {
+          this.notifyListeners();
+          this.lastNotificationTime.set(id, now);
+        }
+        
+        // Continua l'animazione
+        const frameId = requestAnimationFrame(updateTimer);
+        this.animationFrames.set(id, frameId);
       }
-    }, 10); // Aggiorna ogni 10ms per millisecondi precisi
+    };
 
-    this.intervals.set(id, interval);
+    const frameId = requestAnimationFrame(updateTimer);
+    this.animationFrames.set(id, frameId);
 
     return id;
   }
@@ -90,11 +103,13 @@ class TimerManager {
    * Ferma un timer specifico e lo rimuove completamente.
    */
   stopTimer(id: string): boolean {
-    const interval = this.intervals.get(id);
-    if (interval) {
-      clearInterval(interval);
-      this.intervals.delete(id);
+    const frameId = this.animationFrames.get(id);
+    if (frameId !== undefined) {
+      cancelAnimationFrame(frameId);
+      this.animationFrames.delete(id);
     }
+
+    this.lastNotificationTime.delete(id);
 
     const timer = this.timers.get(id);
     if (timer) {
@@ -111,7 +126,7 @@ class TimerManager {
    * Ferma tutti i timer attivi.
    */
   stopAllTimers(): void {
-    for (const [id] of this.intervals) {
+    for (const [id] of this.animationFrames) {
       this.stopTimer(id);
     }
   }
