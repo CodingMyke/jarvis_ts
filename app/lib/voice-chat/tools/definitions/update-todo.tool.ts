@@ -11,12 +11,14 @@ export const updateTodoTool: SystemToolDefinition = {
   name: UPDATE_TODO_TOOL_NAME,
 
   description:
-    "Aggiorna un todo esistente. Può essere usato per completare un todo, " +
-    "marcarlo come fatto, modificare il testo, o riaprire un todo completato. " +
-    "Usa questo tool quando l'utente chiede di completare un todo, di segnarlo come fatto, " +
-    "di modificare un todo, o di riaprire un todo completato. " +
+    "Aggiorna uno o più todo esistenti. Può essere usato per completare todo, " +
+    "marcarli come fatti, modificare il testo, o riaprire todo completati. " +
+    "Usa questo tool quando l'utente chiede di completare todo, di segnarli come fatti, " +
+    "di modificare todo, o di riaprire todo completati. " +
+    "Puoi aggiornare un singolo todo usando 'id' con 'text' o 'completed', " +
+    "oppure aggiornare più todo usando 'updates' con un array di aggiornamenti. " +
     "Esempi: 'completa il todo comprare il latte', 'segna come fatto chiamare Mario', " +
-    "'modifica il todo spesa in fare la spesa', 'riapri il todo chiamare il dottore'.",
+    "'modifica il todo spesa in fare la spesa', 'completa tutti i todo della spesa' (più todo).",
 
   parameters: {
     type: "object",
@@ -24,116 +26,288 @@ export const updateTodoTool: SystemToolDefinition = {
       id: {
         type: "string",
         description:
-          "L'ID del todo da aggiornare. Usa getTodos per ottenere gli ID dei todo disponibili.",
+          "L'ID di un singolo todo da aggiornare. Usa questo per aggiornare un solo todo. " +
+          "Usa getTodos per ottenere gli ID dei todo disponibili. " +
+          "Non usare insieme a 'updates'.",
       },
       text: {
         type: "string",
         description:
-          "Il nuovo testo del todo (opzionale). Usa questo solo se l'utente vuole modificare il testo.",
+          "Il nuovo testo del todo (opzionale, solo per singolo update). " +
+          "Usa questo solo se l'utente vuole modificare il testo di un singolo todo.",
       },
       completed: {
         type: "boolean",
         description:
           "Se true, marca il todo come completato. Se false, lo marca come non completato. " +
-          "Usa questo quando l'utente chiede di completare o riaprire un todo.",
+          "Usa questo quando l'utente chiede di completare o riaprire un singolo todo. " +
+          "Solo per singolo update.",
       },
+      updates: {
+        type: "array",
+        items: {
+          type: "object",
+          properties: {
+            id: {
+              type: "string",
+              description: "L'ID del todo da aggiornare.",
+            },
+            text: {
+              type: "string",
+              description: "Il nuovo testo del todo (opzionale).",
+            },
+            completed: {
+              type: "boolean",
+              description:
+                "Se true, marca il todo come completato. Se false, lo marca come non completato.",
+            },
+          },
+          required: ["id"],
+        },
+        description:
+          "Array di aggiornamenti per modificare più todo in una singola operazione. " +
+          "Ogni elemento deve avere almeno 'id' e opzionalmente 'text' o 'completed'. " +
+          "Usa questo quando l'utente chiede di aggiornare più todo alla volta. " +
+          "Non usare insieme a 'id', 'text' o 'completed'.",
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      } as any,
     },
-    required: ["id"],
   },
 
   execute: async (args) => {
     try {
-      const id = args.id as string;
+      const id = args.id as string | undefined;
       const text = args.text as string | undefined;
       const completed = args.completed as boolean | undefined;
+      const updates = args.updates as
+        | Array<{ id: string; text?: string; completed?: boolean }>
+        | undefined;
 
-      if (!id || typeof id !== "string") {
+      // Verifica che sia fornito id o updates, ma non entrambi
+      if (!id && !updates) {
         return {
           result: {
             success: false,
-            error: "INVALID_ID",
-            errorMessage: "L'ID del todo è obbligatorio",
+            error: "MISSING_PARAMETER",
+            errorMessage: "È necessario fornire 'id' o 'updates'",
           },
         };
       }
 
-      const existingTodo = todoManager.getTodoById(id);
-      if (!existingTodo) {
+      if (id && updates) {
         return {
           result: {
             success: false,
-            error: "TODO_NOT_FOUND",
-            errorMessage: `Todo con ID ${id} non trovato`,
+            error: "INVALID_PARAMETERS",
+            errorMessage: "Non è possibile usare 'id' e 'updates' insieme",
           },
         };
       }
 
-      const updates: Partial<{ text: string; completed: boolean }> = {};
-      if (text !== undefined) {
-        if (typeof text !== "string" || text.trim().length === 0) {
+      // Caso singolo update
+      if (id) {
+        if (typeof id !== "string") {
           return {
             result: {
               success: false,
-              error: "INVALID_TEXT",
-              errorMessage: "Il testo del todo non può essere vuoto",
+              error: "INVALID_ID",
+              errorMessage: "L'ID del todo deve essere una stringa",
             },
           };
         }
-        if (text.trim().length > 500) {
+
+        const existingTodo = todoManager.getTodoById(id);
+        if (!existingTodo) {
           return {
             result: {
               success: false,
-              error: "TEXT_TOO_LONG",
-              errorMessage: "Il testo del todo non può superare i 500 caratteri",
+              error: "TODO_NOT_FOUND",
+              errorMessage: `Todo con ID ${id} non trovato`,
             },
           };
         }
-        updates.text = text.trim();
-      }
 
-      if (completed !== undefined) {
-        if (typeof completed !== "boolean") {
+        const updateData: Partial<{ text: string; completed: boolean }> = {};
+        if (text !== undefined) {
+          if (typeof text !== "string" || text.trim().length === 0) {
+            return {
+              result: {
+                success: false,
+                error: "INVALID_TEXT",
+                errorMessage: "Il testo del todo non può essere vuoto",
+              },
+            };
+          }
+          if (text.trim().length > 500) {
+            return {
+              result: {
+                success: false,
+                error: "TEXT_TOO_LONG",
+                errorMessage: "Il testo del todo non può superare i 500 caratteri",
+              },
+            };
+          }
+          updateData.text = text.trim();
+        }
+
+        if (completed !== undefined) {
+          if (typeof completed !== "boolean") {
+            return {
+              result: {
+                success: false,
+                error: "INVALID_COMPLETED",
+                errorMessage: "Il campo completed deve essere un booleano",
+              },
+            };
+          }
+          updateData.completed = completed;
+        }
+
+        if (Object.keys(updateData).length === 0) {
           return {
             result: {
               success: false,
-              error: "INVALID_COMPLETED",
-              errorMessage: "Il campo completed deve essere un booleano",
+              error: "NO_UPDATES",
+              errorMessage: "Nessun aggiornamento specificato",
             },
           };
         }
-        updates.completed = completed;
-      }
 
-      if (Object.keys(updates).length === 0) {
+        const updatedTodo = todoManager.updateTodo(id, updateData);
+
+        if (!updatedTodo) {
+          return {
+            result: {
+              success: false,
+              error: "UPDATE_FAILED",
+              errorMessage: "Impossibile aggiornare il todo",
+            },
+          };
+        }
+
         return {
           result: {
-            success: false,
-            error: "NO_UPDATES",
-            errorMessage: "Nessun aggiornamento specificato",
+            success: true,
+            todo: {
+              id: updatedTodo.id,
+              text: updatedTodo.text,
+              completed: updatedTodo.completed,
+            },
           },
         };
       }
 
-      const updatedTodo = todoManager.updateTodo(id, updates);
+      // Caso multipli update
+      if (updates) {
+        if (!Array.isArray(updates) || updates.length === 0) {
+          return {
+            result: {
+              success: false,
+              error: "INVALID_UPDATES",
+              errorMessage: "L'array 'updates' deve contenere almeno un elemento",
+            },
+          };
+        }
 
-      if (!updatedTodo) {
+        // Valida ogni update
+        const validatedUpdates: Array<{
+          id: string;
+          updates: Partial<{ text: string; completed: boolean }>;
+        }> = [];
+
+        for (const update of updates) {
+          if (!update.id || typeof update.id !== "string") {
+            return {
+              result: {
+                success: false,
+                error: "INVALID_UPDATE",
+                errorMessage: "Ogni update deve avere un 'id' valido (stringa)",
+              },
+            };
+          }
+
+          const updateData: Partial<{ text: string; completed: boolean }> = {};
+
+          if (update.text !== undefined) {
+            if (typeof update.text !== "string" || update.text.trim().length === 0) {
+              return {
+                result: {
+                  success: false,
+                  error: "INVALID_TEXT",
+                  errorMessage: `Il testo del todo con ID ${update.id} non può essere vuoto`,
+                },
+              };
+            }
+            if (update.text.trim().length > 500) {
+              return {
+                result: {
+                  success: false,
+                  error: "TEXT_TOO_LONG",
+                  errorMessage: `Il testo del todo con ID ${update.id} non può superare i 500 caratteri`,
+                },
+              };
+            }
+            updateData.text = update.text.trim();
+          }
+
+          if (update.completed !== undefined) {
+            if (typeof update.completed !== "boolean") {
+              return {
+                result: {
+                  success: false,
+                  error: "INVALID_COMPLETED",
+                  errorMessage: `Il campo completed per il todo con ID ${update.id} deve essere un booleano`,
+                },
+              };
+            }
+            updateData.completed = update.completed;
+          }
+
+          if (Object.keys(updateData).length === 0) {
+            return {
+              result: {
+                success: false,
+                error: "NO_UPDATES",
+                errorMessage: `Nessun aggiornamento specificato per il todo con ID ${update.id}`,
+              },
+            };
+          }
+
+          validatedUpdates.push({
+            id: update.id,
+            updates: updateData,
+          });
+        }
+
+        const results = todoManager.updateTodos(validatedUpdates);
+
+        const successfulUpdates = results
+          .filter((r) => r.todo !== null)
+          .map((r) => ({
+            id: r.id,
+            text: r.todo!.text,
+            completed: r.todo!.completed,
+          }));
+
+        const failedIds = results.filter((r) => r.todo === null).map((r) => r.id);
+
         return {
           result: {
-            success: false,
-            error: "UPDATE_FAILED",
-            errorMessage: "Impossibile aggiornare il todo",
+            success: true,
+            todos: successfulUpdates,
+            count: successfulUpdates.length,
+            failedIds: failedIds.length > 0 ? failedIds : undefined,
+            requestedCount: updates.length,
           },
         };
       }
 
+      // Questo non dovrebbe mai essere raggiunto, ma TypeScript lo richiede
       return {
         result: {
-          success: true,
-          todo: {
-            id: updatedTodo.id,
-            text: updatedTodo.text,
-            completed: updatedTodo.completed,
-          },
+          success: false,
+          error: "UNEXPECTED_ERROR",
+          errorMessage: "Errore imprevisto nell'esecuzione",
         },
       };
     } catch (error) {

@@ -81,6 +81,44 @@ class TodoManager {
   }
 
   /**
+   * Crea più todo in una singola operazione.
+   */
+  createTodos(texts: string[]): Todo[] {
+    if (texts.length === 0) {
+      return [];
+    }
+
+    const now = Date.now();
+    const createdTodos: Todo[] = [];
+
+    texts.forEach((text) => {
+      const trimmedText = text.trim();
+      if (trimmedText.length === 0) {
+        return; // Salta testi vuoti
+      }
+
+      const id = `todo-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      const todo: Todo = {
+        id,
+        text: trimmedText,
+        completed: false,
+        createdAt: now,
+        updatedAt: now,
+      };
+
+      this.todos.set(id, todo);
+      createdTodos.push(todo);
+    });
+
+    if (createdTodos.length > 0) {
+      this.saveToStorage();
+      this.notifyListeners();
+    }
+
+    return createdTodos;
+  }
+
+  /**
    * Ottiene tutti i todo.
    */
   getAllTodos(): Todo[] {
@@ -124,6 +162,48 @@ class TodoManager {
   }
 
   /**
+   * Aggiorna più todo in una singola operazione.
+   */
+  updateTodos(
+    updates: Array<{
+      id: string;
+      updates: Partial<Pick<Todo, "text" | "completed">>;
+    }>
+  ): Array<{ id: string; todo: Todo | null }> {
+    if (updates.length === 0) {
+      return [];
+    }
+
+    const results: Array<{ id: string; todo: Todo | null }> = [];
+    let hasChanges = false;
+
+    updates.forEach(({ id, updates: todoUpdates }) => {
+      const todo = this.todos.get(id);
+      if (!todo) {
+        results.push({ id, todo: null });
+        return;
+      }
+
+      const updatedTodo: Todo = {
+        ...todo,
+        ...todoUpdates,
+        updatedAt: Date.now(),
+      };
+
+      this.todos.set(id, updatedTodo);
+      results.push({ id, todo: updatedTodo });
+      hasChanges = true;
+    });
+
+    if (hasChanges) {
+      this.saveToStorage();
+      this.notifyListeners();
+    }
+
+    return results;
+  }
+
+  /**
    * Elimina un todo.
    */
   deleteTodo(id: string): boolean {
@@ -133,6 +213,44 @@ class TodoManager {
       this.notifyListeners();
     }
     return existed;
+  }
+
+  /**
+   * Elimina più todo in una singola operazione.
+   */
+  deleteTodos(ids: string[]): number {
+    if (ids.length === 0) {
+      return 0;
+    }
+
+    let deletedCount = 0;
+    ids.forEach((id) => {
+      if (this.todos.delete(id)) {
+        deletedCount++;
+      }
+    });
+
+    if (deletedCount > 0) {
+      this.saveToStorage();
+      this.notifyListeners();
+    }
+
+    return deletedCount;
+  }
+
+  /**
+   * Elimina tutti i todo.
+   */
+  deleteAllTodos(): number {
+    const count = this.todos.size;
+    this.todos.clear();
+
+    if (count > 0) {
+      this.saveToStorage();
+      this.notifyListeners();
+    }
+
+    return count;
   }
 
   /**
