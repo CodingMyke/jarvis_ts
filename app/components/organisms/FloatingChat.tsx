@@ -10,14 +10,42 @@ interface FloatingChatProps {
   onReset?: () => void;
 }
 
-function useAutoScroll(messages: Message[]): RefObject<HTMLDivElement | null> {
-  const endRef = useRef<HTMLDivElement>(null);
+function useAutoScroll(messages: Message[], isExpanded: boolean) {
+  const containerRef = useRef<HTMLDivElement>(null);
 
+  // Scroll to bottom on new messages
   useEffect(() => {
-    endRef.current?.scrollIntoView({ behavior: "smooth" });
+    const container = containerRef.current;
+    if (container) {
+      container.scrollTop = container.scrollHeight;
+    }
   }, [messages]);
 
-  return endRef;
+  // Keep scroll at bottom during collapse animation
+  useEffect(() => {
+    if (isExpanded) return;
+
+    const container = containerRef.current;
+    if (!container) return;
+
+    // Scroll immediately
+    container.scrollTop = container.scrollHeight;
+
+    // Keep scrolling during the animation
+    const interval = setInterval(() => {
+      container.scrollTop = container.scrollHeight;
+    }, 16);
+
+    // Stop after animation completes
+    const timeout = setTimeout(() => clearInterval(interval), 1000);
+
+    return () => {
+      clearInterval(interval);
+      clearTimeout(timeout);
+    };
+  }, [isExpanded]);
+
+  return containerRef;
 }
 
 function useFloatingChat(onReset?: () => void) {
@@ -65,7 +93,6 @@ function useFloatingChat(onReset?: () => void) {
 }
 
 export function FloatingChat({ messages, onReset }: FloatingChatProps) {
-  const endRef = useAutoScroll(messages);
   const {
     isExpanded,
     showControls,
@@ -78,20 +105,20 @@ export function FloatingChat({ messages, onReset }: FloatingChatProps) {
     closeResetDialog,
     confirmReset,
   } = useFloatingChat(onReset);
+  const scrollContainerRef = useAutoScroll(messages, isExpanded);
 
   if (messages.length === 0) return null;
 
   return (
     <>
       <div
-        className={`floating-chat fixed right-4 z-20 w-md transition-[top,bottom,height] duration-500 ease-out ${
-          isExpanded ? "bottom-4 top-4" : "bottom-4 h-64"
-        }`}
+        className="floating-chat fixed bottom-6 right-6 z-20 w-md transition-[height] duration-1000 ease-[cubic-bezier(0.22,1,0.36,1)]"
+        style={{ height: isExpanded ? "calc(100vh - 48px)" : "256px" }}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
       >
         <div
-          className={`relative flex h-full flex-col overflow-hidden rounded-2xl border transition-[border-color,background-color,backdrop-filter] duration-500 ease-out ${
+          className={`relative flex h-full flex-col overflow-hidden rounded-2xl border transition-[border-color,background-color,backdrop-filter] duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] ${
             isExpanded
               ? "border-white/20 bg-black/40 backdrop-blur-xl"
               : "border-transparent bg-transparent backdrop-blur-0"
@@ -99,7 +126,7 @@ export function FloatingChat({ messages, onReset }: FloatingChatProps) {
         >
           {/* Header */}
           <div
-            className={`flex h-10 shrink-0 items-center border-b transition-[border-color,opacity] duration-500 ease-out ${
+            className={`flex h-10 shrink-0 items-center border-b transition-[border-color] duration-500 ${
               isExpanded ? "border-white/10" : "border-transparent"
             }`}
           >
@@ -138,6 +165,7 @@ export function FloatingChat({ messages, onReset }: FloatingChatProps) {
           {/* Messaggi container */}
           <div className="relative flex-1 overflow-hidden">
             <div
+              ref={scrollContainerRef}
               className={`flex h-full flex-col gap-3 overflow-x-hidden overflow-y-auto p-4 ${
                 isExpanded ? "glass-scroll" : "scrollbar-none chat-fade-top"
               }`}
@@ -146,7 +174,6 @@ export function FloatingChat({ messages, onReset }: FloatingChatProps) {
               {messages.map((message) => (
                 <ChatBubble key={message.id} message={message} />
               ))}
-              <div ref={endRef} />
             </div>
           </div>
         </div>
