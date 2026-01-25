@@ -282,31 +282,37 @@ body {
 }
 
 /* Event item interactions */
-.event-item {
+.event-item-container {
   transform: scale(1);
-  transition: transform var(--transition-fast) var(--easing-standard);
+  background: transparent;
+  border: 1px solid transparent;
+  box-shadow: none;
+  transition: 
+    transform var(--transition-medium) var(--easing-smooth),
+    background var(--transition-medium) var(--easing-smooth),
+    border-color var(--transition-medium) var(--easing-smooth),
+    box-shadow var(--transition-medium) var(--easing-smooth),
+    backdrop-filter var(--transition-medium) var(--easing-smooth),
+    padding var(--transition-medium) var(--easing-smooth),
+    margin var(--transition-medium) var(--easing-smooth);
 }
 
-.event-item.event-pressed {
+.event-item-container.event-pressed {
   transform: scale(0.97);
   transition: transform var(--transition-instant) var(--easing-press);
 }
 
-/* Card espansa con blur e sfondo leggibile */
-.event-card-expanded {
+/* Stato espanso - lo stesso elemento si trasforma */
+.event-item-container.event-expanded {
   background: rgba(15, 15, 25, 0.75);
   -webkit-backdrop-filter: blur(20px);
   backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.15);
   box-shadow: 
-    0 12px 40px rgba(0, 0, 0, 0.6),
-    0 0 0 1px rgba(255, 255, 255, 0.1);
-  isolation: isolate;
-  transform: translateZ(0);
-  will-change: backdrop-filter;
+    0 8px 32px rgba(0, 0, 0, 0.4),
+    0 0 0 1px rgba(255, 255, 255, 0.05);
 }
 
-.event-card-expanded.event-pressed {
+.event-item-container.event-expanded.event-pressed {
   transform: scale(0.98);
-  transition: transform var(--transition-instant) var(--easing-press);
 }
