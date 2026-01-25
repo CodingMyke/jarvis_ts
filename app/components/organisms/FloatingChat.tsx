@@ -3,10 +3,11 @@
 import { useRef, useEffect, useState, RefObject } from "react";
 import { ChatBubble } from "@/app/components/molecules";
 import { Message } from "@/app/lib/speech";
-import { ChevronUpIcon, ChevronDownIcon } from "@/app/components/atoms/icons";
+import { ChevronUpIcon, ChevronDownIcon, TrashIcon } from "@/app/components/atoms/icons";
 
 interface FloatingChatProps {
   messages: Message[];
+  onReset?: () => void;
 }
 
 function useAutoScroll(messages: Message[]): RefObject<HTMLDivElement | null> {
@@ -19,48 +20,76 @@ function useAutoScroll(messages: Message[]): RefObject<HTMLDivElement | null> {
   return endRef;
 }
 
-function useFloatingChat() {
+function useFloatingChat(onReset?: () => void) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
+  const [dialogState, setDialogState] = useState<"closed" | "opening" | "open" | "closing">("closed");
 
   const toggleExpanded = () => setIsExpanded((prev) => !prev);
   const handleMouseEnter = () => setIsHovered(true);
   const handleMouseLeave = () => setIsHovered(false);
 
+  const openResetDialog = () => {
+    setDialogState("opening");
+    requestAnimationFrame(() => setDialogState("open"));
+  };
+
+  const closeResetDialog = () => {
+    setDialogState("closing");
+    setTimeout(() => setDialogState("closed"), 200);
+  };
+
+  const confirmReset = () => {
+    onReset?.();
+    setIsExpanded(false);
+    closeResetDialog();
+  };
+
   const showControls = isHovered || isExpanded;
+  const isDialogVisible = dialogState !== "closed";
+  const isDialogAnimatedIn = dialogState === "open";
 
   return {
     isExpanded,
     isHovered,
     showControls,
+    isDialogVisible,
+    isDialogAnimatedIn,
     toggleExpanded,
     handleMouseEnter,
     handleMouseLeave,
+    openResetDialog,
+    closeResetDialog,
+    confirmReset,
   };
 }
 
-export function FloatingChat({ messages }: FloatingChatProps) {
+export function FloatingChat({ messages, onReset }: FloatingChatProps) {
   const endRef = useAutoScroll(messages);
   const {
     isExpanded,
     showControls,
+    isDialogVisible,
+    isDialogAnimatedIn,
     toggleExpanded,
     handleMouseEnter,
     handleMouseLeave,
-  } = useFloatingChat();
+    openResetDialog,
+    closeResetDialog,
+    confirmReset,
+  } = useFloatingChat(onReset);
 
   if (messages.length === 0) return null;
 
   return (
-    <div
-      className={`floating-chat fixed right-4 z-20 w-[28rem] transition-[top,bottom,height] duration-500 ease-out ${
-        isExpanded
-          ? "bottom-4 top-4"
-          : "bottom-4 h-64"
-      }`}
-      onMouseEnter={handleMouseEnter}
-      onMouseLeave={handleMouseLeave}
-    >
+    <>
+      <div
+        className={`floating-chat fixed right-4 z-20 w-md transition-[top,bottom,height] duration-500 ease-out ${
+          isExpanded ? "bottom-4 top-4" : "bottom-4 h-64"
+        }`}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
+      >
         <div
           className={`relative flex h-full flex-col overflow-hidden rounded-2xl border transition-[border-color,background-color,backdrop-filter] duration-500 ease-out ${
             isExpanded
@@ -68,44 +97,103 @@ export function FloatingChat({ messages }: FloatingChatProps) {
               : "border-transparent bg-transparent backdrop-blur-0"
           }`}
         >
-        {/* Header con freccia */}
-        <div
-          className={`flex h-10 shrink-0 items-center justify-center border-b transition-[border-color,opacity] duration-500 ease-out ${
-            isExpanded
-              ? "border-white/10"
-              : "border-transparent"
-          }`}
-        >
-          <button
-            onClick={toggleExpanded}
-            className={`flex h-full w-full items-center justify-center transition-opacity duration-300 hover:text-foreground ${
-              showControls ? "text-muted opacity-100" : "opacity-0"
-            }`}
-            aria-label={isExpanded ? "Riduci chat" : "Espandi chat"}
-          >
-            {isExpanded ? (
-              <ChevronDownIcon className="h-5 w-5" />
-            ) : (
-              <ChevronUpIcon className="h-5 w-5" />
-            )}
-          </button>
-        </div>
-
-        {/* Messaggi container */}
-        <div className="relative flex-1 overflow-hidden">
+          {/* Header */}
           <div
-            className={`flex h-full flex-col gap-3 overflow-x-hidden overflow-y-auto p-4 ${
-              isExpanded ? "glass-scroll" : "scrollbar-none chat-fade-top"
+            className={`flex h-10 shrink-0 items-center border-b transition-[border-color,opacity] duration-500 ease-out ${
+              isExpanded ? "border-white/10" : "border-transparent"
             }`}
           >
-            <div className="mt-auto" />
-            {messages.map((message) => (
-              <ChatBubble key={message.id} message={message} />
-            ))}
-            <div ref={endRef} />
+            {/* Spacer per bilanciare */}
+            <div className="w-10" />
+
+            {/* Toggle button */}
+            <button
+              onClick={toggleExpanded}
+              className={`flex h-full flex-1 items-center justify-center transition-opacity duration-300 hover:text-foreground ${
+                showControls ? "text-muted opacity-100" : "opacity-0"
+              }`}
+              aria-label={isExpanded ? "Riduci chat" : "Espandi chat"}
+            >
+              {isExpanded ? (
+                <ChevronDownIcon className="h-5 w-5" />
+              ) : (
+                <ChevronUpIcon className="h-5 w-5" />
+              )}
+            </button>
+
+            {/* Reset button - solo quando espanso */}
+            <div className="flex w-10 items-center justify-center">
+              {isExpanded && onReset && (
+                <button
+                  onClick={openResetDialog}
+                  className="flex h-8 w-8 items-center justify-center rounded-lg text-muted transition-colors hover:bg-white/10 hover:text-red-400"
+                  aria-label="Reset conversazione"
+                >
+                  <TrashIcon className="h-4 w-4" />
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Messaggi container */}
+          <div className="relative flex-1 overflow-hidden">
+            <div
+              className={`flex h-full flex-col gap-3 overflow-x-hidden overflow-y-auto p-4 ${
+                isExpanded ? "glass-scroll" : "scrollbar-none chat-fade-top"
+              }`}
+            >
+              <div className="mt-auto" />
+              {messages.map((message) => (
+                <ChatBubble key={message.id} message={message} />
+              ))}
+              <div ref={endRef} />
+            </div>
           </div>
         </div>
       </div>
-    </div>
+
+      {/* Reset confirmation dialog */}
+      {isDialogVisible && (
+        <div
+          className={`fixed inset-0 z-50 flex items-center justify-center transition-all duration-200 ${
+            isDialogAnimatedIn
+              ? "bg-black/60 backdrop-blur-sm"
+              : "bg-black/0 backdrop-blur-0"
+          }`}
+          onClick={closeResetDialog}
+        >
+          <div
+            className={`mx-4 w-full max-w-sm rounded-2xl border border-white/20 bg-black/80 p-6 backdrop-blur-xl transition-all duration-200 ${
+              isDialogAnimatedIn
+                ? "scale-100 opacity-100"
+                : "scale-95 opacity-0"
+            }`}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="mb-2 text-lg font-semibold text-foreground">
+              Reset conversazione
+            </h3>
+            <p className="mb-6 text-sm text-muted">
+              Sei sicuro di voler cancellare tutta la conversazione? Questa
+              azione eliminerà tutti i messaggi e non può essere annullata.
+            </p>
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={closeResetDialog}
+                className="rounded-lg px-4 py-2 text-sm text-muted transition-colors hover:bg-white/10 hover:text-foreground"
+              >
+                Annulla
+              </button>
+              <button
+                onClick={confirmReset}
+                className="rounded-lg bg-red-500/20 px-4 py-2 text-sm text-red-400 transition-colors hover:bg-red-500/30"
+              >
+                Elimina tutto
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }

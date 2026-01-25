@@ -1,6 +1,6 @@
 "use client";
 
-import { VoiceOrb, Button } from "@/app/components";
+import { VoiceOrb } from "@/app/components";
 import { FloatingChat } from "@/app/components/organisms";
 import { useVoiceChat } from "@/app/hooks/useVoiceChat";
 
@@ -67,21 +67,10 @@ export default function ChatbotPage() {
       {/* Main content - Orb centered */}
       <div className="flex h-full w-full flex-col items-center justify-center">
         {/* Status indicator - top */}
-        <div className="absolute left-0 right-0 top-0 z-10 flex items-center justify-between p-4">
+        <div className="absolute left-0 right-0 top-0 z-10 flex items-center p-4">
           <div className="flex items-center gap-3">
             <div className={`h-2 w-2 rounded-full ${status.dotColor} ${listeningMode !== "idle" ? "animate-pulse" : ""}`} />
             <span className={`text-sm ${status.color}`}>{status.label}</span>
-          </div>
-          <div className="flex items-center gap-2">
-            {messages.length > 0 && (
-              <Button
-                onClick={clearConversation}
-                variant="secondary"
-                className="glass rounded-lg px-3 py-1.5 text-sm"
-              >
-                Reset
-              </Button>
-            )}
           </div>
         </div>
 
@@ -101,7 +90,7 @@ export default function ChatbotPage() {
       </div>
 
       {/* Floating chat */}
-      <FloatingChat messages={messages} />
+      <FloatingChat messages={messages} onReset={clearConversation} />
     </div>
   );
 }
