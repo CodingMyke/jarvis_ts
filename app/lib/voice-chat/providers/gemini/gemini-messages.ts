@@ -67,7 +67,7 @@ export function buildToolResponseMessage(responses: FunctionResponse[]): ToolRes
 
 interface ClientContentMessage {
   clientContent: {
-    turns: ConversationTurn[];
+    turns: { role: 'user' | 'model'; parts: { text: string }[] }[];
     turnComplete: boolean;
   };
 }
@@ -75,14 +75,18 @@ interface ClientContentMessage {
 /**
  * Costruisce messaggio per inviare la history della conversazione.
  * Usato per fornire contesto a una nuova sessione.
+ * Rimuove il campo 'thinking' che non è riconosciuto da Gemini.
  */
 export function buildHistoryMessage(
   turns: ConversationTurn[],
   turnComplete = false
 ): ClientContentMessage {
+  // Rimuovi il campo 'thinking' dai turni - Gemini non lo riconosce
+  const cleanedTurns = turns.map(({ role, parts }) => ({ role, parts }));
+  
   return {
     clientContent: {
-      turns,
+      turns: cleanedTurns,
       turnComplete,
     },
   };

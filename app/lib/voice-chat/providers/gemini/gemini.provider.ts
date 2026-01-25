@@ -203,10 +203,9 @@ export class GeminiProvider implements VoiceChatProvider {
           this.emit('audio', { data: bytes.buffer });
         }
         
-        // Text transcript (thinking vs output)
-        if (part.text) {
-          const type = part.thought ? 'thinking' : 'output';
-          this.emit('transcript', { text: part.text, type });
+        // Text transcript (solo thinking, output arriva da outputTranscription)
+        if (part.text && part.thought) {
+          this.emit('transcript', { text: part.text, type: 'thinking' });
         }
       }
     }
@@ -219,12 +218,17 @@ export class GeminiProvider implements VoiceChatProvider {
       });
     }
 
-    // Output transcript
+    // Output transcript - rimuovi caratteri ripetuti anomali alla fine
     if (message.serverContent?.outputTranscription?.text) {
-      this.emit('transcript', { 
-        text: message.serverContent.outputTranscription.text, 
-        type: 'output' 
-      });
+      let text = message.serverContent.outputTranscription.text;
+      // Rimuovi sequenze di caratteri ripetuti alla fine (es. "1111111" o "......")
+      text = text.replace(/(.)\1{5,}$/, '');
+      if (text.trim()) {
+        this.emit('transcript', { 
+          text, 
+          type: 'output' 
+        });
+      }
     }
 
     // Turn complete
