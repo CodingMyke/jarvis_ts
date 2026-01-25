@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { VoiceOrb } from "@/app/components";
-import { FloatingChat } from "@/app/components/organisms";
+import { FloatingChat, UpcomingEvents } from "@/app/components/organisms";
 import { useVoiceChat } from "@/app/hooks/useVoiceChat";
 
 function useOrbState(listeningMode: string) {
@@ -87,10 +87,11 @@ export default function ChatbotPage() {
     <div className="fixed inset-0 overflow-hidden bg-background p-6">
       {/* Top bar */}
       <div className="flex items-center justify-between">
-        {/* Date/Time - Left */}
+        {/* Date/Time & Events - Left */}
         <div className="flex flex-col">
           <span className="text-4xl font-semibold text-foreground">{time}</span>
           <span className="text-lg text-muted">{day}, {date}</span>
+          <UpcomingEvents />
         </div>
 
         {/* Status indicator - Center */}
