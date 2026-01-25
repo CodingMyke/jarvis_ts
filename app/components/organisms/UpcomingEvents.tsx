@@ -10,6 +10,12 @@ function useEventsScroll(expandedEventId: string | null) {
   const containerRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   const [scrollOffset, setScrollOffset] = useState(0);
+  const currentOffsetRef = useRef(0);
+
+  // Mantieni il ref sincronizzato con lo state
+  useEffect(() => {
+    currentOffsetRef.current = scrollOffset;
+  }, [scrollOffset]);
 
   useEffect(() => {
     // Se nessun evento è espanso, torna a offset 0
@@ -20,7 +26,6 @@ function useEventsScroll(expandedEventId: string | null) {
 
     if (!containerRef.current || !contentRef.current) return;
 
-    // Calcola immediatamente
     const expandedElement = contentRef.current.querySelector(
       `[data-event-id="${expandedEventId}"]`
     ) as HTMLElement | null;
@@ -31,13 +36,16 @@ function useEventsScroll(expandedEventId: string | null) {
     const containerRect = container.getBoundingClientRect();
     const elementRect = expandedElement.getBoundingClientRect();
     
-    // Calcola quanto spazio servirà: posizione attuale + altezza stimata espansione
-    const estimatedFinalBottom = elementRect.bottom + EXPANSION_HEIGHT_ESTIMATE;
+    // Compensa per l'offset attuale (il transform sposta visivamente gli elementi)
+    // Aggiungiamo l'offset corrente per ottenere la posizione "originale"
+    const originalBottom = elementRect.bottom + currentOffsetRef.current;
+    
+    // Calcola quanto spazio servirà: posizione originale + altezza stimata espansione
+    const estimatedFinalBottom = originalBottom + EXPANSION_HEIGHT_ESTIMATE;
     const overflow = estimatedFinalBottom - containerRect.bottom;
     
-    if (overflow > 0) {
-      setScrollOffset(overflow);
-    }
+    // Se serve scroll lo applica, altrimenti resetta a 0
+    setScrollOffset(overflow > 0 ? overflow : 0);
   }, [expandedEventId]);
 
   return { containerRef, contentRef, scrollOffset };
