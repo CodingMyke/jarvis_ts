@@ -163,7 +163,8 @@ body {
   /* Ottimizzazioni GPU */
   transform: translateZ(0);
   backface-visibility: hidden;
-  contain: layout style paint;
+  /* Rimossa contain per permettere al glow di espandersi oltre i bordi */
+  overflow: visible;
 }
 
 /* Focus ring per accessibilità */

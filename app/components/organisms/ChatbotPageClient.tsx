@@ -91,7 +91,7 @@ export function ChatbotPageClient({ initialEvents }: ChatbotPageClientProps) {
       </div>
 
       {/* Main content - Orb centered */}
-      <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+      <div className="pointer-events-none absolute inset-0 flex items-center justify-center overflow-visible">
         {/* Error display */}
         {error && (
           <div className="absolute left-0 right-0 top-12 z-10 glass rounded-lg px-4 py-2 text-center text-sm text-red-400">
