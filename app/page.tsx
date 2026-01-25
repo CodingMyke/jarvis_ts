@@ -107,7 +107,7 @@ export default function ChatbotPage() {
       </div>
 
       {/* Main content - Orb centered */}
-      <div className="absolute inset-6 flex items-center justify-center -z-10">
+      <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
         {/* Error display */}
         {error && (
           <div className="absolute left-0 right-0 top-12 z-10 glass rounded-lg px-4 py-2 text-center text-sm text-red-400">

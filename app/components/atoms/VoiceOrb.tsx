@@ -87,7 +87,7 @@ export function VoiceOrb({ state, audioLevel = 0, onClick }: VoiceOrbProps) {
 
   return (
     <div
-      className={`orb-container ${isPressed ? "pressed" : ""}`}
+      className={`orb-container pointer-events-auto ${isPressed ? "pressed" : ""}`}
       role="button"
       tabIndex={0}
       aria-label={isActive ? "Ferma assistente vocale" : "Avvia assistente vocale"}
