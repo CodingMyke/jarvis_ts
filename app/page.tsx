@@ -89,8 +89,8 @@ export default function ChatbotPage() {
       <div className="flex items-center justify-between">
         {/* Date/Time & Events - Left */}
         <div className="flex flex-col">
-          <span className="text-4xl font-semibold text-foreground">{time}</span>
-          <span className="text-lg text-muted">{day}, {date}</span>
+          <span className="text-6xl font-semibold text-foreground">{time}</span>
+          <span className="text-2xl text-muted">{day}, {date}</span>
           <UpcomingEvents />
         </div>
 
