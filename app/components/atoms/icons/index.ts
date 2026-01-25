@@ -4,3 +4,5 @@ export interface IconProps {
 
 export { MicrophoneIcon } from "./MicrophoneIcon";
 export { StopIcon } from "./StopIcon";
+export { ChevronUpIcon } from "./ChevronUpIcon";
+export { ChevronDownIcon } from "./ChevronDownIcon";

@@ -1,8 +1,7 @@
 "use client";
 
-import { useState } from "react";
 import { VoiceOrb, Button } from "@/app/components";
-import { MessageList } from "@/app/components/organisms";
+import { FloatingChat } from "@/app/components/organisms";
 import { useVoiceChat } from "@/app/hooks/useVoiceChat";
 
 function useOrbState(listeningMode: string) {
@@ -27,8 +26,6 @@ export default function ChatbotPage() {
     clearConversation,
     outputAudioLevel,
   } = useVoiceChat();
-
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   const orbState = useOrbState(listeningMode);
 
@@ -77,27 +74,13 @@ export default function ChatbotPage() {
           </div>
           <div className="flex items-center gap-2">
             {messages.length > 0 && (
-              <>
-                <Button
-                  onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-                  variant="secondary"
-                  className="glass rounded-lg px-3 py-1.5 text-sm"
-                >
-                  {isSidebarOpen ? "Chiudi" : "Chat"}
-                  {!isSidebarOpen && messages.length > 0 && (
-                    <span className="ml-2 rounded-full bg-accent/20 px-1.5 py-0.5 text-xs text-accent">
-                      {messages.length}
-                    </span>
-                  )}
-                </Button>
-                <Button
-                  onClick={clearConversation}
-                  variant="secondary"
-                  className="glass rounded-lg px-3 py-1.5 text-sm"
-                >
-                  Reset
-                </Button>
-              </>
+              <Button
+                onClick={clearConversation}
+                variant="secondary"
+                className="glass rounded-lg px-3 py-1.5 text-sm"
+              >
+                Reset
+              </Button>
             )}
           </div>
         </div>
@@ -117,16 +100,8 @@ export default function ChatbotPage() {
         />
       </div>
 
-      {/* Messages sidebar - collapsible */}
-      <aside
-        className={`glass glass-scroll fixed bottom-20 top-16 z-20 w-80 overflow-y-auto rounded-2xl transition-all duration-300 ease-out ${
-          isSidebarOpen
-            ? "right-4 opacity-100"
-            : "pointer-events-none -right-80 opacity-0"
-        }`}
-      >
-        <MessageList messages={messages} />
-      </aside>
+      {/* Floating chat */}
+      <FloatingChat messages={messages} />
     </div>
   );
 }

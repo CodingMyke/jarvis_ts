@@ -24,7 +24,7 @@ const markdownComponents: Components = {
   code: ({ className, children }) => {
     const isInline = !className;
     return isInline ? (
-      <code className="rounded bg-white/10 px-1 py-0.5 font-mono text-xs text-accent">
+      <code className="font-mono text-xs text-accent">
         {children}
       </code>
     ) : (
@@ -32,7 +32,7 @@ const markdownComponents: Components = {
     );
   },
   pre: ({ children }) => (
-    <pre className="mb-2 overflow-x-auto rounded-lg bg-white/5 p-2 text-xs">
+    <pre className="mb-2 overflow-hidden whitespace-pre-wrap break-words p-2 text-xs text-muted">
       {children}
     </pre>
   ),
@@ -59,10 +59,8 @@ export function ChatBubble({ message }: ChatBubbleProps) {
   return (
     <div className={`flex ${isUser ? "justify-end" : "justify-start"}`}>
       <div
-        className={`max-w-[90%] rounded-xl px-3 py-2 ${
-          isUser
-            ? "rounded-tr-sm bg-accent/20 text-foreground"
-            : "rounded-tl-sm bg-white/5 text-foreground"
+        className={`max-w-[86%] break-words px-1 py-1 ${
+          isUser ? "text-foreground" : "text-foreground"
         }`}
       >
         {!isUser && message.thinking && (

@@ -84,6 +84,22 @@ body {
   background: rgba(255, 255, 255, 0.2);
 }
 
+/* Hide scrollbar */
+.scrollbar-none {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+
+/* Fade top effect for closed chat */
+.chat-fade-top {
+  mask-image: linear-gradient(to bottom, transparent 0%, black 30%);
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 30%);
+}
+
 /* Orb animations - usa filter invece di transform per non interferire */
 @keyframes orb-pulse {
   0%, 100% {
