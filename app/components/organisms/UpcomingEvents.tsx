@@ -7,7 +7,7 @@ import {
 } from "@/app/components/molecules/DayEvents";
 
 // Stima l'altezza extra necessaria quando un evento si espande
-const EXPANSION_HEIGHT_ESTIMATE = 180; // px - copre descrizione lunga + location + attendees + padding
+const EXPANSION_HEIGHT_ESTIMATE = 80; // px - margine minimo per l'espansione
 
 function useEventsScroll(expandedEventId: string | null) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -41,15 +41,27 @@ function useEventsScroll(expandedEventId: string | null) {
       const elementRect = expandedElement.getBoundingClientRect();
 
       // Compensa per l'offset attuale (il transform sposta visivamente gli elementi)
-      // Aggiungiamo l'offset corrente per ottenere la posizione "originale"
+      const originalTop = elementRect.top + currentOffsetRef.current;
       const originalBottom = elementRect.bottom + currentOffsetRef.current;
 
-      // Calcola quanto spazio servirà: posizione originale + altezza stimata espansione
-      const estimatedFinalBottom = originalBottom + EXPANSION_HEIGHT_ESTIMATE;
-      const overflow = estimatedFinalBottom - containerRect.bottom;
+      // Usa il viewport per calcolare lo spazio disponibile (con margine di 100px dal fondo)
+      const viewportBottom = window.innerHeight - 100;
+      const spaceBelow = viewportBottom - originalBottom;
 
-      // Se serve scroll lo applica, altrimenti resetta a 0
-      setScrollOffset(overflow > 0 ? overflow : 0);
+      // Se c'è abbastanza spazio per l'espansione, non serve scroll
+      if (spaceBelow >= EXPANSION_HEIGHT_ESTIMATE) {
+        setScrollOffset(0);
+        return;
+      }
+
+      // Calcola quanto scroll serve per mostrare l'espansione
+      const overflow = EXPANSION_HEIGHT_ESTIMATE - spaceBelow;
+
+      // Limita lo scroll: l'elemento non deve mai scomparire sopra il container
+      const maxScroll = originalTop - containerRect.top;
+
+      // Applica lo scroll minimo necessario
+      setScrollOffset(Math.min(overflow, maxScroll));
     });
 
     return () => cancelAnimationFrame(frameId);
