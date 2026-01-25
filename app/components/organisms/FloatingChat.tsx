@@ -122,7 +122,7 @@ function FloatingChatComponent({ messages, onReset }: FloatingChatProps) {
       <div
         className="floating-chat fixed bottom-6 right-6 z-20 w-md transition-[height] duration-(--transition-medium) ease-(--easing-smooth)"
         style={{ 
-          height: isExpanded ? "calc(100vh - 48px)" : "256px",
+          height: isExpanded ? "calc(100vh - 48px)" : "220px",
           willChange: "height"
         }}
         onMouseEnter={handleMouseEnter}
