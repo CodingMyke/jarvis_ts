@@ -156,14 +156,12 @@ body {
   justify-content: center;
   width: 400px;
   height: 400px;
-  cursor: pointer;
   user-select: none;
   -webkit-tap-highlight-color: transparent;
-  outline: none;
 }
 
 /* Focus ring per accessibilità */
-.orb-container:focus-visible .orb-core {
+.orb-core:focus-visible {
   box-shadow:
     0 0 0 3px var(--background),
     0 0 0 5px var(--orb-color-glow),
@@ -198,6 +196,8 @@ body {
   position: relative;
   width: 180px;
   height: 180px;
+  cursor: pointer;
+  outline: none;
   --orb-color-core: rgba(100, 100, 120, 0.8);
   --orb-color-mid: rgba(60, 60, 80, 0.6);
   --orb-color-glow: rgba(100, 100, 120, 0.3);

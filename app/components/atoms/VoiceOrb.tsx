@@ -86,26 +86,24 @@ export function VoiceOrb({ state, audioLevel = 0, onClick }: VoiceOrbProps) {
   const stateClass = isSpeaking ? "speaking" : isListening ? "listening" : "";
 
   return (
-    <div
-      className={`orb-container pointer-events-auto ${isPressed ? "pressed" : ""}`}
-      role="button"
-      tabIndex={0}
-      aria-label={isActive ? "Ferma assistente vocale" : "Avvia assistente vocale"}
-      {...handlers}
-      onKeyDown={(e) => {
-        if (e.key === "Enter" || e.key === " ") {
-          e.preventDefault();
-          onClick?.();
-        }
-      }}
-    >
+    <div className={`orb-container ${isPressed ? "pressed" : ""}`}>
       {/* Glow background */}
       <div className={`orb-glow ${stateClass}`} style={styles.glow} />
 
-      {/* Core orb */}
+      {/* Core orb - area cliccabile */}
       <div
-        className={`orb-core ${stateClass} ${isActive ? "active" : ""} ${isListening ? "listening-pulse" : ""} ${isPressed ? "pressed" : ""}`}
+        className={`orb-core pointer-events-auto ${stateClass} ${isActive ? "active" : ""} ${isListening ? "listening-pulse" : ""} ${isPressed ? "pressed" : ""}`}
         style={styles.core}
+        role="button"
+        tabIndex={0}
+        aria-label={isActive ? "Ferma assistente vocale" : "Avvia assistente vocale"}
+        {...handlers}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            onClick?.();
+          }
+        }}
       />
     </div>
   );
