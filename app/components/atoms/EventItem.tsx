@@ -110,13 +110,13 @@ function EventItemComponent({ event, isExpanded, onToggle }: EventItemProps) {
       onTouchEnd={handleMouseUp}
       onClick={handleClick}
     >
-      <div className="flex gap-3">
+      <div className="flex items-center gap-3">
         {/* Pallino - si ingrandisce quando espanso */}
         <div
           className={`
             shrink-0 rounded-full
             transition-[width,height,margin-top,opacity] duration-(--transition-medium) ease-(--easing-smooth)
-            ${isExpanded ? "h-3 w-3 mt-1" : "h-2 w-2 mt-1.5"}
+            ${isExpanded ? "h-3 w-3" : "h-2 w-2"}
           `}
           style={{ backgroundColor: accentColor }}
         />

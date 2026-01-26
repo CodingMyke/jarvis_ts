@@ -55,7 +55,7 @@ function mapGoogleEventToCalendarEvent(
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (a: any) => a.displayName || a.email
     ),
-    color: googleEvent.colorId ? getGoogleEventColor(googleEvent.colorId) : undefined,
+    color: getGoogleEventColor(googleEvent.colorId),
     isAllDay,
   };
 }
@@ -63,21 +63,21 @@ function mapGoogleEventToCalendarEvent(
 /**
  * Mappa i colorId di Google Calendar a colori hex.
  */
-function getGoogleEventColor(colorId: string): string {
+function getGoogleEventColor(colorId?: string): string {
   const colors: Record<string, string> = {
-    "1": "#7986cb", // Lavender
+    "1": "#4285f4", // // Default Google Blue
     "2": "#33b679", // Sage
     "3": "#8e24aa", // Grape
     "4": "#e67c73", // Flamingo
     "5": "#f6c026", // Banana
     "6": "#f5511d", // Tangerine
-    "7": "#039be5", // Peacock
+    "7": "#7986cb", // Peacock
     "8": "#616161", // Graphite
     "9": "#3f51b5", // Blueberry
     "10": "#0b8043", // Basil
     "11": "#d60000", // Tomato
   };
-  return colors[colorId] || "#4285f4"; // Default Google Blue
+  return colors[colorId || "1"]; 
 }
 
 /**
