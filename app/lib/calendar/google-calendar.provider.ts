@@ -326,27 +326,17 @@ export class GoogleCalendarProvider implements CalendarProvider {
       };
     } catch (error) {
       console.error("[GoogleCalendarProvider] Errore durante il fetch:", error);
-      console.warn("[GoogleCalendarProvider] Restituisco eventi fake a causa dell'errore");
       
-      // Restituisci eventi fake invece di lanciare l'errore
-      const allMockEvents = createMockEvents();
-      // Filtra gli eventi nel range, includendo anche quelli già passati di oggi
-      const todayStart = new Date(timeMin);
-      todayStart.setHours(0, 0, 0, 0);
-      const mockEvents = allMockEvents.filter(
-        (e) => {
-          const eventDate = new Date(e.startTime);
-          eventDate.setHours(0, 0, 0, 0);
-          // Include eventi di oggi anche se già passati, e eventi futuri nel range
-          return (
-            (eventDate.getTime() === todayStart.getTime()) ||
-            (e.startTime >= timeMin && e.startTime <= timeMax)
-          );
-        }
+      // Se il servizio è configurato ma c'è un errore, restituisci eventi vuoti invece di mock
+      // per evitare confusione (gli eventi mock sono solo per sviluppo quando NON è configurato)
+      // Questo permette al tool di comunicare l'errore all'assistente invece di mostrare eventi falsi
+      console.warn(
+        "[GoogleCalendarProvider] Errore nell'accesso a Google Calendar. " +
+        "Restituisco eventi vuoti. Verifica la configurazione OAuth o API key."
       );
-
+      
       return {
-        events: mockEvents,
+        events: [],
         timeRange: { from: timeMin, to: timeMax },
       };
     }

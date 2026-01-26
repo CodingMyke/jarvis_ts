@@ -233,21 +233,31 @@ export class CalendarService {
 
 /**
  * Istanza singleton del servizio.
- * Usa mock se Google non è configurato.
+ * Controlla sempre se Google è configurato per evitare di usare mock quando Google Calendar viene configurato dopo l'inizializzazione.
  */
 let defaultService: CalendarService | null = null;
 
 export function getCalendarService(): CalendarService {
-  if (!defaultService) {
-    const googleProvider = getCalendarProvider("google");
-    const providerType = googleProvider.isConfigured() ? "google" : "mock";
+  // Controlla sempre se Google è configurato, non solo alla prima creazione
+  // Questo permette di usare Google Calendar anche se viene configurato dopo l'inizializzazione
+  const googleProvider = getCalendarProvider("google");
+  const providerType = googleProvider.isConfigured() ? "google" : "mock";
+  
+  // Ricrea il servizio se il provider type è cambiato (da mock a google)
+  if (!defaultService || 
+      (providerType === "google" && defaultService.providerName === "Mock Calendar")) {
     defaultService = new CalendarService(providerType);
 
     if (providerType === "mock") {
       console.info(
-        "[CalendarService] Usando provider mock. Configura GOOGLE_CALENDAR_API_KEY per usare Google Calendar."
+        "[CalendarService] Usando provider mock. Configura GOOGLE_CALENDAR_API_KEY o OAuth per usare Google Calendar."
+      );
+    } else {
+      console.info(
+        "[CalendarService] Usando provider Google Calendar."
       );
     }
   }
+
   return defaultService;
 }

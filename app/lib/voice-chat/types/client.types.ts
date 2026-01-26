@@ -39,4 +39,5 @@ export interface VoiceChatClientOptions {
   onAudioLevel?: (level: number) => void;
   onOutputAudioLevel?: (level: number) => void;
   onEndConversation?: () => void;
+  onToolExecuted?: (toolName: string, result: unknown) => void;
 }

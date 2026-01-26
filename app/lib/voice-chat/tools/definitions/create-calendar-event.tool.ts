@@ -4,6 +4,14 @@ import { createCalendarEvent } from "@/app/lib/calendar/actions";
 export const CREATE_CALENDAR_EVENT_TOOL_NAME = "createCalendarEvent";
 
 /**
+ * Capitalizza la prima lettera di una stringa.
+ */
+function capitalizeFirstLetter(str: string): string {
+  if (str.length === 0) return str;
+  return str.charAt(0).toUpperCase() + str.slice(1);
+}
+
+/**
  * Converte una stringa di data/ora in un oggetto Date.
  * Supporta vari formati comuni.
  */
@@ -165,6 +173,9 @@ export const createCalendarEventTool: SystemToolDefinition = {
         };
       }
 
+      // Capitalizza la prima lettera del titolo
+      const capitalizedTitle = capitalizeFirstLetter(title.trim());
+
       // Parsing date
       const now = new Date();
       const startTime = startDateTimeStr
@@ -193,7 +204,7 @@ export const createCalendarEventTool: SystemToolDefinition = {
 
       // Chiama la server action riutilizzabile
       const result = await createCalendarEvent({
-        title: title.trim(),
+        title: capitalizedTitle,
         startTime,
         endTime,
         description: description?.trim(),

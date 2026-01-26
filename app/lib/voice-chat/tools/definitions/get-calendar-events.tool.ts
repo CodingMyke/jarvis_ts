@@ -1,5 +1,5 @@
 import type { SystemToolDefinition } from "../types";
-import { getCalendarService, type CalendarEvent } from "@/app/lib/calendar";
+import type { CalendarEvent } from "@/app/lib/calendar";
 
 export const GET_CALENDAR_EVENTS_TOOL_NAME = "getCalendarEvents";
 
@@ -41,6 +41,9 @@ function formatEventsForAssistant(events: CalendarEvent[]): string {
 /**
  * Tool per leggere gli eventi del calendario.
  * L'assistente può usarlo per rispondere a domande sugli impegni dell'utente.
+ * 
+ * NOTA: Questo tool chiama un'API route lato server perché i tool vengono eseguiti
+ * lato client e non hanno accesso alle variabili d'ambiente del server.
  */
 export const getCalendarEventsTool: SystemToolDefinition = {
   name: GET_CALENDAR_EVENTS_TOOL_NAME,
@@ -68,13 +71,32 @@ export const getCalendarEventsTool: SystemToolDefinition = {
   execute: async (args) => {
     const daysAhead = (args.daysAhead as number) || 7;
 
-    const from = new Date();
-    const to = new Date();
-    to.setDate(to.getDate() + daysAhead);
-
     try {
-      const service = getCalendarService();
-      const { events } = await service.getEvents({ from, to });
+      // Chiama l'API route lato server che ha accesso alle variabili d'ambiente
+      const response = await fetch(`/api/calendar/events?daysAhead=${daysAhead}`);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+
+      if (!data.success) {
+        return {
+          result: {
+            success: false,
+            message: data.message || "Errore nel leggere il calendario.",
+            error: data.error || "UNKNOWN_ERROR",
+          },
+        };
+      }
+
+      // Converti le date da stringhe ISO a oggetti Date
+      const events: CalendarEvent[] = (data.events || []).map((event: any) => ({
+        ...event,
+        startTime: new Date(event.startTime),
+        endTime: event.endTime ? new Date(event.endTime) : undefined,
+      }));
 
       const formattedResponse = formatEventsForAssistant(events);
 
@@ -83,20 +105,22 @@ export const getCalendarEventsTool: SystemToolDefinition = {
           success: true,
           message: formattedResponse,
           eventCount: events.length,
-          period: {
-            from: from.toISOString(),
-            to: to.toISOString(),
+          period: data.period || {
+            from: new Date().toISOString(),
+            to: new Date(Date.now() + daysAhead * 24 * 60 * 60 * 1000).toISOString(),
             daysAhead,
           },
         },
       };
     } catch (error) {
       console.error("[getCalendarEventsTool] Errore:", error);
+      const errorMessage = error instanceof Error ? error.message : "Errore sconosciuto";
+      
       return {
         result: {
           success: false,
-          message: "Si è verificato un errore nel leggere il calendario.",
-          error: error instanceof Error ? error.message : "Errore sconosciuto",
+          message: `Si è verificato un errore nel leggere il calendario: ${errorMessage}. Verifica la configurazione di Google Calendar.`,
+          error: errorMessage,
         },
       };
     }

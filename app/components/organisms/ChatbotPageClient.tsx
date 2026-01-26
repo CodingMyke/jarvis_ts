@@ -1,10 +1,12 @@
 "use client";
 
-import { useCallback, useMemo } from "react";
+import { useCallback, useMemo, useState, useRef } from "react";
 import { VoiceOrb } from "@/app/components";
 import { FloatingChat, UpcomingEvents, TimerDisplay, TodoList } from "@/app/components/organisms";
 import { useVoiceChat } from "@/app/hooks/useVoiceChat";
 import type { UIDayEvents } from "@/app/lib/calendar/actions";
+import { fetchCalendarEvents } from "@/app/lib/calendar/actions";
+import { CREATE_CALENDAR_EVENT_TOOL_NAME } from "@/app/lib/voice-chat/tools/definitions/create-calendar-event.tool";
 import { useDateTime, useOrbState } from "./ChatbotPageClient.hooks";
 
 interface ChatbotPageClientProps {
@@ -12,6 +14,54 @@ interface ChatbotPageClientProps {
 }
 
 export function ChatbotPageClient({ initialEvents }: ChatbotPageClientProps) {
+  const [events, setEvents] = useState<UIDayEvents[]>(initialEvents);
+  const isRefreshingRef = useRef(false);
+
+  // Funzione per refreshare gli eventi senza loader
+  const refreshEvents = useCallback(async () => {
+    // Evita refresh multipli simultanei
+    if (isRefreshingRef.current) return;
+    
+    isRefreshingRef.current = true;
+    try {
+      const now = new Date();
+      const sevenDaysLater = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+      const updatedEvents = await fetchCalendarEvents({
+        from: now,
+        to: sevenDaysLater,
+      });
+      setEvents(updatedEvents);
+    } catch (error) {
+      console.error("[ChatbotPageClient] Errore durante il refresh degli eventi:", error);
+    } finally {
+      isRefreshingRef.current = false;
+    }
+  }, []);
+
+  // Callback per quando viene eseguito un tool del calendario
+  const handleToolExecuted = useCallback((toolName: string, result: unknown) => {
+    // Tool che modificano il calendario
+    const calendarModifyingTools = [
+      CREATE_CALENDAR_EVENT_TOOL_NAME,
+      // Aggiungi qui altri tool quando li implementerai:
+      // UPDATE_CALENDAR_EVENT_TOOL_NAME,
+      // DELETE_CALENDAR_EVENT_TOOL_NAME,
+    ];
+
+    if (calendarModifyingTools.includes(toolName)) {
+      // Verifica che l'operazione sia riuscita
+      if (result && typeof result === "object" && "success" in result) {
+        const successResult = result as { success: boolean };
+        if (successResult.success) {
+          // Refresh silenzioso dopo un breve delay per permettere all'API di propagare le modifiche
+          setTimeout(() => {
+            refreshEvents();
+          }, 500);
+        }
+      }
+    }
+  }, [refreshEvents]);
+
   const {
     isListening,
     messages,
@@ -21,7 +71,7 @@ export function ChatbotPageClient({ initialEvents }: ChatbotPageClientProps) {
     listeningMode,
     clearConversation,
     outputAudioLevel,
-  } = useVoiceChat();
+  } = useVoiceChat({ onToolExecuted: handleToolExecuted });
 
   const orbState = useOrbState(listeningMode);
   const { day, date, time, refs } = useDateTime();
@@ -68,7 +118,7 @@ export function ChatbotPageClient({ initialEvents }: ChatbotPageClientProps) {
       {/* Top bar */}
       <div className="flex items-start justify-between">
         {/* Events - Top Left */}
-        <UpcomingEvents initialEvents={initialEvents} />
+        <UpcomingEvents initialEvents={events} />
 
         {/* Date/Time - Top Center */}
         <div className="absolute left-1/2 top-6 -translate-x-1/2 flex flex-col items-center">

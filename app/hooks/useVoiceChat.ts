@@ -32,12 +32,16 @@ export interface UseVoiceChatReturn {
   clearConversation: () => void;
 }
 
+export interface UseVoiceChatOptions {
+  onToolExecuted?: (toolName: string, result: unknown) => void;
+}
+
 /**
  * Hook per gestire la voice chat con Gemini Live API.
  * Implementa un sistema di wake word: il browser ascolta localmente finché
  * non rileva "Jarvis", poi apre la connessione con Gemini.
  */
-export function useVoiceChat(): UseVoiceChatReturn {
+export function useVoiceChat(options?: UseVoiceChatOptions): UseVoiceChatReturn {
   const clientRef = useRef<VoiceChatClient | null>(null);
   const wakeWordRef = useRef<WakeWordManager | null>(null);
   const currentMessageIdRef = useRef<{ user: string | null; ai: string | null }>({ user: null, ai: null });
@@ -196,6 +200,7 @@ export function useVoiceChat(): UseVoiceChatReturn {
         },
         tools: [],
         onTranscript: handleTranscript,
+        onToolExecuted: options?.onToolExecuted,
         onStateChange: (state: ConnectionState) => {
           console.log('[useVoiceChat] state changed:', state);
           setConnectionState(state);

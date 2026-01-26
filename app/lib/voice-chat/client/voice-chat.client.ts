@@ -188,25 +188,34 @@ export class VoiceChatClient {
     };
 
     for (const call of calls) {
+      let executeResult: { result: unknown } | null = null;
+      let toolError: Error | null = null;
+
       // Cerca prima nei tools di sistema
       const systemTool = SYSTEM_TOOLS.find((t) => t.name === call.name);
       if (systemTool) {
         try {
-          const executeResult = await systemTool.execute(call.args, toolContext);
+          executeResult = await systemTool.execute(call.args, toolContext);
           responses.push({
             id: call.id,
             name: call.name,
             response: { result: JSON.stringify(executeResult.result) },
           });
         } catch (error) {
+          toolError = error instanceof Error ? error : new Error(String(error));
           responses.push({
             id: call.id,
             name: call.name,
             response: {
               result: "",
-              error: error instanceof Error ? error.message : String(error),
+              error: toolError.message,
             },
           });
+        }
+        
+        // Notifica l'esecuzione del tool
+        if (executeResult) {
+          this.options.onToolExecuted?.(call.name, executeResult.result);
         }
         continue;
       }
@@ -216,20 +225,27 @@ export class VoiceChatClient {
       if (userTool) {
         try {
           const result = await userTool.execute(call.args);
+          executeResult = { result };
           responses.push({
             id: call.id,
             name: call.name,
             response: { result: JSON.stringify(result) },
           });
         } catch (error) {
+          toolError = error instanceof Error ? error : new Error(String(error));
           responses.push({
             id: call.id,
             name: call.name,
             response: {
               result: "",
-              error: error instanceof Error ? error.message : String(error),
+              error: toolError.message,
             },
           });
+        }
+        
+        // Notifica l'esecuzione del tool
+        if (executeResult) {
+          this.options.onToolExecuted?.(call.name, executeResult.result);
         }
       } else {
         responses.push({
