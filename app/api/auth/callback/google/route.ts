@@ -9,25 +9,27 @@ export async function GET(request: Request) {
   const code = searchParams.get("code");
   const error = searchParams.get("error");
 
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || new URL(request.url).origin;
+
   if (error) {
     return NextResponse.redirect(
-      `/setup/calendar?error=${encodeURIComponent(error)}`
+      `${baseUrl}/setup/calendar?error=${encodeURIComponent(error)}`
     );
   }
 
   if (!code) {
     return NextResponse.redirect(
-      `/setup/calendar?error=${encodeURIComponent("Codice di autorizzazione mancante")}`
+      `${baseUrl}/setup/calendar?error=${encodeURIComponent("Codice di autorizzazione mancante")}`
     );
   }
 
   const clientId = process.env.GOOGLE_CALENDAR_CLIENT_ID;
   const clientSecret = process.env.GOOGLE_CALENDAR_CLIENT_SECRET;
-  const redirectUri = `${process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"}/api/auth/callback/google`;
+  const redirectUri = `${baseUrl}/api/auth/callback/google`;
 
   if (!clientId || !clientSecret) {
     return NextResponse.redirect(
-      `/setup/calendar?error=${encodeURIComponent("Credenziali OAuth non configurate")}`
+      `${baseUrl}/setup/calendar?error=${encodeURIComponent("Credenziali OAuth non configurate")}`
     );
   }
 
@@ -51,7 +53,7 @@ export async function GET(request: Request) {
       const errorText = await tokenResponse.text();
       console.error("[OAuth Callback] Errore:", errorText);
       return NextResponse.redirect(
-        `/setup/calendar?error=${encodeURIComponent("Errore durante lo scambio del codice")}`
+        `${baseUrl}/setup/calendar?error=${encodeURIComponent("Errore durante lo scambio del codice")}`
       );
     }
 
@@ -59,18 +61,18 @@ export async function GET(request: Request) {
 
     if (!tokens.refresh_token) {
       return NextResponse.redirect(
-        `/setup/calendar?error=${encodeURIComponent("Refresh token non ricevuto. Assicurati di aver selezionato 'consent' nel prompt OAuth.")}`
+        `${baseUrl}/setup/calendar?error=${encodeURIComponent("Refresh token non ricevuto. Assicurati di aver selezionato 'consent' nel prompt OAuth.")}`
       );
     }
 
     // Reindirizza alla pagina di setup con i token
     return NextResponse.redirect(
-      `/setup/calendar?success=true&refresh_token=${encodeURIComponent(tokens.refresh_token)}&access_token=${encodeURIComponent(tokens.access_token || "")}`
+      `${baseUrl}/setup/calendar?success=true&refresh_token=${encodeURIComponent(tokens.refresh_token)}&access_token=${encodeURIComponent(tokens.access_token || "")}`
     );
   } catch (error) {
     console.error("[OAuth Callback] Errore:", error);
     return NextResponse.redirect(
-      `/setup/calendar?error=${encodeURIComponent("Errore imprevisto durante l'autenticazione")}`
+      `${baseUrl}/setup/calendar?error=${encodeURIComponent("Errore imprevisto durante l'autenticazione")}`
     );
   }
 }

@@ -27,7 +27,14 @@
    - Developer contact: la tua email
 4. Aggiungi gli scope:
    - `https://www.googleapis.com/auth/calendar.readonly`
-5. Salva e continua
+5. Salva e continua attraverso tutte le schermate (potrebbero esserci più passaggi)
+6. **IMPORTANTE - Aggiungi utenti di test** (necessario per evitare l'errore "Access blocked"):
+   - Nella pagina "OAuth consent screen", vai alla scheda **"Audience"** (o "Publishing status")
+   - Scorri fino alla sezione **"Test users"**
+   - Clicca "ADD USERS" o "+ ADD USERS"
+   - Aggiungi il tuo indirizzo email Google (quello che userai per autorizzare l'app)
+   - Clicca "ADD" o "SAVE"
+   - **Nota**: Puoi aggiungere fino a 100 utenti di test. Per uso personale, basta aggiungere il tuo account.
 
 ### Passo 3: Crea credenziali OAuth 2.0
 
@@ -130,6 +137,29 @@ GOOGLE_CALENDAR_ID=public_calendar_id@group.calendar.google.com
 - **Access Token**: Scade dopo ~1 ora. Il sistema dovrebbe rinnovarlo automaticamente usando il refresh token.
 - **Sicurezza**: Non committare mai `.env.local` nel repository!
 
+## Utenti di Test - Limitazioni e Informazioni
+
+### Cosa sono gli utenti di test?
+Gli utenti di test sono account Google autorizzati a usare la tua app OAuth mentre è in modalità "Testing" (non pubblicata). Sono necessari per evitare l'errore "Access blocked" quando l'app non è ancora verificata da Google.
+
+### Limitazioni
+- **Massimo 100 utenti di test** per app
+- Funzionano solo se l'app è in modalità "Testing" (non pubblicata)
+- **Non scadono automaticamente** - rimangono validi finché non li rimuovi manualmente
+- Solo gli utenti di test possono usare l'app finché non viene pubblicata
+
+### Per uso personale
+✅ **Nessuna limitazione pratica**: Puoi usare l'app senza problemi  
+✅ **Non scade**: L'account resta valido finché non lo rimuovi manualmente  
+✅ **Nessun limite di chiamate API**: Stessi limiti di quota delle app verificate  
+
+### Cosa devi sapere
+- Se vuoi condividere l'app con altri utenti, devi pubblicarla e passare la verifica di Google
+- Per uso personale, gli utenti di test sono perfetti e non ci sono limitazioni pratiche
+- Se pubblichi l'app, tutti potranno usarla senza essere test user (ma richiede verifica Google)
+
+**In sintesi**: Per uso personale, gli utenti di test sono la soluzione ideale - nessuna limitazione pratica, non scadono e funzionano esattamente come account normali.
+
 ## Troubleshooting
 
 ### Errore "Access denied"
@@ -148,3 +178,32 @@ GOOGLE_CALENDAR_ID=public_calendar_id@group.calendar.google.com
 - Questo errore si verifica spesso con OAuth Playground
 - **Soluzione**: Usa il metodo integrato (Passo 5) invece di OAuth Playground
 - Verifica che il redirect URI nelle credenziali OAuth corrisponda esattamente a quello configurato
+
+### Errore "Access blocked: jarvis has not completed the Google verification process"
+- Questo errore si verifica quando provi ad autorizzare l'app con un account che non è nella lista degli utenti di test
+- **Soluzione**: 
+  1. Vai su Google Cloud Console > "APIs & Services" > "OAuth consent screen"
+  2. Vai alla scheda **"Audience"** (o "Publishing status")
+  3. Scorri fino alla sezione **"Test users"**
+  4. Clicca "ADD USERS"
+  5. Aggiungi il tuo indirizzo email Google (quello che stai usando per autorizzare)
+  6. Clicca "ADD" e salva
+  7. Riprova l'autorizzazione
+- **Nota**: Questo è necessario solo per app in modalità "Testing". Per uso personale, aggiungi semplicemente il tuo account come test user.
+
+### Errore "The following email addresses are either not associated with a Google Account or the account is not eligible for designation as a test user"
+- Questo errore si verifica quando l'email che stai cercando di aggiungere non è un account Google valido o non è idoneo
+- **Possibili cause e soluzioni**:
+  1. **L'email non è un account Google**: 
+     - Assicurati di usare un account Google personale (es. `tuaemail@gmail.com` o `tuaemail@googlemail.com`)
+     - Se stai usando un account Google Workspace aziendale, potrebbe non funzionare con app "External"
+  2. **Account Google non completamente configurato**:
+     - Accedi all'account Google e completa la configurazione iniziale
+     - Verifica che l'account sia attivo e funzionante
+  3. **Account Google Workspace**:
+     - Se hai scelto "External" nel Passo 2, prova a cambiare in "Internal" se hai Google Workspace
+     - Oppure usa un account Google personale (gmail.com) invece di quello aziendale
+  4. **Email scritta in modo errato**:
+     - Verifica di aver scritto correttamente l'indirizzo email
+     - Prova a copiare e incollare l'email direttamente
+- **Soluzione rapida**: Se hai un account Google personale (gmail.com), usa quello. Se stai usando un account aziendale, potresti dover cambiare la configurazione del consent screen da "External" a "Internal" (se hai Google Workspace).
