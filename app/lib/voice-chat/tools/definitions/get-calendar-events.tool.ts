@@ -1,5 +1,4 @@
 import type { SystemToolDefinition } from "../types";
-import type { CalendarEvent } from "@/app/lib/calendar";
 
 export const GET_CALENDAR_EVENTS_TOOL_NAME = "getCalendarEvents";
 
@@ -24,12 +23,20 @@ export const getCalendarEventsTool: SystemToolDefinition = {
     "- events: array di eventi, dove ogni evento ha i campi: id (stringa, obbligatorio per delete/update), title, startTime, endTime, description, location, attendees, color, isAllDay " +
     "- eventCount: numero di eventi " +
     "- period: informazioni sul periodo richiesto " +
+    "IMPORTANTE: Le date startTime e endTime sono formattate nel fuso orario locale (CET, es. '2026-01-27T17:30:00+01:00'). " +
+    "Quando leggi gli orari, estrai SEMPRE l'ora locale dalla stringa (es. da '2026-01-27T17:30:00+01:00' leggi '17:30'). " +
+    "NON convertire in UTC o altri fusi orari, usa direttamente l'ora locale indicata nella stringa. " +
     "Per eliminare o aggiornare eventi, usa il campo 'id' di ogni evento nell'array 'events'. " +
     "NON includere mai l'ID nelle risposte all'utente. " +
     "FORMATO RISPOSTA OBBLIGATORIO: Quando elenchi gli eventi, usa SEMPRE questo formato per ogni evento: " +
-    "'Dalle [ora inizio] a [ora fine]: [Titolo]'. " +
-    "Formatta le ore in formato HH:mm (es. '14:30', '09:00'). " +
-    "Se l'evento è tutto il giorno o non ha ora di fine, adatta il formato di conseguenza.",
+    "'Dalle [ora inizio] a [ora fine], [Titolo]'. " +
+    "Leggi le ore in modo naturale e fluente, senza usare il formato HH:mm con i due punti. " +
+    "Esempi: 'Dalle quattordici e trenta alle sedici, Riunione team' oppure 'Dalle nove alle dieci, Call con cliente'. " +
+    "Se l'evento è tutto il giorno o non ha ora di fine, adatta il formato di conseguenza. " +
+    "IMPORTANTE: Non usare mai i due punti dopo l'ora di fine, usa sempre una virgola per separare l'orario dal titolo. " +
+    "IMPORTANTE: Quando leggi più eventi a voce, leggi ogni evento in modo fluido separandoli con pause brevi. " +
+    "NON usare formattazione Markdown (no trattini, asterischi, numeri con punto) che può causare interruzioni nella sintesi vocale. " +
+    "Esempio: 'Hai tre eventi oggi: Dalle nove alle dieci, Riunione team, dalle quattordici alle quindici, Call con cliente, e dalle sedici alle diciassette, Revisione progetto'.",
 
   parameters: {
     type: "object",
@@ -71,15 +78,13 @@ export const getCalendarEventsTool: SystemToolDefinition = {
         };
       }
 
-      // Converti le date da stringhe ISO a stringhe ISO (non oggetti Date)
-      // perché quando viene serializzato con JSON.stringify, gli oggetti Date diventano stringhe
-      // ma è meglio essere espliciti e usare stringhe ISO direttamente
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const events: CalendarEvent[] = (data.events || []).map((event: any) => ({
+      // L'API restituisce già le date in formato locale (CET)
+      // Non serve fare conversioni, passiamo direttamente i dati all'assistente
+      const serializedEvents = (data.events || []).map((event: any) => ({
         id: event.id,
         title: event.title,
-        startTime: new Date(event.startTime),
-        endTime: event.endTime ? new Date(event.endTime) : undefined,
+        startTime: event.startTime, // Già in formato locale (es. "2026-01-27T17:30:00+01:00")
+        endTime: event.endTime, // Già in formato locale
         description: event.description,
         location: event.location,
         attendees: event.attendees,
@@ -87,20 +92,7 @@ export const getCalendarEventsTool: SystemToolDefinition = {
         isAllDay: event.isAllDay,
       }));
 
-      // Serializza manualmente le date per evitare problemi con JSON.stringify
-      const serializedEvents = events.map(event => ({
-        id: event.id,
-        title: event.title,
-        startTime: event.startTime.toISOString(),
-        endTime: event.endTime?.toISOString(),
-        description: event.description,
-        location: event.location,
-        attendees: event.attendees,
-        color: event.color,
-        isAllDay: event.isAllDay,
-      }));
-
-      console.log("[getCalendarEventsTool] Returning", serializedEvents.length, "events with IDs:", serializedEvents.map(e => e.id));
+      console.log("[getCalendarEventsTool] Returning", serializedEvents.length, "events with IDs:", serializedEvents.map((e: { id: string }) => e.id));
 
       return {
         result: {

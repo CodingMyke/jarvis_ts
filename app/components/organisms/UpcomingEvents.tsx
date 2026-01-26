@@ -116,7 +116,12 @@ function toDayEventsData(uiDays: UIDayEvents[]): DayEventsData[] {
 }
 
 export function UpcomingEvents({ initialEvents = [] }: UpcomingEventsProps) {
-  const days = useMemo(() => toDayEventsData(initialEvents), [initialEvents]);
+  // Usa useMemo per convertire gli eventi
+  // La dipendenza è initialEvents, quindi si aggiorna quando cambia l'array
+  const days = useMemo(() => {
+    console.log("initialEvents changed", initialEvents);
+    return toDayEventsData(initialEvents)}, [initialEvents]);
+  
   const [expandedEventId, setExpandedEventId] = useState<string | null>(null);
   const { containerRef, contentRef, scrollOffset } =
     useEventsScroll(expandedEventId);

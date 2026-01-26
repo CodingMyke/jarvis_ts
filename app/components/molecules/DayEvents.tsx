@@ -56,12 +56,4 @@ function DayEventsComponent({ data, expandedEventId, onToggleEvent }: DayEventsP
   );
 }
 
-export const DayEvents = memo(DayEventsComponent, (prev, next) => {
-  return (
-    prev.data.date.getTime() === next.data.date.getTime() &&
-    prev.data.events.length === next.data.events.length &&
-    prev.data.events.every((e, i) => e.id === next.data.events[i]?.id) &&
-    prev.expandedEventId === next.expandedEventId &&
-    prev.onToggleEvent === next.onToggleEvent
-  );
-});
+export const DayEvents = memo(DayEventsComponent);

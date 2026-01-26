@@ -3,6 +3,28 @@ import { getCalendarService } from "@/app/lib/calendar";
 import type { CreateEventOptions, UpdateEventOptions } from "@/app/lib/calendar/types";
 
 /**
+ * Formatta una data in formato ISO con il fuso orario locale (CET).
+ * Questo assicura che gli orari siano sempre nel fuso orario dell'utente.
+ */
+function formatDateWithLocalTimezone(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  const hours = String(date.getHours()).padStart(2, "0");
+  const minutes = String(date.getMinutes()).padStart(2, "0");
+  const seconds = String(date.getSeconds()).padStart(2, "0");
+  
+  // Calcola l'offset del fuso orario in formato ±HH:mm
+  const offset = -date.getTimezoneOffset();
+  const offsetHours = Math.floor(Math.abs(offset) / 60);
+  const offsetMinutes = Math.abs(offset) % 60;
+  const offsetSign = offset >= 0 ? "+" : "-";
+  const offsetStr = `${offsetSign}${String(offsetHours).padStart(2, "0")}:${String(offsetMinutes).padStart(2, "0")}`;
+  
+  return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}${offsetStr}`;
+}
+
+/**
  * API route per gestire gli eventi del calendario.
  * Chiamata dai tool lato client che non hanno accesso alle variabili d'ambiente del server.
  */
@@ -56,12 +78,13 @@ export async function GET(request: NextRequest) {
 
     const { events } = await service.getEvents({ from, to });
 
-    // Serializza gli eventi per la risposta (converte Date in ISO string)
+    // Serializza gli eventi per la risposta con date in formato locale (CET)
+    // Questo assicura che gli orari siano sempre nel fuso orario dell'utente
     const serializedEvents = events.map((event) => ({
       id: event.id,
       title: event.title,
-      startTime: event.startTime.toISOString(),
-      endTime: event.endTime?.toISOString(),
+      startTime: formatDateWithLocalTimezone(event.startTime),
+      endTime: event.endTime ? formatDateWithLocalTimezone(event.endTime) : undefined,
       description: event.description,
       location: event.location,
       attendees: event.attendees,

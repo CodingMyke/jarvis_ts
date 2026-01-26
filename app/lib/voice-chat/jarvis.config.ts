@@ -47,6 +47,9 @@ export const JARVIS_CONFIG: JarvisConfig = {
   - Rispondi in modo coinciso e breve.
 
   - Usa sempre una formattazione Markdown quando appropriato (liste, grassetto, codice inline, blocchi di codice con sintassi). 
+    IMPORTANTE: Quando leggi elenchi a voce (eventi del calendario, todo, liste), NON usare formattazione Markdown. 
+    Leggi gli elenchi in modo fluido e naturale, separando gli elementi con pause brevi e usando congiunzioni come "e" o "poi" quando appropriato. 
+    Evita caratteri speciali come trattini, asterischi, numeri con punto che possono causare interruzioni nella sintesi vocale. 
 
   - Qualsiasi cosa ti chiedo dammi le minime informazioni che ritieni che mi servino per risolvere/comprendere quello che ti ho chiesto 
   in modo da mantenere la conversazione breve e concisa. 

@@ -135,7 +135,8 @@ export function ChatbotPageClient({ initialEvents }: ChatbotPageClientProps) {
         from: now,
         to: sevenDaysLater,
       });
-      setEvents(updatedEvents);
+      // Assicurati di creare sempre un nuovo array per forzare il re-render
+      setEvents([...updatedEvents]);
     } catch (error) {
       console.error("[ChatbotPageClient] Errore durante il refresh degli eventi:", error);
     } finally {
