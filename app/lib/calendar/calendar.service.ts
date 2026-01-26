@@ -3,6 +3,8 @@ import type {
   CalendarEvent,
   GetEventsOptions,
   GetEventsResult,
+  CreateEventOptions,
+  CreateEventResult,
 } from "./types";
 import { GoogleCalendarProvider } from "./google-calendar.provider";
 
@@ -104,6 +106,42 @@ class MockCalendarProvider implements CalendarProvider {
       timeRange: { from, to },
     };
   }
+
+  async createEvent(options: CreateEventOptions): Promise<CreateEventResult> {
+    // Simula un piccolo delay di rete
+    await new Promise((resolve) => setTimeout(resolve, 100));
+
+    // Valida il titolo
+    if (!options.title || options.title.trim().length === 0) {
+      return {
+        success: false,
+        error: "Il titolo dell'evento è obbligatorio",
+        event: {
+          id: "",
+          title: "",
+          startTime: options.startTime,
+        },
+      };
+    }
+
+    // Crea un evento mock
+    const mockEvent: CalendarEvent = {
+      id: `mock-${Date.now()}`,
+      title: options.title,
+      startTime: options.startTime,
+      endTime: options.endTime,
+      description: options.description,
+      location: options.location,
+      attendees: options.attendees,
+      color: options.color,
+      isAllDay: options.isAllDay,
+    };
+
+    return {
+      success: true,
+      event: mockEvent,
+    };
+  }
 }
 
 /**
@@ -183,6 +221,13 @@ export class CalendarService {
     }
 
     return grouped;
+  }
+
+  /**
+   * Crea un nuovo evento nel calendario.
+   */
+  async createEvent(options: CreateEventOptions): Promise<CreateEventResult> {
+    return this.provider.createEvent(options);
   }
 }
 

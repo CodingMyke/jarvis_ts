@@ -10,6 +10,7 @@ import { createTodoTool } from "./definitions/create-todo.tool";
 import { getTodosTool } from "./definitions/get-todos.tool";
 import { updateTodoTool } from "./definitions/update-todo.tool";
 import { deleteTodoTool } from "./definitions/delete-todo.tool";
+import { createCalendarEventTool } from "./definitions/create-calendar-event.tool";
 
 /**
  * Tutti i tools di sistema con la loro implementazione.
@@ -18,6 +19,7 @@ import { deleteTodoTool } from "./definitions/delete-todo.tool";
 export const SYSTEM_TOOLS: SystemToolDefinition[] = [
   endConversationTool,
   getCalendarEventsTool,
+  createCalendarEventTool,
   startTimerTool,
   stopTimerTool,
   getTimerStatusTool,

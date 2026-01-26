@@ -3,6 +3,8 @@ import type {
   CalendarEvent,
   GetEventsOptions,
   GetEventsResult,
+  CreateEventOptions,
+  CreateEventResult,
 } from "./types";
 import { createMockEvents } from "./calendar.service";
 
@@ -78,6 +80,105 @@ function getGoogleEventColor(colorId?: string): string {
     "11": "#d60000", // Tomato
   };
   return colors[colorId || "1"]; 
+}
+
+/**
+ * Mappa un colore hex a colorId di Google Calendar.
+ * Se non corrisponde a nessun colore standard, restituisce undefined.
+ */
+function getGoogleColorIdFromHex(hex?: string): string | undefined {
+  if (!hex) return undefined;
+  
+  const colorMap: Record<string, string> = {
+    "#4285f4": "1", // Default Google Blue
+    "#33b679": "2", // Sage
+    "#8e24aa": "3", // Grape
+    "#e67c73": "4", // Flamingo
+    "#f6c026": "5", // Banana
+    "#f5511d": "6", // Tangerine
+    "#7986cb": "7", // Peacock
+    "#616161": "8", // Graphite
+    "#3f51b5": "9", // Blueberry
+    "#0b8043": "10", // Basil
+    "#d60000": "11", // Tomato
+  };
+  
+  return colorMap[hex.toLowerCase()];
+}
+
+/**
+ * Converte un CalendarEvent nel formato richiesto da Google Calendar API.
+ */
+function mapCalendarEventToGoogleEvent(
+  options: CreateEventOptions
+): Record<string, unknown> {
+  const googleEvent: Record<string, unknown> = {
+    summary: options.title,
+  };
+
+  // Gestione data/ora
+  if (options.isAllDay) {
+    // Evento tutto il giorno: usa solo la data (YYYY-MM-DD)
+    const startDate = options.startTime.toISOString().split("T")[0];
+    googleEvent.start = { date: startDate };
+    
+    if (options.endTime) {
+      const endDate = options.endTime.toISOString().split("T")[0];
+      googleEvent.end = { date: endDate };
+    } else {
+      // Se non specificato, usa il giorno successivo
+      const nextDay = new Date(options.startTime);
+      nextDay.setDate(nextDay.getDate() + 1);
+      googleEvent.end = { date: nextDay.toISOString().split("T")[0] };
+    }
+  } else {
+    // Evento con orario: usa dateTime (RFC3339)
+    googleEvent.start = {
+      dateTime: options.startTime.toISOString(),
+      timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+    };
+    
+    if (options.endTime) {
+      googleEvent.end = {
+        dateTime: options.endTime.toISOString(),
+        timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      };
+    } else {
+      // Default: 1 ora dopo l'inizio
+      const defaultEnd = new Date(options.startTime);
+      defaultEnd.setHours(defaultEnd.getHours() + 1);
+      googleEvent.end = {
+        dateTime: defaultEnd.toISOString(),
+        timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      };
+    }
+  }
+
+  // Campi opzionali
+  if (options.description) {
+    googleEvent.description = options.description;
+  }
+
+  if (options.location) {
+    googleEvent.location = options.location;
+  }
+
+  if (options.attendees && options.attendees.length > 0) {
+    googleEvent.attendees = options.attendees.map((attendee) => {
+      // Se contiene @, assumiamo sia un'email, altrimenti solo displayName
+      if (attendee.includes("@")) {
+        return { email: attendee };
+      }
+      return { displayName: attendee };
+    });
+  }
+
+  const colorId = getGoogleColorIdFromHex(options.color);
+  if (colorId) {
+    googleEvent.colorId = colorId;
+  }
+
+  return googleEvent;
 }
 
 /**
@@ -247,6 +348,107 @@ export class GoogleCalendarProvider implements CalendarProvider {
       return {
         events: mockEvents,
         timeRange: { from: timeMin, to: timeMax },
+      };
+    }
+  }
+
+  async createEvent(options: CreateEventOptions): Promise<CreateEventResult> {
+    // Validazione base
+    if (!options.title || options.title.trim().length === 0) {
+      return {
+        success: false,
+        error: "Il titolo dell'evento è obbligatorio",
+        event: {
+          id: "",
+          title: "",
+          startTime: options.startTime,
+        },
+      };
+    }
+
+    if (!this.isConfigured()) {
+      return {
+        success: false,
+        error: "Google Calendar non è configurato correttamente",
+        event: {
+          id: "",
+          title: options.title,
+          startTime: options.startTime,
+        },
+      };
+    }
+
+    // Verifica che abbiamo OAuth (necessario per creare eventi)
+    const accessToken = await this.getValidAccessToken();
+    if (!accessToken) {
+      return {
+        success: false,
+        error: "Autenticazione OAuth richiesta per creare eventi. Configura GOOGLE_CALENDAR_REFRESH_TOKEN.",
+        event: {
+          id: "",
+          title: options.title,
+          startTime: options.startTime,
+        },
+      };
+    }
+
+    try {
+      const googleEvent = mapCalendarEventToGoogleEvent(options);
+      const url = `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(
+        this.config.calendarId!
+      )}/events`;
+
+      const response = await fetch(url, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(googleEvent),
+      });
+
+      if (!response.ok) {
+        const errorBody = await response.text();
+        console.error("[GoogleCalendarProvider] Errore creazione evento:", response.status, errorBody);
+        
+        let errorMessage = `Errore durante la creazione dell'evento (${response.status})`;
+        try {
+          const errorData = JSON.parse(errorBody);
+          if (errorData.error?.message) {
+            errorMessage = errorData.error.message;
+          }
+        } catch {
+          // Ignora errori di parsing
+        }
+
+        return {
+          success: false,
+          error: errorMessage,
+          event: {
+            id: "",
+            title: options.title,
+            startTime: options.startTime,
+          },
+        };
+      }
+
+      const createdEvent = await response.json();
+      const calendarEvent = mapGoogleEventToCalendarEvent(createdEvent);
+
+      return {
+        success: true,
+        event: calendarEvent,
+      };
+    } catch (error) {
+      console.error("[GoogleCalendarProvider] Errore durante la creazione dell'evento:", error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : "Errore sconosciuto durante la creazione dell'evento",
+        event: {
+          id: "",
+          title: options.title,
+          startTime: options.startTime,
+        },
       };
     }
   }

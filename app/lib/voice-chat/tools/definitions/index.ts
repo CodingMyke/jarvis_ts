@@ -13,6 +13,11 @@ export {
 } from "./get-calendar-events.tool";
 
 export {
+  createCalendarEventTool,
+  CREATE_CALENDAR_EVENT_TOOL_NAME,
+} from "./create-calendar-event.tool";
+
+export {
   startTimerTool,
   START_TIMER_TOOL_NAME,
 } from "./start-timer.tool";

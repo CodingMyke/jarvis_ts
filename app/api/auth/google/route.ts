@@ -15,7 +15,7 @@ export async function GET() {
     );
   }
 
-  const scopes = ["https://www.googleapis.com/auth/calendar.readonly"];
+  const scopes = ["https://www.googleapis.com/auth/calendar"];
   const scope = scopes.join(" ");
 
   const params = new URLSearchParams({

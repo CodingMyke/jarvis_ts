@@ -39,6 +39,40 @@ export interface GetEventsResult {
 }
 
 /**
+ * Opzioni per creare un nuovo evento.
+ */
+export interface CreateEventOptions {
+  /** Titolo dell'evento (obbligatorio) */
+  title: string;
+  /** Data e ora di inizio (obbligatorio) */
+  startTime: Date;
+  /** Data e ora di fine (opzionale) */
+  endTime?: Date;
+  /** Descrizione dell'evento */
+  description?: string;
+  /** Luogo dell'evento */
+  location?: string;
+  /** Lista di partecipanti (email o nomi) */
+  attendees?: string[];
+  /** Colore dell'evento (hex) */
+  color?: string;
+  /** Se true, l'evento dura tutto il giorno */
+  isAllDay?: boolean;
+}
+
+/**
+ * Risultato della creazione di un evento.
+ */
+export interface CreateEventResult {
+  /** Evento creato con ID assegnato dal provider */
+  event: CalendarEvent;
+  /** Indica se l'operazione è riuscita */
+  success: boolean;
+  /** Messaggio di errore se success è false */
+  error?: string;
+}
+
+/**
  * Interfaccia per un provider di calendario.
  * Ogni implementazione (Google, Outlook, etc.) deve rispettare questo contratto.
  */
@@ -50,6 +84,11 @@ export interface CalendarProvider {
    * Ottiene gli eventi nel range specificato.
    */
   getEvents(options?: GetEventsOptions): Promise<GetEventsResult>;
+
+  /**
+   * Crea un nuovo evento nel calendario.
+   */
+  createEvent(options: CreateEventOptions): Promise<CreateEventResult>;
 
   /**
    * Verifica se il provider è configurato correttamente.

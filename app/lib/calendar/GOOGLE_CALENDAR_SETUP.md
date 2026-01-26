@@ -26,7 +26,8 @@
    - User support email: la tua email
    - Developer contact: la tua email
 4. Aggiungi gli scope:
-   - `https://www.googleapis.com/auth/calendar.readonly`
+   - `https://www.googleapis.com/auth/calendar` (per tutte le operazioni CRUD: creare, leggere, modificare ed eliminare eventi)
+   - **Nota**: Se vuoi solo leggere eventi, puoi usare `https://www.googleapis.com/auth/calendar.readonly`, ma per operazioni complete (creare, modificare, eliminare) serve lo scope completo `calendar`
 5. Salva e continua attraverso tutte le schermate (potrebbero esserci più passaggi)
 6. **IMPORTANTE - Aggiungi utenti di test** (necessario per evitare l'errore "Access blocked"):
    - Nella pagina "OAuth consent screen", vai alla scheda **"Audience"** (o "Publishing status")
@@ -35,6 +36,12 @@
    - Aggiungi il tuo indirizzo email Google (quello che userai per autorizzare l'app)
    - Clicca "ADD" o "SAVE"
    - **Nota**: Puoi aggiungere fino a 100 utenti di test. Per uso personale, basta aggiungere il tuo account.
+
+**⚠️ IMPORTANTE - Se hai già configurato con `calendar.readonly`**: 
+Se hai già autorizzato l'app con lo scope `calendar.readonly` e ora vuoi usare tutte le operazioni CRUD, devi:
+1. Aggiornare lo scope nel "OAuth consent screen" da `calendar.readonly` a `calendar` (vedi passo 4 sopra)
+2. **Rigenerare il refresh token** seguendo il Passo 5, perché i token esistenti hanno solo i permessi readonly
+3. Il nuovo refresh token avrà i permessi completi per creare, modificare ed eliminare eventi
 
 ### Passo 3: Crea credenziali OAuth 2.0
 
@@ -91,7 +98,7 @@ const oauth2Client = new google.auth.OAuth2(
   'http://localhost:3000/api/auth/callback/google'
 );
 
-const scopes = ['https://www.googleapis.com/auth/calendar.readonly'];
+const scopes = ['https://www.googleapis.com/auth/calendar'];
 
 const authUrl = oauth2Client.generateAuthUrl({
   access_type: 'offline',
