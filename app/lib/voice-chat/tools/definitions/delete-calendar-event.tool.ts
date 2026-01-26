@@ -17,8 +17,13 @@ export const deleteCalendarEventTool: SystemToolDefinition = {
     "Esempi: 'cancella la riunione di domani', " +
     "'elimina l'appuntamento con il dentista', " +
     "'rimuovi l'evento X dal calendario', " +
-    "'annulla la riunione di lunedì'. " +
-    "È necessario fornire l'ID dell'evento o informazioni sufficienti per identificarlo univocamente.",
+    "'annulla la riunione di lunedì', " +
+    "'elimina tutti gli eventi di oggi'. " +
+    "IMPORTANTE: Per eliminare eventi, devi prima chiamare getCalendarEvents per ottenere la lista degli eventi " +
+    "con i loro ID. Poi, per ogni evento che vuoi eliminare, chiama questo tool con l'ID dell'evento. " +
+    "Se l'utente chiede di eliminare più eventi (es. 'tutti gli eventi di oggi'), " +
+    "chiama questo tool una volta per ogni evento usando il campo 'id' di ogni evento ottenuto da getCalendarEvents. " +
+    "Il campo 'id' è sempre presente nella risposta di getCalendarEvents.",
 
   parameters: {
     type: "object",
@@ -34,10 +39,12 @@ export const deleteCalendarEventTool: SystemToolDefinition = {
 
   execute: async (args) => {
     try {
+      console.log("[deleteCalendarEventTool] Executing with args:", args);
       const eventId = args.eventId as string | undefined;
 
       // Validazione eventId
       if (!eventId || typeof eventId !== "string" || eventId.trim().length === 0) {
+        console.error("[deleteCalendarEventTool] Missing or invalid eventId");
         return {
           result: {
             success: false,
@@ -47,10 +54,15 @@ export const deleteCalendarEventTool: SystemToolDefinition = {
         };
       }
 
+      const url = `/api/calendar/events?eventId=${encodeURIComponent(eventId.trim())}`;
+      console.log("[deleteCalendarEventTool] Calling DELETE:", url);
+      
       // Chiama l'API route lato server che ha accesso alle variabili d'ambiente
-      const response = await fetch(`/api/calendar/events?eventId=${encodeURIComponent(eventId.trim())}`, {
+      const response = await fetch(url, {
         method: "DELETE",
       });
+      
+      console.log("[deleteCalendarEventTool] Response status:", response.status);
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
@@ -64,8 +76,10 @@ export const deleteCalendarEventTool: SystemToolDefinition = {
       }
 
       const data = await response.json();
+      console.log("[deleteCalendarEventTool] Response data:", data);
 
       if (!data.success) {
+        console.error("[deleteCalendarEventTool] Delete failed:", data.error, data.errorMessage);
         return {
           result: {
             success: false,
@@ -75,6 +89,7 @@ export const deleteCalendarEventTool: SystemToolDefinition = {
         };
       }
 
+      console.log("[deleteCalendarEventTool] Event deleted successfully");
       return {
         result: {
           success: true,

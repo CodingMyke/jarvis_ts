@@ -242,6 +242,7 @@ export const createCalendarEventTool: SystemToolDefinition = {
       }
 
       // Formatta la risposta per l'assistente
+      const event = data.event;
       const eventStartTime = new Date(event.startTime);
       const eventEndTime = event.endTime ? new Date(event.endTime) : undefined;
       const startFormatted = eventStartTime.toLocaleString("it-IT", {

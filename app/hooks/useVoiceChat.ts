@@ -178,8 +178,6 @@ export function useVoiceChat(options?: UseVoiceChatOptions): UseVoiceChatReturn 
    * Connette a Gemini e invia il messaggio iniziale con la wake word.
    */
   const connectToGemini = useCallback(async (initialMessage: string) => {
-    console.log('[useVoiceChat] connectToGemini called with:', initialMessage);
-    
     // Evita connessioni multiple
     if (clientRef.current) {
       console.log('[useVoiceChat] client already exists');
@@ -202,7 +200,6 @@ export function useVoiceChat(options?: UseVoiceChatOptions): UseVoiceChatReturn 
         onTranscript: handleTranscript,
         onToolExecuted: options?.onToolExecuted,
         onStateChange: (state: ConnectionState) => {
-          console.log('[useVoiceChat] state changed:', state);
           setConnectionState(state);
           
           // Gestisci disconnessione inattesa (es. errore WebSocket)
@@ -307,15 +304,13 @@ export function useVoiceChat(options?: UseVoiceChatOptions): UseVoiceChatReturn 
       setListeningMode('wake_word');
       wakeWordRef.current?.resume();
     }
-  }, [handleTranscript, saveConversation]);
+  }, [handleTranscript, saveConversation, options]);
 
   /**
    * Avvia l'ascolto in modalità wake word.
    * Il browser ascolta localmente finché non rileva "Jarvis".
    */
   const startListening = useCallback(() => {
-    console.log('[useVoiceChat] startListening called');
-    
     if (listeningMode !== 'idle') {
       console.log('[useVoiceChat] already listening, mode:', listeningMode);
       return;
@@ -345,8 +340,6 @@ export function useVoiceChat(options?: UseVoiceChatOptions): UseVoiceChatReturn 
    * Ferma completamente l'ascolto (sia wake word che Gemini).
    */
   const stopListening = useCallback(() => {
-    console.log('[useVoiceChat] stopListening called');
-    
     // Ferma wake word manager
     wakeWordRef.current?.dispose();
     wakeWordRef.current = null;

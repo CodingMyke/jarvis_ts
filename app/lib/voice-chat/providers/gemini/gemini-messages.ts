@@ -98,7 +98,8 @@ export function buildHistoryMessage(
 export function parseServerMessage(data: string): ServerMessage | null {
   try {
     return JSON.parse(data) as ServerMessage;
-  } catch {
+  } catch (error) {
+    console.error('[parseServerMessage] Failed to parse server message:', error);
     return null;
   }
 }

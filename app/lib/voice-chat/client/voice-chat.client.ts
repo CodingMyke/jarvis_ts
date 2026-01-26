@@ -176,6 +176,7 @@ export class VoiceChatClient {
   }
 
   private async handleToolCalls(calls: FunctionCall[]): Promise<void> {
+    console.log('[VoiceChatClient] handleToolCalls called with', calls.length, 'calls:', calls.map(c => c.name));
     const responses: FunctionResponse[] = [];
 
     // Contesto con le azioni disponibili per i tools
@@ -188,6 +189,7 @@ export class VoiceChatClient {
     };
 
     for (const call of calls) {
+      console.log('[VoiceChatClient] Processing tool call:', call.name, 'with args:', call.args);
       let executeResult: { result: unknown } | null = null;
       let toolError: Error | null = null;
 
@@ -195,14 +197,18 @@ export class VoiceChatClient {
       const systemTool = SYSTEM_TOOLS.find((t) => t.name === call.name);
       if (systemTool) {
         try {
+          console.log('[VoiceChatClient] Executing system tool:', call.name);
           executeResult = await systemTool.execute(call.args, toolContext);
+          const resultString = JSON.stringify(executeResult.result);
+          console.log('[VoiceChatClient] Tool', call.name, 'executed successfully, result length:', resultString.length);
           responses.push({
             id: call.id,
             name: call.name,
-            response: { result: JSON.stringify(executeResult.result) },
+            response: { result: resultString },
           });
         } catch (error) {
           toolError = error instanceof Error ? error : new Error(String(error));
+          console.error(`[VoiceChatClient] Error executing system tool "${call.name}":`, toolError);
           responses.push({
             id: call.id,
             name: call.name,
@@ -233,6 +239,7 @@ export class VoiceChatClient {
           });
         } catch (error) {
           toolError = error instanceof Error ? error : new Error(String(error));
+          console.error(`[VoiceChatClient] Error executing user tool "${call.name}":`, toolError);
           responses.push({
             id: call.id,
             name: call.name,
@@ -248,6 +255,7 @@ export class VoiceChatClient {
           this.options.onToolExecuted?.(call.name, executeResult.result);
         }
       } else {
+        console.error(`[VoiceChatClient] Tool "${call.name}" not found`);
         responses.push({
           id: call.id,
           name: call.name,
@@ -257,7 +265,10 @@ export class VoiceChatClient {
     }
 
     if (responses.length > 0) {
+      console.log('[VoiceChatClient] Sending', responses.length, 'tool responses to provider');
       this.provider.sendToolResponse(responses);
+    } else {
+      console.warn('[VoiceChatClient] No responses to send for', calls.length, 'tool calls');
     }
   }
 

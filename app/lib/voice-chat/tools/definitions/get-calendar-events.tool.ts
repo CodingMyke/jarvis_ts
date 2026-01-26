@@ -18,7 +18,18 @@ export const getCalendarEventsTool: SystemToolDefinition = {
     "Usa questo tool quando l'utente chiede dei suoi impegni, appuntamenti, " +
     "eventi in agenda o cosa deve fare in un determinato giorno/periodo. " +
     "Esempi: 'cosa ho oggi?', 'quali sono i miei impegni di domani?', " +
-    "'ho appuntamenti questa settimana?', 'quando è la prossima riunione?'",
+    "'ho appuntamenti questa settimana?', 'quando è la prossima riunione?'. " +
+    "IMPORTANTE: Il tool ritorna un oggetto con: " +
+    "- success: true/false " +
+    "- events: array di eventi, dove ogni evento ha i campi: id (stringa, obbligatorio per delete/update), title, startTime, endTime, description, location, attendees, color, isAllDay " +
+    "- eventCount: numero di eventi " +
+    "- period: informazioni sul periodo richiesto " +
+    "Per eliminare o aggiornare eventi, usa il campo 'id' di ogni evento nell'array 'events'. " +
+    "NON includere mai l'ID nelle risposte all'utente. " +
+    "FORMATO RISPOSTA OBBLIGATORIO: Quando elenchi gli eventi, usa SEMPRE questo formato per ogni evento: " +
+    "'Dalle [ora inizio] a [ora fine]: [Titolo]'. " +
+    "Formatta le ore in formato HH:mm (es. '14:30', '09:00'). " +
+    "Se l'evento è tutto il giorno o non ha ora di fine, adatta il formato di conseguenza.",
 
   parameters: {
     type: "object",
@@ -35,28 +46,35 @@ export const getCalendarEventsTool: SystemToolDefinition = {
 
   execute: async (args) => {
     const daysAhead = (args.daysAhead as number) || 7;
+    console.log("[getCalendarEventsTool] Executing with daysAhead:", daysAhead);
 
     try {
       // Chiama l'API route lato server che ha accesso alle variabili d'ambiente
       const response = await fetch(`/api/calendar/events?daysAhead=${daysAhead}`);
+      console.log("[getCalendarEventsTool] Response status:", response.status);
       
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
       const data = await response.json();
+      console.log("[getCalendarEventsTool] Response data success:", data.success, "events count:", data.events?.length || 0);
 
       if (!data.success) {
-      return {
-        result: {
-          success: false,
-          error: data.error || "UNKNOWN_ERROR",
-          errorMessage: data.message || "Errore nel leggere il calendario.",
-        },
-      };
+        console.error("[getCalendarEventsTool] Failed to get events:", data.error, data.message);
+        return {
+          result: {
+            success: false,
+            error: data.error || "UNKNOWN_ERROR",
+            errorMessage: data.message || "Errore nel leggere il calendario.",
+          },
+        };
       }
 
-      // Converti le date da stringhe ISO a oggetti Date
+      // Converti le date da stringhe ISO a stringhe ISO (non oggetti Date)
+      // perché quando viene serializzato con JSON.stringify, gli oggetti Date diventano stringhe
+      // ma è meglio essere espliciti e usare stringhe ISO direttamente
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const events: CalendarEvent[] = (data.events || []).map((event: any) => ({
         id: event.id,
         title: event.title,
@@ -69,11 +87,26 @@ export const getCalendarEventsTool: SystemToolDefinition = {
         isAllDay: event.isAllDay,
       }));
 
+      // Serializza manualmente le date per evitare problemi con JSON.stringify
+      const serializedEvents = events.map(event => ({
+        id: event.id,
+        title: event.title,
+        startTime: event.startTime.toISOString(),
+        endTime: event.endTime?.toISOString(),
+        description: event.description,
+        location: event.location,
+        attendees: event.attendees,
+        color: event.color,
+        isAllDay: event.isAllDay,
+      }));
+
+      console.log("[getCalendarEventsTool] Returning", serializedEvents.length, "events with IDs:", serializedEvents.map(e => e.id));
+
       return {
         result: {
           success: true,
-          events: events,
-          eventCount: events.length,
+          events: serializedEvents,
+          eventCount: serializedEvents.length,
           period: data.period || {
             from: new Date().toISOString(),
             to: new Date(Date.now() + daysAhead * 24 * 60 * 60 * 1000).toISOString(),

@@ -56,7 +56,6 @@ export class GeminiProvider implements VoiceChatProvider {
       this.ws.onopen = () => {
         console.log('[GeminiProvider] WebSocket opened, sending setup...');
         const setupMsg = buildSetupMessage(config);
-        console.log('[GeminiProvider] setup message:', JSON.stringify(setupMsg, null, 2));
         this.ws?.send(JSON.stringify(setupMsg));
       };
 
@@ -66,7 +65,6 @@ export class GeminiProvider implements VoiceChatProvider {
           ? await event.data.text() 
           : event.data;
         
-        console.log('[GeminiProvider] message received:', data);
         const message = parseServerMessage(data);
         
         // Risolvi dopo setupComplete
@@ -149,8 +147,12 @@ export class GeminiProvider implements VoiceChatProvider {
   }
 
   sendToolResponse(responses: FunctionResponse[]): void {
-    if (!this.ws || this.ws.readyState !== WebSocket.OPEN) return;
+    if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
+      console.warn('[GeminiProvider] Cannot send tool response: WebSocket not open');
+      return;
+    }
     
+    console.log('[GeminiProvider] Sending tool responses:', responses.length, responses.map(r => ({ name: r.name, id: r.id, hasError: !!r.response.error })));
     const msg = buildToolResponseMessage(responses);
     this.ws.send(JSON.stringify(msg));
   }
@@ -159,7 +161,6 @@ export class GeminiProvider implements VoiceChatProvider {
     if (!this.ws || this.ws.readyState !== WebSocket.OPEN) return;
     
     const msg = buildHistoryMessage(turns, turnComplete);
-    console.log('[GeminiProvider] sending history:', JSON.stringify(msg, null, 2));
     this.ws.send(JSON.stringify(msg));
   }
 
@@ -243,6 +244,7 @@ export class GeminiProvider implements VoiceChatProvider {
 
     // Tool calls
     if (message.toolCall?.functionCalls) {
+      console.log('[GeminiProvider] Received tool calls:', message.toolCall.functionCalls.length, message.toolCall.functionCalls.map(c => c.name));
       this.emit('toolCall', { calls: message.toolCall.functionCalls });
     }
   }
