@@ -1,6 +1,6 @@
 import type { SystemToolDefinition } from "../types";
 
-export const CREATE_CALENDAR_EVENT_TOOL_NAME = "createCalendarEvent";
+export const UPDATE_CALENDAR_EVENT_TOOL_NAME = "updateCalendarEvent";
 
 /**
  * Capitalizza la prima lettera di una stringa.
@@ -71,55 +71,58 @@ function parseDateTime(dateTimeStr: string, referenceDate?: Date): Date {
 }
 
 /**
- * Tool per creare un nuovo evento nel calendario.
- * L'assistente può usarlo quando l'utente chiede di aggiungere un appuntamento,
- * un evento, un impegno o un promemoria nel calendario.
+ * Tool per aggiornare un evento esistente nel calendario.
+ * L'assistente può usarlo quando l'utente chiede di modificare un appuntamento,
+ * un evento o un impegno esistente nel calendario.
  */
-export const createCalendarEventTool: SystemToolDefinition = {
-  name: CREATE_CALENDAR_EVENT_TOOL_NAME,
+export const updateCalendarEventTool: SystemToolDefinition = {
+  name: UPDATE_CALENDAR_EVENT_TOOL_NAME,
 
   description:
-    "Crea un nuovo evento nel calendario dell'utente. " +
-    "Usa questo tool quando l'utente chiede di aggiungere un appuntamento, " +
-    "un evento, un impegno, un promemoria o qualsiasi cosa nel calendario. " +
-    "Esempi: 'aggiungi un appuntamento domani alle 15', " +
-    "'crea un evento per la riunione di lunedì alle 10', " +
-    "'segna in calendario che ho il dentista il 15 marzo alle 14:30', " +
-    "'ricordami di chiamare Mario domani alle 9'. " +
-    "Se l'utente non specifica la data, usa oggi. Se non specifica l'ora, usa l'ora corrente o un'ora ragionevole.",
+    "Aggiorna un evento esistente nel calendario dell'utente. " +
+    "Usa questo tool quando l'utente chiede di modificare, spostare, cambiare " +
+    "o aggiornare un appuntamento, un evento o un impegno esistente. " +
+    "Esempi: 'sposta la riunione di domani alle 15', " +
+    "'cambia il titolo dell'evento X in Y', " +
+    "'modifica l'appuntamento con il dentista alle 16 invece delle 14', " +
+    "'aggiorna la descrizione dell'evento X'. " +
+    "È necessario fornire l'ID dell'evento o informazioni sufficienti per identificarlo univocamente.",
 
   parameters: {
     type: "object",
     properties: {
+      eventId: {
+        type: "string",
+        description:
+          "ID dell'evento da aggiornare (obbligatorio). Puoi ottenere l'ID chiamando prima getCalendarEvents.",
+      },
       title: {
         type: "string",
         description:
-          "Titolo dell'evento (obbligatorio). Esempi: 'Riunione con il team', 'Appuntamento dal dentista', 'Chiamare Mario'.",
+          "Nuovo titolo dell'evento (opzionale). Esempi: 'Riunione con il team aggiornata', 'Appuntamento dal dentista'.",
       },
       startDateTime: {
         type: "string",
         description:
-          "Data e ora di inizio dell'evento in formato ISO 8601 (YYYY-MM-DDTHH:mm:ss) o formato italiano (DD/MM/YYYY HH:mm). " +
-          "Se non specificato, usa la data e ora corrente. " +
+          "Nuova data e ora di inizio dell'evento in formato ISO 8601 (YYYY-MM-DDTHH:mm:ss) o formato italiano (DD/MM/YYYY HH:mm) (opzionale). " +
           "Esempi: '2024-03-15T14:30:00', '15/03/2024 14:30', '2024-03-15 14:30'.",
       },
       endDateTime: {
         type: "string",
         description:
-          "Data e ora di fine dell'evento in formato ISO 8601 o formato italiano. " +
-          "Se non specificato, l'evento dura 1 ora dall'inizio. " +
+          "Nuova data e ora di fine dell'evento in formato ISO 8601 o formato italiano (opzionale). " +
           "Esempi: '2024-03-15T16:00:00', '15/03/2024 16:00'.",
       },
       description: {
         type: "string",
         description:
-          "Descrizione dettagliata dell'evento. Opzionale. " +
-          "Esempi: 'Discussione del nuovo progetto', 'Portare i documenti'.",
+          "Nuova descrizione dettagliata dell'evento (opzionale). " +
+          "Esempi: 'Discussione del nuovo progetto aggiornata', 'Portare i documenti'.",
       },
       location: {
         type: "string",
         description:
-          "Luogo dell'evento. Opzionale. " +
+          "Nuovo luogo dell'evento (opzionale). " +
           "Esempi: 'Ufficio principale', 'Ristorante Da Luigi, Via Roma 42', 'Zoom Meeting'.",
       },
       attendees: {
@@ -128,22 +131,22 @@ export const createCalendarEventTool: SystemToolDefinition = {
           type: "string",
         },
         description:
-          "Lista di partecipanti all'evento (nomi o email). Opzionale. " +
+          "Nuova lista di partecipanti all'evento (nomi o email) (opzionale). " +
           "Esempi: ['Marco Rossi', 'giulia@example.com'].",
       },
       isAllDay: {
         type: "boolean",
         description:
-          "Se true, l'evento dura tutto il giorno. Default: false. " +
+          "Se true, l'evento dura tutto il giorno (opzionale). Default: mantiene il valore esistente. " +
           "Usa true per eventi come compleanni, festività, ecc.",
       },
     },
-    required: ["title"],
+    required: ["eventId"],
   },
 
   execute: async (args) => {
     try {
-      const title = args.title as string | undefined;
+      const eventId = args.eventId as string | undefined;
       const startDateTimeStr = args.startDateTime as string | undefined;
       const endDateTimeStr = args.endDateTime as string | undefined;
       const description = args.description as string | undefined;
@@ -151,47 +154,59 @@ export const createCalendarEventTool: SystemToolDefinition = {
       const attendees = args.attendees as string[] | undefined;
       const isAllDay = args.isAllDay as boolean | undefined;
 
-      // Validazione titolo
-      if (!title || typeof title !== "string" || title.trim().length === 0) {
+      // Validazione eventId
+      if (!eventId || typeof eventId !== "string" || eventId.trim().length === 0) {
         return {
           result: {
             success: false,
-            error: "MISSING_TITLE",
-            errorMessage: "Il titolo dell'evento è obbligatorio",
+            error: "MISSING_EVENT_ID",
+            errorMessage: "L'ID dell'evento è obbligatorio",
           },
         };
       }
 
-      if (title.trim().length > 500) {
-        return {
-          result: {
-            success: false,
-            error: "TITLE_TOO_LONG",
-            errorMessage: "Il titolo dell'evento non può superare i 500 caratteri",
-          },
-        };
+      // Validazione titolo se fornito
+      if (args.title !== undefined) {
+        const title = args.title as string;
+        if (typeof title !== "string" || title.trim().length === 0) {
+          return {
+            result: {
+              success: false,
+              error: "EMPTY_TITLE",
+              errorMessage: "Il titolo dell'evento non può essere vuoto",
+            },
+          };
+        }
+
+        if (title.trim().length > 500) {
+          return {
+            result: {
+              success: false,
+              error: "TITLE_TOO_LONG",
+              errorMessage: "Il titolo dell'evento non può superare i 500 caratteri",
+            },
+          };
+        }
       }
 
-      // Capitalizza la prima lettera del titolo
-      const capitalizedTitle = capitalizeFirstLetter(title.trim());
+      // Capitalizza la prima lettera del titolo se fornito
+      const capitalizedTitle = args.title
+        ? capitalizeFirstLetter((args.title as string).trim())
+        : undefined;
 
       // Parsing date
-      const now = new Date();
-      const startTime = startDateTimeStr
-        ? parseDateTime(startDateTimeStr, now)
-        : now;
+      let startTime: Date | undefined;
+      if (startDateTimeStr) {
+        startTime = parseDateTime(startDateTimeStr);
+      }
 
       let endTime: Date | undefined;
       if (endDateTimeStr) {
         endTime = parseDateTime(endDateTimeStr, startTime);
-      } else if (!isAllDay) {
-        // Default: 1 ora dopo l'inizio se non è tutto il giorno
-        endTime = new Date(startTime);
-        endTime.setHours(endTime.getHours() + 1);
       }
 
       // Validazione date
-      if (endTime && endTime < startTime) {
+      if (startTime && endTime && endTime < startTime) {
         return {
           result: {
             success: false,
@@ -203,18 +218,19 @@ export const createCalendarEventTool: SystemToolDefinition = {
 
       // Chiama l'API route lato server che ha accesso alle variabili d'ambiente
       const response = await fetch("/api/calendar/events", {
-        method: "POST",
+        method: "PATCH",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
+          eventId: eventId.trim(),
           title: capitalizedTitle,
-          startTime: startTime.toISOString(),
+          startTime: startTime?.toISOString(),
           endTime: endTime?.toISOString(),
           description: description?.trim(),
           location: location?.trim(),
           attendees,
-          isAllDay: isAllDay || false,
+          isAllDay,
         }),
       });
 
@@ -223,7 +239,7 @@ export const createCalendarEventTool: SystemToolDefinition = {
         return {
           result: {
             success: false,
-            error: errorData.error || "CREATION_FAILED",
+            error: errorData.error || "UPDATE_FAILED",
             errorMessage: errorData.errorMessage || `Errore HTTP: ${response.status}`,
           },
         };
@@ -235,13 +251,14 @@ export const createCalendarEventTool: SystemToolDefinition = {
         return {
           result: {
             success: false,
-            error: data.error || "CREATION_FAILED",
-            errorMessage: data.errorMessage || "Errore durante la creazione dell'evento",
+            error: data.error || "UPDATE_FAILED",
+            errorMessage: data.errorMessage || "Errore durante l'aggiornamento dell'evento",
           },
         };
       }
 
       // Formatta la risposta per l'assistente
+      const event = data.event;
       const eventStartTime = new Date(event.startTime);
       const eventEndTime = event.endTime ? new Date(event.endTime) : undefined;
       const startFormatted = eventStartTime.toLocaleString("it-IT", {
@@ -252,7 +269,7 @@ export const createCalendarEventTool: SystemToolDefinition = {
         minute: "2-digit",
       });
 
-      let message = `Ho creato l'evento "${event.title}" per ${startFormatted}`;
+      let message = `Ho aggiornato l'evento "${event.title}" per ${startFormatted}`;
       if (eventEndTime) {
         const endFormatted = eventEndTime.toLocaleTimeString("it-IT", {
           hour: "2-digit",
@@ -280,7 +297,7 @@ export const createCalendarEventTool: SystemToolDefinition = {
         },
       };
     } catch (error) {
-      console.error("[createCalendarEventTool] Errore:", error);
+      console.error("[updateCalendarEventTool] Errore:", error);
       return {
         result: {
           success: false,

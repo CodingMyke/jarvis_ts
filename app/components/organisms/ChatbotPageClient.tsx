@@ -4,13 +4,118 @@ import { useCallback, useMemo, useState, useRef } from "react";
 import { VoiceOrb } from "@/app/components";
 import { FloatingChat, UpcomingEvents, TimerDisplay, TodoList } from "@/app/components/organisms";
 import { useVoiceChat } from "@/app/hooks/useVoiceChat";
-import type { UIDayEvents } from "@/app/lib/calendar/actions";
-import { fetchCalendarEvents } from "@/app/lib/calendar/actions";
+import type { UIDayEvents, UICalendarEvent } from "@/app/lib/calendar/actions";
 import { CREATE_CALENDAR_EVENT_TOOL_NAME } from "@/app/lib/voice-chat/tools/definitions/create-calendar-event.tool";
+import { UPDATE_CALENDAR_EVENT_TOOL_NAME } from "@/app/lib/voice-chat/tools/definitions/update-calendar-event.tool";
+import { DELETE_CALENDAR_EVENT_TOOL_NAME } from "@/app/lib/voice-chat/tools/definitions/delete-calendar-event.tool";
 import { useDateTime, useOrbState } from "./ChatbotPageClient.hooks";
 
 interface ChatbotPageClientProps {
   initialEvents: UIDayEvents[];
+}
+
+/**
+ * Formatta l'orario da una Date.
+ */
+function formatTime(date: Date): string {
+  return date.toLocaleTimeString("it-IT", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+/**
+ * Converte un evento dal formato API al formato UI.
+ */
+function toUIEvent(event: {
+  id: string;
+  title: string;
+  startTime: string;
+  endTime?: string;
+  color?: string;
+  description?: string;
+  location?: string;
+  attendees?: string[];
+}): UICalendarEvent {
+  return {
+    id: event.id,
+    title: event.title,
+    time: formatTime(new Date(event.startTime)),
+    endTime: event.endTime ? formatTime(new Date(event.endTime)) : undefined,
+    color: event.color,
+    description: event.description,
+    location: event.location,
+    attendees: event.attendees,
+  };
+}
+
+/**
+ * Raggruppa gli eventi per giorno.
+ */
+function groupEventsByDay(events: Array<{
+  id: string;
+  title: string;
+  startTime: string;
+  endTime?: string;
+  color?: string;
+  description?: string;
+  location?: string;
+  attendees?: string[];
+}>): UIDayEvents[] {
+  const grouped = new Map<string, UICalendarEvent[]>();
+
+  for (const event of events) {
+    const dateKey = new Date(event.startTime).toISOString().split("T")[0];
+    if (!grouped.has(dateKey)) {
+      grouped.set(dateKey, []);
+    }
+    grouped.get(dateKey)!.push(toUIEvent(event));
+  }
+
+  // Ordina per data e restituisci
+  return Array.from(grouped.entries())
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([dateISO, events]) => ({ dateISO, events }));
+}
+
+/**
+ * Chiama l'API route per ottenere gli eventi del calendario.
+ */
+async function fetchCalendarEventsFromAPI(options?: {
+  from?: Date;
+  to?: Date;
+  daysAhead?: number;
+}): Promise<UIDayEvents[]> {
+  try {
+    const params = new URLSearchParams();
+    
+    if (options?.daysAhead) {
+      params.append("daysAhead", options.daysAhead.toString());
+    } else if (options?.from && options?.to) {
+      params.append("from", options.from.toISOString());
+      params.append("to", options.to.toISOString());
+    } else {
+      params.append("daysAhead", "7");
+    }
+
+    const response = await fetch(`/api/calendar/events?${params.toString()}`);
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const data = await response.json();
+
+    if (!data.success) {
+      console.error("[fetchCalendarEventsFromAPI] Errore:", data.message || data.error);
+      return [];
+    }
+
+    return groupEventsByDay(data.events || []);
+  } catch (error) {
+    console.error("[fetchCalendarEventsFromAPI] Errore:", error);
+    return [];
+  }
 }
 
 export function ChatbotPageClient({ initialEvents }: ChatbotPageClientProps) {
@@ -26,7 +131,7 @@ export function ChatbotPageClient({ initialEvents }: ChatbotPageClientProps) {
     try {
       const now = new Date();
       const sevenDaysLater = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
-      const updatedEvents = await fetchCalendarEvents({
+      const updatedEvents = await fetchCalendarEventsFromAPI({
         from: now,
         to: sevenDaysLater,
       });
@@ -43,9 +148,8 @@ export function ChatbotPageClient({ initialEvents }: ChatbotPageClientProps) {
     // Tool che modificano il calendario
     const calendarModifyingTools = [
       CREATE_CALENDAR_EVENT_TOOL_NAME,
-      // Aggiungi qui altri tool quando li implementerai:
-      // UPDATE_CALENDAR_EVENT_TOOL_NAME,
-      // DELETE_CALENDAR_EVENT_TOOL_NAME,
+      UPDATE_CALENDAR_EVENT_TOOL_NAME,
+      DELETE_CALENDAR_EVENT_TOOL_NAME,
     ];
 
     if (calendarModifyingTools.includes(toolName)) {

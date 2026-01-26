@@ -5,6 +5,9 @@ import type {
   GetEventsResult,
   CreateEventOptions,
   CreateEventResult,
+  UpdateEventOptions,
+  UpdateEventResult,
+  DeleteEventResult,
 } from "./types";
 import { GoogleCalendarProvider } from "./google-calendar.provider";
 
@@ -80,6 +83,23 @@ export function createMockEvents(): CalendarEvent[] {
 }
 
 /**
+ * Storage per eventi mock (per permettere update/delete).
+ */
+const mockEventsStorage = new Map<string, CalendarEvent>();
+
+/**
+ * Inizializza lo storage con eventi mock.
+ */
+function initializeMockEventsStorage() {
+  if (mockEventsStorage.size === 0) {
+    const mockEvents = createMockEvents();
+    for (const event of mockEvents) {
+      mockEventsStorage.set(event.id, event);
+    }
+  }
+}
+
+/**
  * Provider mock per testing/development.
  */
 class MockCalendarProvider implements CalendarProvider {
@@ -96,7 +116,11 @@ class MockCalendarProvider implements CalendarProvider {
     // Simula un piccolo delay di rete
     await new Promise((resolve) => setTimeout(resolve, 100));
 
-    const allEvents = createMockEvents();
+    // Inizializza lo storage se vuoto
+    initializeMockEventsStorage();
+
+    // Ottieni eventi dallo storage
+    const allEvents = Array.from(mockEventsStorage.values());
     const events = allEvents.filter(
       (e) => e.startTime >= from && e.startTime <= to
     );
@@ -124,6 +148,9 @@ class MockCalendarProvider implements CalendarProvider {
       };
     }
 
+    // Inizializza lo storage se vuoto
+    initializeMockEventsStorage();
+
     // Crea un evento mock
     const mockEvent: CalendarEvent = {
       id: `mock-${Date.now()}`,
@@ -137,9 +164,97 @@ class MockCalendarProvider implements CalendarProvider {
       isAllDay: options.isAllDay,
     };
 
+    // Salva nello storage
+    mockEventsStorage.set(mockEvent.id, mockEvent);
+
     return {
       success: true,
       event: mockEvent,
+    };
+  }
+
+  async updateEvent(options: UpdateEventOptions): Promise<UpdateEventResult> {
+    // Simula un piccolo delay di rete
+    await new Promise((resolve) => setTimeout(resolve, 100));
+
+    // Validazione base
+    if (!options.eventId || options.eventId.trim().length === 0) {
+      return {
+        success: false,
+        error: "L'ID dell'evento è obbligatorio",
+        event: {
+          id: "",
+          title: "",
+          startTime: new Date(),
+        },
+      };
+    }
+
+    // Inizializza lo storage se vuoto
+    initializeMockEventsStorage();
+
+    // Trova l'evento esistente
+    const existingEvent = mockEventsStorage.get(options.eventId);
+    if (!existingEvent) {
+      return {
+        success: false,
+        error: "Evento non trovato",
+        event: {
+          id: options.eventId,
+          title: "",
+          startTime: new Date(),
+        },
+      };
+    }
+
+    // Aggiorna l'evento
+    const updatedEvent: CalendarEvent = {
+      ...existingEvent,
+      title: options.title !== undefined ? options.title : existingEvent.title,
+      startTime: options.startTime !== undefined ? options.startTime : existingEvent.startTime,
+      endTime: options.endTime !== undefined ? options.endTime : existingEvent.endTime,
+      description: options.description !== undefined ? options.description : existingEvent.description,
+      location: options.location !== undefined ? options.location : existingEvent.location,
+      attendees: options.attendees !== undefined ? options.attendees : existingEvent.attendees,
+      color: options.color !== undefined ? options.color : existingEvent.color,
+      isAllDay: options.isAllDay !== undefined ? options.isAllDay : existingEvent.isAllDay,
+    };
+
+    // Salva nello storage
+    mockEventsStorage.set(options.eventId, updatedEvent);
+
+    return {
+      success: true,
+      event: updatedEvent,
+    };
+  }
+
+  async deleteEvent(eventId: string): Promise<DeleteEventResult> {
+    // Simula un piccolo delay di rete
+    await new Promise((resolve) => setTimeout(resolve, 100));
+
+    // Validazione base
+    if (!eventId || eventId.trim().length === 0) {
+      return {
+        success: false,
+        error: "L'ID dell'evento è obbligatorio",
+      };
+    }
+
+    // Inizializza lo storage se vuoto
+    initializeMockEventsStorage();
+
+    // Elimina l'evento
+    const deleted = mockEventsStorage.delete(eventId);
+    if (!deleted) {
+      return {
+        success: false,
+        error: "Evento non trovato",
+      };
+    }
+
+    return {
+      success: true,
     };
   }
 }
@@ -228,6 +343,20 @@ export class CalendarService {
    */
   async createEvent(options: CreateEventOptions): Promise<CreateEventResult> {
     return this.provider.createEvent(options);
+  }
+
+  /**
+   * Aggiorna un evento esistente nel calendario.
+   */
+  async updateEvent(options: UpdateEventOptions): Promise<UpdateEventResult> {
+    return this.provider.updateEvent(options);
+  }
+
+  /**
+   * Elimina un evento dal calendario.
+   */
+  async deleteEvent(eventId: string): Promise<DeleteEventResult> {
+    return this.provider.deleteEvent(eventId);
   }
 }
 

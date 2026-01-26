@@ -14,6 +14,9 @@ export type {
   GetEventsResult,
   CreateEventOptions,
   CreateEventResult,
+  UpdateEventOptions,
+  UpdateEventResult,
+  DeleteEventResult,
   CalendarProvider,
 } from "./types";
 

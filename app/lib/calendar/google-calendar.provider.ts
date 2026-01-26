@@ -5,6 +5,9 @@ import type {
   GetEventsResult,
   CreateEventOptions,
   CreateEventResult,
+  UpdateEventOptions,
+  UpdateEventResult,
+  DeleteEventResult,
 } from "./types";
 import { createMockEvents } from "./calendar.service";
 
@@ -439,6 +442,346 @@ export class GoogleCalendarProvider implements CalendarProvider {
           title: options.title,
           startTime: options.startTime,
         },
+      };
+    }
+  }
+
+  async updateEvent(options: UpdateEventOptions): Promise<UpdateEventResult> {
+    // Validazione base
+    if (!options.eventId || options.eventId.trim().length === 0) {
+      return {
+        success: false,
+        error: "L'ID dell'evento è obbligatorio",
+        event: {
+          id: "",
+          title: "",
+          startTime: new Date(),
+        },
+      };
+    }
+
+    if (options.title !== undefined && options.title.trim().length === 0) {
+      return {
+        success: false,
+        error: "Il titolo dell'evento non può essere vuoto",
+        event: {
+          id: options.eventId,
+          title: "",
+          startTime: new Date(),
+        },
+      };
+    }
+
+    if (options.title && options.title.trim().length > 500) {
+      return {
+        success: false,
+        error: "Il titolo dell'evento non può superare i 500 caratteri",
+        event: {
+          id: options.eventId,
+          title: options.title,
+          startTime: new Date(),
+        },
+      };
+    }
+
+    if (!this.isConfigured()) {
+      return {
+        success: false,
+        error: "Google Calendar non è configurato correttamente",
+        event: {
+          id: options.eventId,
+          title: "",
+          startTime: new Date(),
+        },
+      };
+    }
+
+    // Verifica che abbiamo OAuth (necessario per aggiornare eventi)
+    const accessToken = await this.getValidAccessToken();
+    if (!accessToken) {
+      return {
+        success: false,
+        error: "Autenticazione OAuth richiesta per aggiornare eventi. Configura GOOGLE_CALENDAR_REFRESH_TOKEN.",
+        event: {
+          id: options.eventId,
+          title: "",
+          startTime: new Date(),
+        },
+      };
+    }
+
+    try {
+      // Prima ottieni l'evento esistente per fare un merge
+      const getUrl = `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(
+        this.config.calendarId!
+      )}/events/${encodeURIComponent(options.eventId)}`;
+
+      const getResponse = await fetch(getUrl, {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      });
+
+      if (!getResponse.ok) {
+        const errorBody = await getResponse.text();
+        console.error("[GoogleCalendarProvider] Errore recupero evento:", getResponse.status, errorBody);
+        
+        let errorMessage = `Errore durante il recupero dell'evento (${getResponse.status})`;
+        if (getResponse.status === 404) {
+          errorMessage = "Evento non trovato";
+        } else {
+          try {
+            const errorData = JSON.parse(errorBody);
+            if (errorData.error?.message) {
+              errorMessage = errorData.error.message;
+            }
+          } catch {
+            // Ignora errori di parsing
+          }
+        }
+
+        return {
+          success: false,
+          error: errorMessage,
+          event: {
+            id: options.eventId,
+            title: "",
+            startTime: new Date(),
+          },
+        };
+      }
+
+      const existingEvent = await getResponse.json();
+
+      // Prepara l'evento aggiornato (merge con l'evento esistente)
+      const updatedGoogleEvent: Record<string, unknown> = {
+        ...existingEvent,
+      };
+
+      // Aggiorna solo i campi specificati
+      if (options.title !== undefined) {
+        updatedGoogleEvent.summary = options.title.trim();
+      }
+
+      if (options.startTime !== undefined || options.endTime !== undefined || options.isAllDay !== undefined) {
+        const startTime = options.startTime || new Date(existingEvent.start?.dateTime || existingEvent.start?.date);
+        const isAllDay = options.isAllDay !== undefined ? options.isAllDay : !existingEvent.start?.dateTime;
+
+        if (isAllDay) {
+          const startDate = startTime.toISOString().split("T")[0];
+          updatedGoogleEvent.start = { date: startDate };
+          
+          if (options.endTime) {
+            const endDate = options.endTime.toISOString().split("T")[0];
+            updatedGoogleEvent.end = { date: endDate };
+          } else if (existingEvent.end?.date) {
+            updatedGoogleEvent.end = { date: existingEvent.end.date };
+          } else {
+            const nextDay = new Date(startTime);
+            nextDay.setDate(nextDay.getDate() + 1);
+            updatedGoogleEvent.end = { date: nextDay.toISOString().split("T")[0] };
+          }
+        } else {
+          updatedGoogleEvent.start = {
+            dateTime: startTime.toISOString(),
+            timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+          };
+          
+          if (options.endTime) {
+            updatedGoogleEvent.end = {
+              dateTime: options.endTime.toISOString(),
+              timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+            };
+          } else if (existingEvent.end?.dateTime) {
+            updatedGoogleEvent.end = {
+              dateTime: existingEvent.end.dateTime,
+              timeZone: existingEvent.end.timeZone,
+            };
+          } else {
+            const defaultEnd = new Date(startTime);
+            defaultEnd.setHours(defaultEnd.getHours() + 1);
+            updatedGoogleEvent.end = {
+              dateTime: defaultEnd.toISOString(),
+              timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+            };
+          }
+        }
+      }
+
+      if (options.description !== undefined) {
+        updatedGoogleEvent.description = options.description.trim() || null;
+      }
+
+      if (options.location !== undefined) {
+        updatedGoogleEvent.location = options.location.trim() || null;
+      }
+
+      if (options.attendees !== undefined) {
+        if (options.attendees.length > 0) {
+          updatedGoogleEvent.attendees = options.attendees.map((attendee) => {
+            if (attendee.includes("@")) {
+              return { email: attendee };
+            }
+            return { displayName: attendee };
+          });
+        } else {
+          updatedGoogleEvent.attendees = [];
+        }
+      }
+
+      if (options.color !== undefined) {
+        const colorId = getGoogleColorIdFromHex(options.color);
+        if (colorId) {
+          updatedGoogleEvent.colorId = colorId;
+        } else if (options.color === null || options.color === undefined) {
+          delete updatedGoogleEvent.colorId;
+        }
+      }
+
+      // Validazione date
+      const startDate = new Date(updatedGoogleEvent.start?.dateTime || updatedGoogleEvent.start?.date);
+      const endDate = updatedGoogleEvent.end?.dateTime || updatedGoogleEvent.end?.date;
+      if (endDate && new Date(endDate) < startDate) {
+        return {
+          success: false,
+          error: "La data di fine deve essere successiva alla data di inizio",
+          event: {
+            id: options.eventId,
+            title: options.title || existingEvent.summary || "",
+            startTime: startDate,
+          },
+        };
+      }
+
+      // Aggiorna l'evento
+      const updateUrl = `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(
+        this.config.calendarId!
+      )}/events/${encodeURIComponent(options.eventId)}`;
+
+      const updateResponse = await fetch(updateUrl, {
+        method: "PUT",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(updatedGoogleEvent),
+      });
+
+      if (!updateResponse.ok) {
+        const errorBody = await updateResponse.text();
+        console.error("[GoogleCalendarProvider] Errore aggiornamento evento:", updateResponse.status, errorBody);
+        
+        let errorMessage = `Errore durante l'aggiornamento dell'evento (${updateResponse.status})`;
+        try {
+          const errorData = JSON.parse(errorBody);
+          if (errorData.error?.message) {
+            errorMessage = errorData.error.message;
+          }
+        } catch {
+          // Ignora errori di parsing
+        }
+
+        return {
+          success: false,
+          error: errorMessage,
+          event: {
+            id: options.eventId,
+            title: options.title || existingEvent.summary || "",
+            startTime: startDate,
+          },
+        };
+      }
+
+      const updatedEvent = await updateResponse.json();
+      const calendarEvent = mapGoogleEventToCalendarEvent(updatedEvent);
+
+      return {
+        success: true,
+        event: calendarEvent,
+      };
+    } catch (error) {
+      console.error("[GoogleCalendarProvider] Errore durante l'aggiornamento dell'evento:", error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : "Errore sconosciuto durante l'aggiornamento dell'evento",
+        event: {
+          id: options.eventId,
+          title: "",
+          startTime: new Date(),
+        },
+      };
+    }
+  }
+
+  async deleteEvent(eventId: string): Promise<DeleteEventResult> {
+    // Validazione base
+    if (!eventId || eventId.trim().length === 0) {
+      return {
+        success: false,
+        error: "L'ID dell'evento è obbligatorio",
+      };
+    }
+
+    if (!this.isConfigured()) {
+      return {
+        success: false,
+        error: "Google Calendar non è configurato correttamente",
+      };
+    }
+
+    // Verifica che abbiamo OAuth (necessario per eliminare eventi)
+    const accessToken = await this.getValidAccessToken();
+    if (!accessToken) {
+      return {
+        success: false,
+        error: "Autenticazione OAuth richiesta per eliminare eventi. Configura GOOGLE_CALENDAR_REFRESH_TOKEN.",
+      };
+    }
+
+    try {
+      const url = `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(
+        this.config.calendarId!
+      )}/events/${encodeURIComponent(eventId)}`;
+
+      const response = await fetch(url, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      });
+
+      if (!response.ok) {
+        const errorBody = await response.text();
+        console.error("[GoogleCalendarProvider] Errore eliminazione evento:", response.status, errorBody);
+        
+        let errorMessage = `Errore durante l'eliminazione dell'evento (${response.status})`;
+        if (response.status === 404) {
+          errorMessage = "Evento non trovato";
+        } else {
+          try {
+            const errorData = JSON.parse(errorBody);
+            if (errorData.error?.message) {
+              errorMessage = errorData.error.message;
+            }
+          } catch {
+            // Ignora errori di parsing
+          }
+        }
+
+        return {
+          success: false,
+          error: errorMessage,
+        };
+      }
+
+      return {
+        success: true,
+      };
+    } catch (error) {
+      console.error("[GoogleCalendarProvider] Errore durante l'eliminazione dell'evento:", error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : "Errore sconosciuto durante l'eliminazione dell'evento",
       };
     }
   }

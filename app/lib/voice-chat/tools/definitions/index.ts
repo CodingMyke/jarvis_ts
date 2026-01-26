@@ -18,6 +18,16 @@ export {
 } from "./create-calendar-event.tool";
 
 export {
+  updateCalendarEventTool,
+  UPDATE_CALENDAR_EVENT_TOOL_NAME,
+} from "./update-calendar-event.tool";
+
+export {
+  deleteCalendarEventTool,
+  DELETE_CALENDAR_EVENT_TOOL_NAME,
+} from "./delete-calendar-event.tool";
+
+export {
   startTimerTool,
   START_TIMER_TOOL_NAME,
 } from "./start-timer.tool";
