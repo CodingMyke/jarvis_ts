@@ -1,11 +1,11 @@
 import type { SystemToolDefinition } from "../types";
-import { todoManager } from "@/app/lib/todo";
+import { notifyTodosChanged } from "@/app/lib/tasks";
 
 export const CREATE_TODO_TOOL_NAME = "createTodo";
 
 /**
- * Tool per creare un nuovo todo.
- * L'assistente può usarlo quando l'utente chiede di aggiungere qualcosa da fare.
+ * Tool per creare uno o più todo (task Google).
+ * Chiama l'API /api/tasks.
  */
 export const createTodoTool: SystemToolDefinition = {
   name: CREATE_TODO_TOOL_NAME,
@@ -47,7 +47,6 @@ export const createTodoTool: SystemToolDefinition = {
       const text = args.text as string | undefined;
       const texts = args.texts as string[] | undefined;
 
-      // Verifica che sia fornito text o texts, ma non entrambi
       if (!text && !texts) {
         return {
           result: {
@@ -68,7 +67,6 @@ export const createTodoTool: SystemToolDefinition = {
         };
       }
 
-      // Caso singolo todo
       if (text) {
         if (typeof text !== "string" || text.trim().length === 0) {
           return {
@@ -79,7 +77,6 @@ export const createTodoTool: SystemToolDefinition = {
             },
           };
         }
-
         if (text.trim().length > 500) {
           return {
             result: {
@@ -90,21 +87,37 @@ export const createTodoTool: SystemToolDefinition = {
           };
         }
 
-        const todo = todoManager.createTodo(text);
+        const response = await fetch("/api/tasks", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text: text.trim() }),
+        });
+        const data = await response.json();
 
+        if (!response.ok || !data.success) {
+          return {
+            result: {
+              success: false,
+              error: data.error || "CREATION_FAILED",
+              errorMessage: data.errorMessage || data.message || "Errore durante la creazione",
+            },
+          };
+        }
+
+        const todo = data.todo ?? {};
+        notifyTodosChanged();
         return {
           result: {
             success: true,
             todo: {
               id: todo.id,
               text: todo.text,
-              completed: todo.completed,
+              completed: todo.completed ?? false,
             },
           },
         };
       }
 
-      // Caso multipli todo
       if (texts) {
         if (!Array.isArray(texts) || texts.length === 0) {
           return {
@@ -116,11 +129,9 @@ export const createTodoTool: SystemToolDefinition = {
           };
         }
 
-        // Valida ogni testo
         const invalidTexts = texts.filter(
           (t) => typeof t !== "string" || t.trim().length === 0 || t.trim().length > 500
         );
-
         if (invalidTexts.length > 0) {
           return {
             result: {
@@ -132,22 +143,40 @@ export const createTodoTool: SystemToolDefinition = {
           };
         }
 
-        const createdTodos = todoManager.createTodos(texts);
+        const response = await fetch("/api/tasks", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ texts: texts.map((t) => String(t).trim()) }),
+        });
+        const data = await response.json();
 
+        if (!response.ok || !data.success) {
+          return {
+            result: {
+              success: false,
+              error: data.error || "CREATION_FAILED",
+              errorMessage: data.errorMessage || data.message || "Errore durante la creazione",
+            },
+          };
+        }
+
+        const todos = (data.todos || []).map(
+          (t: { id: string; text: string; completed: boolean }) => ({
+            id: t.id,
+            text: t.text,
+            completed: t.completed ?? false,
+          })
+        );
+        notifyTodosChanged();
         return {
           result: {
             success: true,
-            todos: createdTodos.map((todo) => ({
-              id: todo.id,
-              text: todo.text,
-              completed: todo.completed,
-            })),
-            count: createdTodos.length,
+            todos,
+            count: todos.length,
           },
         };
       }
 
-      // Questo non dovrebbe mai essere raggiunto, ma TypeScript lo richiede
       return {
         result: {
           success: false,

@@ -1,11 +1,11 @@
 import type { SystemToolDefinition } from "../types";
-import { todoManager } from "@/app/lib/todo";
+import { notifyTodosChanged } from "@/app/lib/tasks";
 
 export const DELETE_TODO_TOOL_NAME = "deleteTodo";
 
 /**
- * Tool per eliminare un todo.
- * L'assistente può usarlo quando l'utente chiede di rimuovere un todo dalla lista.
+ * Tool per eliminare uno o più todo (task Google).
+ * Chiama l'API /api/tasks.
  */
 export const deleteTodoTool: SystemToolDefinition = {
   name: DELETE_TODO_TOOL_NAME,
@@ -30,14 +30,13 @@ export const deleteTodoTool: SystemToolDefinition = {
       },
       ids: {
         type: "array",
-        items: {
-          type: "string",
-        },
+        items: { type: "string" },
         description:
           "Array di ID per eliminare più todo in una singola operazione. " +
           "Usa questo quando l'utente chiede di eliminare più todo alla volta. " +
           "Non usare insieme a 'id' o 'deleteAll'.",
-      },
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      } as any,
       deleteAll: {
         type: "boolean",
         description:
@@ -79,13 +78,27 @@ export const deleteTodoTool: SystemToolDefinition = {
 
       // Caso: elimina tutti i todo
       if (deleteAll === true) {
-        const deletedCount = todoManager.deleteAllTodos();
-
+        const response = await fetch("/api/tasks", {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ deleteAll: true }),
+        });
+        const data = await response.json();
+        if (!response.ok || !data.success) {
+          return {
+            result: {
+              success: false,
+              error: data.error || "DELETE_FAILED",
+              errorMessage: data.errorMessage || data.message || "Impossibile eliminare i todo",
+            },
+          };
+        }
+        notifyTodosChanged();
         return {
           result: {
             success: true,
             deletedAll: true,
-            count: deletedCount,
+            count: data.count ?? 0,
           },
         };
       }
@@ -102,36 +115,28 @@ export const deleteTodoTool: SystemToolDefinition = {
           };
         }
 
-        const existingTodo = todoManager.getTodoById(id);
-        if (!existingTodo) {
+        const response = await fetch("/api/tasks", {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id }),
+        });
+        const data = await response.json();
+
+        if (!response.ok || !data.success) {
           return {
             result: {
               success: false,
-              error: "TODO_NOT_FOUND",
-              errorMessage: `Todo con ID ${id} non trovato`,
+              error: data.error || "DELETE_FAILED",
+              errorMessage:
+                data.errorMessage || data.message || "Impossibile eliminare il todo",
             },
           };
         }
-
-        const deleted = todoManager.deleteTodo(id);
-
-        if (!deleted) {
-          return {
-            result: {
-              success: false,
-              error: "DELETE_FAILED",
-              errorMessage: "Impossibile eliminare il todo",
-            },
-          };
-        }
-
+        notifyTodosChanged();
         return {
           result: {
             success: true,
-            deletedTodo: {
-              id: existingTodo.id,
-              text: existingTodo.text,
-            },
+            deletedTodo: { id, text: "" },
           },
         };
       }
@@ -148,7 +153,6 @@ export const deleteTodoTool: SystemToolDefinition = {
           };
         }
 
-        // Verifica che tutti gli ID siano stringhe valide
         const invalidIds = ids.filter((i) => typeof i !== "string" || i.trim().length === 0);
         if (invalidIds.length > 0) {
           return {
@@ -160,31 +164,36 @@ export const deleteTodoTool: SystemToolDefinition = {
           };
         }
 
-        // Recupera i todo prima di eliminarli per il risultato
-        const todosToDelete = ids
-          .map((todoId) => {
-            const todo = todoManager.getTodoById(todoId);
-            return todo ? { id: todo.id, text: todo.text } : null;
-          })
-          .filter((todo): todo is { id: string; text: string } => todo !== null);
+        const response = await fetch("/api/tasks", {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ ids }),
+        });
+        const data = await response.json();
 
-        const deletedCount = todoManager.deleteTodos(ids);
-
-        if (deletedCount === 0) {
+        if (!response.ok || !data.success) {
           return {
             result: {
               success: false,
-              error: "NO_TODOS_DELETED",
-              errorMessage: "Nessun todo è stato eliminato. Verifica che gli ID siano corretti.",
+              error: data.error || "DELETE_FAILED",
+              errorMessage: data.errorMessage || data.message || "Errore durante l'eliminazione",
             },
           };
         }
 
+        const deletedTodos = data.deletedTodos ?? data.todos ?? [];
+        const count = data.count ?? deletedTodos.length;
+        notifyTodosChanged();
         return {
           result: {
             success: true,
-            deletedTodos: todosToDelete,
-            count: deletedCount,
+            deletedTodos: Array.isArray(deletedTodos)
+              ? deletedTodos.map((t: { id: string; text?: string }) => ({
+                  id: t.id,
+                  text: t.text ?? "",
+                }))
+              : [],
+            count,
             requestedCount: ids.length,
           },
         };

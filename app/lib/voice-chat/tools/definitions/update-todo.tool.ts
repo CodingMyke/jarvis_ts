@@ -1,11 +1,11 @@
 import type { SystemToolDefinition } from "../types";
-import { todoManager } from "@/app/lib/todo";
+import { notifyTodosChanged } from "@/app/lib/tasks";
 
 export const UPDATE_TODO_TOOL_NAME = "updateTodo";
 
 /**
- * Tool per aggiornare un todo esistente.
- * L'assistente può usarlo quando l'utente chiede di modificare o completare un todo.
+ * Tool per aggiornare uno o più todo (task Google).
+ * Chiama l'API /api/tasks.
  */
 export const updateTodoTool: SystemToolDefinition = {
   name: UPDATE_TODO_TOOL_NAME,
@@ -116,17 +116,6 @@ export const updateTodoTool: SystemToolDefinition = {
           };
         }
 
-        const existingTodo = todoManager.getTodoById(id);
-        if (!existingTodo) {
-          return {
-            result: {
-              success: false,
-              error: "TODO_NOT_FOUND",
-              errorMessage: `Todo con ID ${id} non trovato`,
-            },
-          };
-        }
-
         const updateData: Partial<{ text: string; completed: boolean }> = {};
         if (text !== undefined) {
           if (typeof text !== "string" || text.trim().length === 0) {
@@ -173,25 +162,32 @@ export const updateTodoTool: SystemToolDefinition = {
           };
         }
 
-        const updatedTodo = todoManager.updateTodo(id, updateData);
+        const response = await fetch("/api/tasks", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id, text: updateData.text, completed: updateData.completed }),
+        });
+        const data = await response.json();
 
-        if (!updatedTodo) {
+        if (!response.ok || !data.success) {
           return {
             result: {
               success: false,
-              error: "UPDATE_FAILED",
-              errorMessage: "Impossibile aggiornare il todo",
+              error: data.error || "UPDATE_FAILED",
+              errorMessage: data.errorMessage || data.message || "Impossibile aggiornare il todo",
             },
           };
         }
 
+        const todo = data.todo ?? {};
+        notifyTodosChanged();
         return {
           result: {
             success: true,
             todo: {
-              id: updatedTodo.id,
-              text: updatedTodo.text,
-              completed: updatedTodo.completed,
+              id: todo.id,
+              text: todo.text,
+              completed: todo.completed,
             },
           },
         };
@@ -279,18 +275,38 @@ export const updateTodoTool: SystemToolDefinition = {
           });
         }
 
-        const results = todoManager.updateTodos(validatedUpdates);
+        const response = await fetch("/api/tasks", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            updates: validatedUpdates.map((u) => ({
+              id: u.id,
+              text: u.updates.text,
+              completed: u.updates.completed,
+            })),
+          }),
+        });
+        const data = await response.json();
 
-        const successfulUpdates = results
-          .filter((r) => r.todo !== null)
-          .map((r) => ({
-            id: r.id,
-            text: r.todo!.text,
-            completed: r.todo!.completed,
-          }));
+        if (!response.ok || !data.success) {
+          return {
+            result: {
+              success: false,
+              error: data.error || "UPDATE_FAILED",
+              errorMessage: data.errorMessage || data.message || "Errore durante l'aggiornamento",
+            },
+          };
+        }
 
-        const failedIds = results.filter((r) => r.todo === null).map((r) => r.id);
-
+        const successfulUpdates = (data.todos || []).map(
+          (t: { id: string; text: string; completed: boolean }) => ({
+            id: t.id,
+            text: t.text,
+            completed: t.completed,
+          })
+        );
+        const failedIds = data.failedIds ?? [];
+        notifyTodosChanged();
         return {
           result: {
             success: true,

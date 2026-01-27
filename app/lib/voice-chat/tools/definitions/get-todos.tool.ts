@@ -1,11 +1,10 @@
 import type { SystemToolDefinition } from "../types";
-import { todoManager } from "@/app/lib/todo";
 
 export const GET_TODOS_TOOL_NAME = "getTodos";
 
 /**
- * Tool per ottenere tutti i todo.
- * L'assistente può usarlo quando l'utente chiede di vedere la lista delle cose da fare.
+ * Tool per ottenere tutti i todo (task Google).
+ * Chiama l'API /api/tasks che legge dalla lista Google Tasks di default.
  */
 export const getTodosTool: SystemToolDefinition = {
   name: GET_TODOS_TOOL_NAME,
@@ -23,20 +22,48 @@ export const getTodosTool: SystemToolDefinition = {
 
   execute: async () => {
     try {
-      const todos = todoManager.getAllTodos();
+      const response = await fetch("/api/tasks");
+      const data = await response.json();
+
+      if (!response.ok) {
+        return {
+          result: {
+            success: false,
+            error: data.error || "EXECUTION_ERROR",
+            errorMessage: data.message || data.errorMessage || "Errore nel leggere i todo.",
+          },
+        };
+      }
+
+      if (!data.success) {
+        return {
+          result: {
+            success: false,
+            error: data.error || "UNKNOWN_ERROR",
+            errorMessage:
+              data.message ||
+              data.errorMessage ||
+              "I todo non sono configurati. Configura Google Tasks (stesso token del calendario).",
+          },
+        };
+      }
+
+      const todos = (data.todos || []).map(
+        (t: { id: string; text: string; completed: boolean; createdAt?: number }) => ({
+          id: t.id,
+          text: t.text,
+          completed: t.completed,
+          createdAt: t.createdAt ?? 0,
+        })
+      );
 
       return {
         result: {
           success: true,
-          todos: todos.map((todo) => ({
-            id: todo.id,
-            text: todo.text,
-            completed: todo.completed,
-            createdAt: todo.createdAt,
-          })),
+          todos,
           count: todos.length,
-          completedCount: todos.filter((t) => t.completed).length,
-          pendingCount: todos.filter((t) => !t.completed).length,
+          completedCount: data.completedCount ?? todos.filter((x: { completed: boolean }) => x.completed).length,
+          pendingCount: data.pendingCount ?? todos.filter((x: { completed: boolean }) => !x.completed).length,
         },
       };
     } catch (error) {
