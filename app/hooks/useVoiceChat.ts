@@ -16,6 +16,8 @@ import { JARVIS_CONFIG } from "@/app/lib/voice-chat/jarvis.config";
 
 type ListeningMode = "idle" | "wake_word" | "connected";
 
+const INACTIVITY_MS = 20_000;
+
 export interface UseVoiceChatReturn {
   isConnected: boolean;
   isListening: boolean;
@@ -47,6 +49,7 @@ export function useVoiceChat(options?: UseVoiceChatOptions): UseVoiceChatReturn 
   const currentMessageIdRef = useRef<{ user: string | null; ai: string | null }>({ user: null, ai: null });
   const storageRef = useRef<ConversationStorage>(new ConversationStorage());
   const messagesRef = useRef<Message[]>([]);
+  const inactivityTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   
   const [connectionState, setConnectionState] = useState<ConnectionState>('disconnected');
   const [listeningMode, setListeningMode] = useState<ListeningMode>('idle');
@@ -130,6 +133,10 @@ export function useVoiceChat(options?: UseVoiceChatOptions): UseVoiceChatReturn 
    * Punto unico per orb cliccata dall'utente e tool disableAssistant.
    */
   const goToIdle = useCallback(() => {
+    if (inactivityTimeoutRef.current) {
+      clearTimeout(inactivityTimeoutRef.current);
+      inactivityTimeoutRef.current = null;
+    }
     saveConversation(messagesRef.current);
     wakeWordRef.current?.dispose();
     wakeWordRef.current = null;
@@ -143,8 +150,40 @@ export function useVoiceChat(options?: UseVoiceChatOptions): UseVoiceChatReturn 
     setListeningMode('idle');
   }, [saveConversation]);
 
+  /**
+   * Disconnette da Gemini e torna in ascolto wake word (stesso esito di endConversation).
+   */
+  const goToWakeWord = useCallback(() => {
+    if (inactivityTimeoutRef.current) {
+      clearTimeout(inactivityTimeoutRef.current);
+      inactivityTimeoutRef.current = null;
+    }
+    saveConversation(messagesRef.current);
+    const client = clientRef.current;
+    clientRef.current = null;
+    client?.dispose();
+    setIsMuted(false);
+    setAudioLevel(0);
+    setOutputAudioLevel(0);
+    setConnectionState('disconnected');
+    currentMessageIdRef.current = { user: null, ai: null };
+    setListeningMode('wake_word');
+    wakeWordRef.current?.resume();
+  }, [saveConversation]);
+
+  /**
+   * Programma il ritorno a wake word dopo INACTIVITY_MS senza input utente.
+   * Va chiamato a ogni messaggio utente (incluso il primo dopo la wake word).
+   */
+  const scheduleInactivityTimeout = useCallback(() => {
+    if (inactivityTimeoutRef.current) clearTimeout(inactivityTimeoutRef.current);
+    if (!clientRef.current) return;
+    inactivityTimeoutRef.current = setTimeout(goToWakeWord, INACTIVITY_MS);
+  }, [goToWakeWord]);
+
   const handleTranscript = useCallback((text: string, type: 'input' | 'output' | 'thinking'): void => {
     if (type === 'input') {
+      scheduleInactivityTimeout();
       // Messaggio utente - reset AI message id
       currentMessageIdRef.current.ai = null;
       
@@ -190,7 +229,7 @@ export function useVoiceChat(options?: UseVoiceChatOptions): UseVoiceChatReturn 
         setMessages((prev) => [...prev, message]);
       }
     }
-  }, []);
+  }, [scheduleInactivityTimeout]);
 
   /**
    * Connette a Gemini e invia il messaggio iniziale con la wake word.
@@ -223,24 +262,18 @@ export function useVoiceChat(options?: UseVoiceChatOptions): UseVoiceChatReturn 
           // Gestisci disconnessione inattesa (es. errore WebSocket)
           if (state === 'disconnected' && clientRef.current) {
             console.log('[useVoiceChat] unexpected disconnection, cleaning up...');
-            
-            // Salva la conversazione prima di pulire
+            if (inactivityTimeoutRef.current) {
+              clearTimeout(inactivityTimeoutRef.current);
+              inactivityTimeoutRef.current = null;
+            }
             saveConversation(messagesRef.current);
-            
-            // Salva ref e resetta PRIMA del dispose per evitare loop
             const client = clientRef.current;
             clientRef.current = null;
-            
-            // Cleanup client
             client.dispose();
             setIsMuted(false);
             setAudioLevel(0);
             setOutputAudioLevel(0);
-            
-            // Reset message refs
             currentMessageIdRef.current = { user: null, ai: null };
-            
-            // Torna in modalità wake word per permettere di riprovare
             setListeningMode('wake_word');
             wakeWordRef.current?.resume();
           }
@@ -253,27 +286,7 @@ export function useVoiceChat(options?: UseVoiceChatOptions): UseVoiceChatReturn 
         onOutputAudioLevel: setOutputAudioLevel,
         onEndConversation: () => {
           console.log('[useVoiceChat] conversation ended by assistant');
-          
-          // Salva la conversazione prima di pulire
-          saveConversation(messagesRef.current);
-          
-          // Salva ref e resetta PRIMA del dispose per evitare loop
-          const client = clientRef.current;
-          clientRef.current = null;
-          
-          // Cleanup client Gemini
-          client?.dispose();
-          setIsMuted(false);
-          setAudioLevel(0);
-          setOutputAudioLevel(0);
-          setConnectionState('disconnected');
-          
-          // Reset message refs per la prossima conversazione
-          currentMessageIdRef.current = { user: null, ai: null };
-          
-          // Torna in modalità wake word
-          setListeningMode('wake_word');
-          wakeWordRef.current?.resume();
+          goToWakeWord();
         },
         onDisableCompletely: goToIdle,
       });
@@ -304,6 +317,7 @@ export function useVoiceChat(options?: UseVoiceChatOptions): UseVoiceChatReturn 
       currentMessageIdRef.current = { user: null, ai: null };
       
       client.sendText(initialMessage);
+      scheduleInactivityTimeout();
       
     } catch (err) {
       console.error('[useVoiceChat] catch error:', err);
@@ -323,7 +337,7 @@ export function useVoiceChat(options?: UseVoiceChatOptions): UseVoiceChatReturn 
       setListeningMode('wake_word');
       wakeWordRef.current?.resume();
     }
-  }, [handleTranscript, saveConversation, options, goToIdle]);
+  }, [handleTranscript, saveConversation, options, goToIdle, goToWakeWord, scheduleInactivityTimeout]);
 
   /**
    * Avvia l'ascolto in modalità wake word.
@@ -376,6 +390,10 @@ export function useVoiceChat(options?: UseVoiceChatOptions): UseVoiceChatReturn 
   // Cleanup on unmount
   useEffect(() => {
     return () => {
+      if (inactivityTimeoutRef.current) {
+        clearTimeout(inactivityTimeoutRef.current);
+        inactivityTimeoutRef.current = null;
+      }
       wakeWordRef.current?.dispose();
       clientRef.current?.dispose();
     };
