@@ -192,13 +192,15 @@ export async function POST(request: NextRequest) {
     const result = await service.createEvent(createOptions);
 
     if (!result.success) {
+      // Se è un errore di refresh token scaduto, restituisci 401
+      const isTokenExpired = result.error?.includes("REFRESH_TOKEN_EXPIRED");
       return NextResponse.json(
         {
           success: false,
-          error: "CREATION_FAILED",
+          error: isTokenExpired ? "REFRESH_TOKEN_EXPIRED" : "CREATION_FAILED",
           errorMessage: result.error || "Errore durante la creazione dell'evento",
         },
-        { status: 500 }
+        { status: isTokenExpired ? 401 : 500 }
       );
     }
 
@@ -320,13 +322,15 @@ export async function PATCH(request: NextRequest) {
     const result = await service.updateEvent(updateOptions);
 
     if (!result.success) {
+      // Se è un errore di refresh token scaduto, restituisci 401
+      const isTokenExpired = result.error?.includes("REFRESH_TOKEN_EXPIRED");
       return NextResponse.json(
         {
           success: false,
-          error: "UPDATE_FAILED",
+          error: isTokenExpired ? "REFRESH_TOKEN_EXPIRED" : "UPDATE_FAILED",
           errorMessage: result.error || "Errore durante l'aggiornamento dell'evento",
         },
-        { status: 500 }
+        { status: isTokenExpired ? 401 : 500 }
       );
     }
 
@@ -398,13 +402,15 @@ export async function DELETE(request: NextRequest) {
     const result = await service.deleteEvent(eventId.trim());
 
     if (!result.success) {
+      // Se è un errore di refresh token scaduto, restituisci 401
+      const isTokenExpired = result.error?.includes("REFRESH_TOKEN_EXPIRED");
       return NextResponse.json(
         {
           success: false,
-          error: "DELETE_FAILED",
+          error: isTokenExpired ? "REFRESH_TOKEN_EXPIRED" : "DELETE_FAILED",
           errorMessage: result.error || "Errore durante l'eliminazione dell'evento",
         },
-        { status: 500 }
+        { status: isTokenExpired ? 401 : 500 }
       );
     }
 

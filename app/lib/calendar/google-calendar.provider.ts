@@ -214,8 +214,11 @@ export class GoogleCalendarProvider implements CalendarProvider {
 
   /**
    * Ottiene un access token valido, rinnovandolo se necessario usando il refresh token.
+   * @param forceRefresh Se true, forza il refresh anche se il token cached è ancora valido
+   * @returns L'access token o null se non è possibile ottenerlo
+   * @throws Error se il refresh token è scaduto/revocato (richiede riautorizzazione)
    */
-  private async getValidAccessToken(): Promise<string | null> {
+  private async getValidAccessToken(forceRefresh = false): Promise<string | null> {
     // Se c'è un access token esplicito, usalo
     if (this.config.accessToken) {
       return this.config.accessToken;
@@ -226,8 +229,8 @@ export class GoogleCalendarProvider implements CalendarProvider {
       return null;
     }
 
-    // Se abbiamo un token cached e non è scaduto, usalo
-    if (cachedAccessToken && cachedAccessToken.expiresAt > Date.now()) {
+    // Se abbiamo un token cached e non è scaduto, usalo (a meno che non sia forzato il refresh)
+    if (!forceRefresh && cachedAccessToken && cachedAccessToken.expiresAt > Date.now()) {
       return cachedAccessToken.token;
     }
 
@@ -248,7 +251,27 @@ export class GoogleCalendarProvider implements CalendarProvider {
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error("[GoogleCalendarProvider] Errore refresh token:", errorText);
+        console.error("[GoogleCalendarProvider] Errore refresh token:", response.status, errorText);
+        
+        // Se il refresh token è scaduto/revocato (400 o 401), invalida la cache
+        if (response.status === 400 || response.status === 401) {
+          cachedAccessToken = null;
+          
+          // Prova a parsare l'errore per capire se è un problema di refresh token
+          try {
+            const errorData = JSON.parse(errorText);
+            if (errorData.error === "invalid_grant" || errorData.error === "invalid_request") {
+              // Refresh token scaduto o revocato - richiede riautorizzazione
+              throw new Error(
+                "REFRESH_TOKEN_EXPIRED: Il refresh token è scaduto o revocato. " +
+                "È necessario riautorizzare l'applicazione. Vai su /setup/calendar per riautorizzare."
+              );
+            }
+          } catch {
+            // Se non riesce a parsare, continua con l'errore generico
+          }
+        }
+        
         return null;
       }
 
@@ -262,9 +285,90 @@ export class GoogleCalendarProvider implements CalendarProvider {
 
       return cachedAccessToken.token;
     } catch (error) {
+      // Se è già un errore con messaggio specifico, rilancialo
+      if (error instanceof Error && error.message.includes("REFRESH_TOKEN_EXPIRED")) {
+        throw error;
+      }
+      
       console.error("[GoogleCalendarProvider] Errore durante il refresh del token:", error);
       return null;
     }
+  }
+
+  /**
+   * Invalida la cache del token corrente, forzando un refresh al prossimo utilizzo.
+   */
+  private invalidateTokenCache(): void {
+    cachedAccessToken = null;
+  }
+
+  /**
+   * Esegue una chiamata API a Google Calendar con retry automatico su errori 401.
+   * Se riceve un 401, invalida la cache e riprova con un nuovo token.
+   */
+  private async makeApiRequest(
+    url: string,
+    options: RequestInit = {},
+    retryOn401 = true
+  ): Promise<Response> {
+    let accessToken: string | null;
+    try {
+      accessToken = await this.getValidAccessToken();
+    } catch (error) {
+      // Se il refresh token è scaduto, rilanciamo l'errore
+      if (error instanceof Error && error.message.includes("REFRESH_TOKEN_EXPIRED")) {
+        throw error;
+      }
+      accessToken = null;
+    }
+    
+    if (accessToken) {
+      options.headers = {
+        ...options.headers,
+        Authorization: `Bearer ${accessToken}`,
+      };
+    } else if (this.config.apiKey) {
+      // Fallback su API key (per calendari pubblici)
+      const urlWithKey = url.includes("?") ? `${url}&key=${this.config.apiKey}` : `${url}?key=${this.config.apiKey}`;
+      url = urlWithKey;
+    }
+
+    let response = await fetch(url, options);
+
+    // Se riceviamo un 401 e abbiamo un refresh token, proviamo a rigenerare il token e riprovare
+    if (response.status === 401 && retryOn401 && this.config.refreshToken) {
+      console.warn("[GoogleCalendarProvider] Ricevuto 401, provo a rigenerare il token...");
+      
+      // Invalida la cache e forza il refresh
+      this.invalidateTokenCache();
+      
+      try {
+        const newAccessToken = await this.getValidAccessToken(true);
+        
+        if (newAccessToken) {
+          // Riprova la richiesta con il nuovo token
+          options.headers = {
+            ...options.headers,
+            Authorization: `Bearer ${newAccessToken}`,
+          };
+          
+          // Rimuovi la key dalla URL se era stata aggiunta
+          if (this.config.apiKey && url.includes(`&key=${this.config.apiKey}`)) {
+            url = url.replace(`&key=${this.config.apiKey}`, "");
+          }
+          
+          response = await fetch(url, options);
+        }
+      } catch (error) {
+        // Se il refresh token è scaduto, l'errore viene già gestito da getValidAccessToken
+        if (error instanceof Error && error.message.includes("REFRESH_TOKEN_EXPIRED")) {
+          throw error;
+        }
+        // Altrimenti continua con la risposta originale
+      }
+    }
+
+    return response;
   }
 
   async getEvents(options: GetEventsOptions = {}): Promise<GetEventsResult> {
@@ -296,27 +400,28 @@ export class GoogleCalendarProvider implements CalendarProvider {
         orderBy: "startTime",
       });
 
-      const headers: HeadersInit = {};
-      let url = `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(
+      const url = `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(
         this.config.calendarId!
       )}/events?${params}`;
 
-      // Prova prima con OAuth (per calendari privati)
-      const accessToken = await this.getValidAccessToken();
-      if (accessToken) {
-        headers["Authorization"] = `Bearer ${accessToken}`;
-      } else if (this.config.apiKey) {
-        // Fallback su API key (per calendari pubblici)
-        url += `&key=${this.config.apiKey}`;
-      } else {
-        throw new Error("Nessun metodo di autenticazione disponibile");
-      }
-
-      const response = await fetch(url, { headers });
+      const response = await this.makeApiRequest(url);
 
       if (!response.ok) {
         const errorBody = await response.text();
         console.error("[GoogleCalendarProvider] Errore API:", response.status, errorBody);
+        
+        // Se è un errore di refresh token scaduto, rilanciamo l'errore
+        if (errorBody.includes("REFRESH_TOKEN_EXPIRED") || response.status === 401) {
+          // Verifica se abbiamo ancora un refresh token valido
+          const accessToken = await this.getValidAccessToken(true);
+          if (!accessToken) {
+            throw new Error(
+              "REFRESH_TOKEN_EXPIRED: Il refresh token è scaduto o revocato. " +
+              "È necessario riautorizzare l'applicazione. Vai su /setup/calendar per riautorizzare."
+            );
+          }
+        }
+        
         throw new Error(`Google Calendar API error: ${response.status}`);
       }
 
@@ -329,6 +434,11 @@ export class GoogleCalendarProvider implements CalendarProvider {
       };
     } catch (error) {
       console.error("[GoogleCalendarProvider] Errore durante il fetch:", error);
+      
+      // Se è un errore di refresh token scaduto, rilanciamo l'errore con messaggio chiaro
+      if (error instanceof Error && error.message.includes("REFRESH_TOKEN_EXPIRED")) {
+        throw error;
+      }
       
       // Se il servizio è configurato ma c'è un errore, restituisci eventi vuoti invece di mock
       // per evitare confusione (gli eventi mock sono solo per sviluppo quando NON è configurato)
@@ -372,7 +482,25 @@ export class GoogleCalendarProvider implements CalendarProvider {
     }
 
     // Verifica che abbiamo OAuth (necessario per creare eventi)
-    const accessToken = await this.getValidAccessToken();
+    let accessToken: string | null;
+    try {
+      accessToken = await this.getValidAccessToken();
+    } catch (error) {
+      // Se il refresh token è scaduto, restituisci un errore specifico
+      if (error instanceof Error && error.message.includes("REFRESH_TOKEN_EXPIRED")) {
+        return {
+          success: false,
+          error: "REFRESH_TOKEN_EXPIRED: Il refresh token è scaduto o revocato. È necessario riautorizzare l'applicazione. Vai su /setup/calendar per riautorizzare.",
+          event: {
+            id: "",
+            title: options.title,
+            startTime: options.startTime,
+          },
+        };
+      }
+      accessToken = null;
+    }
+    
     if (!accessToken) {
       return {
         success: false,
@@ -391,10 +519,9 @@ export class GoogleCalendarProvider implements CalendarProvider {
         this.config.calendarId!
       )}/events`;
 
-      const response = await fetch(url, {
+      const response = await this.makeApiRequest(url, {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${accessToken}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify(googleEvent),
@@ -403,6 +530,22 @@ export class GoogleCalendarProvider implements CalendarProvider {
       if (!response.ok) {
         const errorBody = await response.text();
         console.error("[GoogleCalendarProvider] Errore creazione evento:", response.status, errorBody);
+        
+        // Se è un errore di refresh token scaduto, rilanciamo l'errore
+        if (response.status === 401) {
+          const newAccessToken = await this.getValidAccessToken(true);
+          if (!newAccessToken) {
+            return {
+              success: false,
+              error: "REFRESH_TOKEN_EXPIRED: Il refresh token è scaduto o revocato. È necessario riautorizzare l'applicazione. Vai su /setup/calendar per riautorizzare.",
+              event: {
+                id: "",
+                title: options.title,
+                startTime: options.startTime,
+              },
+            };
+          }
+        }
         
         let errorMessage = `Errore durante la creazione dell'evento (${response.status})`;
         try {
@@ -497,7 +640,25 @@ export class GoogleCalendarProvider implements CalendarProvider {
     }
 
     // Verifica che abbiamo OAuth (necessario per aggiornare eventi)
-    const accessToken = await this.getValidAccessToken();
+    let accessToken: string | null;
+    try {
+      accessToken = await this.getValidAccessToken();
+    } catch (error) {
+      // Se il refresh token è scaduto, restituisci un errore specifico
+      if (error instanceof Error && error.message.includes("REFRESH_TOKEN_EXPIRED")) {
+        return {
+          success: false,
+          error: "REFRESH_TOKEN_EXPIRED: Il refresh token è scaduto o revocato. È necessario riautorizzare l'applicazione. Vai su /setup/calendar per riautorizzare.",
+          event: {
+            id: options.eventId,
+            title: "",
+            startTime: new Date(),
+          },
+        };
+      }
+      accessToken = null;
+    }
+    
     if (!accessToken) {
       return {
         success: false,
@@ -516,15 +677,27 @@ export class GoogleCalendarProvider implements CalendarProvider {
         this.config.calendarId!
       )}/events/${encodeURIComponent(options.eventId)}`;
 
-      const getResponse = await fetch(getUrl, {
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
-      });
+      const getResponse = await this.makeApiRequest(getUrl);
 
       if (!getResponse.ok) {
         const errorBody = await getResponse.text();
         console.error("[GoogleCalendarProvider] Errore recupero evento:", getResponse.status, errorBody);
+        
+        // Se è un errore di refresh token scaduto, rilanciamo l'errore
+        if (getResponse.status === 401) {
+          const newAccessToken = await this.getValidAccessToken(true);
+          if (!newAccessToken) {
+            return {
+              success: false,
+              error: "REFRESH_TOKEN_EXPIRED: Il refresh token è scaduto o revocato. È necessario riautorizzare l'applicazione. Vai su /setup/calendar per riautorizzare.",
+              event: {
+                id: options.eventId,
+                title: "",
+                startTime: new Date(),
+              },
+            };
+          }
+        }
         
         let errorMessage = `Errore durante il recupero dell'evento (${getResponse.status})`;
         if (getResponse.status === 404) {
@@ -639,8 +812,10 @@ export class GoogleCalendarProvider implements CalendarProvider {
       }
 
       // Validazione date
-      const startDate = new Date(updatedGoogleEvent.start?.dateTime || updatedGoogleEvent.start?.date);
-      const endDate = updatedGoogleEvent.end?.dateTime || updatedGoogleEvent.end?.date;
+      const startValue = (updatedGoogleEvent.start as { dateTime?: string; date?: string } | undefined);
+      const endValue = (updatedGoogleEvent.end as { dateTime?: string; date?: string } | undefined);
+      const startDate = new Date(startValue?.dateTime || startValue?.date || new Date());
+      const endDate = endValue?.dateTime || endValue?.date;
       if (endDate && new Date(endDate) < startDate) {
         return {
           success: false,
@@ -658,10 +833,9 @@ export class GoogleCalendarProvider implements CalendarProvider {
         this.config.calendarId!
       )}/events/${encodeURIComponent(options.eventId)}`;
 
-      const updateResponse = await fetch(updateUrl, {
+      const updateResponse = await this.makeApiRequest(updateUrl, {
         method: "PUT",
         headers: {
-          Authorization: `Bearer ${accessToken}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify(updatedGoogleEvent),
@@ -670,6 +844,22 @@ export class GoogleCalendarProvider implements CalendarProvider {
       if (!updateResponse.ok) {
         const errorBody = await updateResponse.text();
         console.error("[GoogleCalendarProvider] Errore aggiornamento evento:", updateResponse.status, errorBody);
+        
+        // Se è un errore di refresh token scaduto, rilanciamo l'errore
+        if (updateResponse.status === 401) {
+          const newAccessToken = await this.getValidAccessToken(true);
+          if (!newAccessToken) {
+            return {
+              success: false,
+              error: "REFRESH_TOKEN_EXPIRED: Il refresh token è scaduto o revocato. È necessario riautorizzare l'applicazione. Vai su /setup/calendar per riautorizzare.",
+              event: {
+                id: options.eventId,
+                title: options.title || existingEvent.summary || "",
+                startTime: startDate,
+              },
+            };
+          }
+        }
         
         let errorMessage = `Errore durante l'aggiornamento dell'evento (${updateResponse.status})`;
         try {
@@ -730,7 +920,20 @@ export class GoogleCalendarProvider implements CalendarProvider {
     }
 
     // Verifica che abbiamo OAuth (necessario per eliminare eventi)
-    const accessToken = await this.getValidAccessToken();
+    let accessToken: string | null;
+    try {
+      accessToken = await this.getValidAccessToken();
+    } catch (error) {
+      // Se il refresh token è scaduto, restituisci un errore specifico
+      if (error instanceof Error && error.message.includes("REFRESH_TOKEN_EXPIRED")) {
+        return {
+          success: false,
+          error: "REFRESH_TOKEN_EXPIRED: Il refresh token è scaduto o revocato. È necessario riautorizzare l'applicazione. Vai su /setup/calendar per riautorizzare.",
+        };
+      }
+      accessToken = null;
+    }
+    
     if (!accessToken) {
       return {
         success: false,
@@ -743,16 +946,24 @@ export class GoogleCalendarProvider implements CalendarProvider {
         this.config.calendarId!
       )}/events/${encodeURIComponent(eventId)}`;
 
-      const response = await fetch(url, {
+      const response = await this.makeApiRequest(url, {
         method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
       });
 
       if (!response.ok) {
         const errorBody = await response.text();
         console.error("[GoogleCalendarProvider] Errore eliminazione evento:", response.status, errorBody);
+        
+        // Se è un errore di refresh token scaduto, rilanciamo l'errore
+        if (response.status === 401) {
+          const newAccessToken = await this.getValidAccessToken(true);
+          if (!newAccessToken) {
+            return {
+              success: false,
+              error: "REFRESH_TOKEN_EXPIRED: Il refresh token è scaduto o revocato. È necessario riautorizzare l'applicazione. Vai su /setup/calendar per riautorizzare.",
+            };
+          }
+        }
         
         let errorMessage = `Errore durante l'eliminazione dell'evento (${response.status})`;
         if (response.status === 404) {
