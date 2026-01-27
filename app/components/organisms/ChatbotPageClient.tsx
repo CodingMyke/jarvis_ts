@@ -216,6 +216,13 @@ export function ChatbotPageClient({ initialEvents }: ChatbotPageClientProps) {
 
   return (
     <div className="fixed inset-0 overflow-hidden bg-background p-6">
+      {/* Error banner - barra in cima, sempre visibile e mai coperta */}
+      {error && (
+        <div className="absolute left-0 right-0 top-0 z-20 rounded-b-lg border-b border-red-500/50 bg-red-950/95 px-4 py-3 text-center text-sm text-red-300 shadow-md backdrop-blur-sm">
+          {error.message}
+        </div>
+      )}
+
       {/* Timer Display - Top Right */}
       <TimerDisplay />
 
@@ -249,13 +256,6 @@ export function ChatbotPageClient({ initialEvents }: ChatbotPageClientProps) {
 
       {/* Main content - Orb centered */}
       <div className="pointer-events-none absolute inset-0 flex items-center justify-center overflow-visible">
-        {/* Error display */}
-        {error && (
-          <div className="absolute left-0 right-0 top-12 z-10 glass rounded-lg px-4 py-2 text-center text-sm text-red-400">
-            {error.message}
-          </div>
-        )}
-
         {/* Orb - interactive */}
         <VoiceOrb
           state={orbState}
