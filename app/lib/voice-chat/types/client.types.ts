@@ -39,5 +39,7 @@ export interface VoiceChatClientOptions {
   onAudioLevel?: (level: number) => void;
   onOutputAudioLevel?: (level: number) => void;
   onEndConversation?: () => void;
+  /** Chiamato quando l'assistente deve disattivarsi completamente (orb grigio, niente ascolto) */
+  onDisableCompletely?: () => void;
   onToolExecuted?: (toolName: string, result: unknown) => void;
 }

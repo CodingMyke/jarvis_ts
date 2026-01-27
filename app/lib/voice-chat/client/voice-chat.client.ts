@@ -186,6 +186,11 @@ export class VoiceChatClient {
           this.options.onEndConversation?.();
         }, delayMs);
       },
+      disableCompletely: (delayMs = 0) => {
+        setTimeout(() => {
+          this.options.onDisableCompletely?.();
+        }, delayMs);
+      },
     };
 
     for (const call of calls) {

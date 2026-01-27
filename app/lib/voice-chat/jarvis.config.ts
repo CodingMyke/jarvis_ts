@@ -70,6 +70,9 @@ export const JARVIS_CONFIG: JarvisConfig = (() => {
   - IMPORTANTE: Quando l'utente indica che la conversazione è finita (es. "ok grazie", "ciao", "a dopo", "perfetto grazie", "ho finito"), 
     rispondi con un breve saluto e poi chiama il tool endConversation per terminare la connessione.
 
+  - IMPORTANTE: Quando l'utente ti chiede di tapparti le orecchie, smettere di ascoltare o disattivarti completamente, 
+    rispondi brevemente e chiama il tool disableAssistant. L'assistente andrà in stato spento (orb grigio, nessun ascolto nemmeno della parola chiave).
+
   - IMPORTANTE: Quando usi i tool, NON ripetere le informazioni già presenti nei risultati. I tool restituiscono solo dati strutturati, 
     quindi formula una risposta naturale e concisa basandoti sui dati ricevuti, senza ripetere meccanicamente il contenuto del risultato.
   

@@ -125,6 +125,24 @@ export function useVoiceChat(options?: UseVoiceChatOptions): UseVoiceChatReturn 
     }
   }, []);
 
+  /**
+   * Porta l'assistente in stato idle (orb grigio, nessun ascolto).
+   * Punto unico per orb cliccata dall'utente e tool disableAssistant.
+   */
+  const goToIdle = useCallback(() => {
+    saveConversation(messagesRef.current);
+    wakeWordRef.current?.dispose();
+    wakeWordRef.current = null;
+    clientRef.current?.dispose();
+    clientRef.current = null;
+    setIsMuted(false);
+    setAudioLevel(0);
+    setOutputAudioLevel(0);
+    setConnectionState('disconnected');
+    currentMessageIdRef.current = { user: null, ai: null };
+    setListeningMode('idle');
+  }, [saveConversation]);
+
   const handleTranscript = useCallback((text: string, type: 'input' | 'output' | 'thinking'): void => {
     if (type === 'input') {
       // Messaggio utente - reset AI message id
@@ -257,6 +275,7 @@ export function useVoiceChat(options?: UseVoiceChatOptions): UseVoiceChatReturn 
           setListeningMode('wake_word');
           wakeWordRef.current?.resume();
         },
+        onDisableCompletely: goToIdle,
       });
 
       clientRef.current = client;
@@ -304,7 +323,7 @@ export function useVoiceChat(options?: UseVoiceChatOptions): UseVoiceChatReturn 
       setListeningMode('wake_word');
       wakeWordRef.current?.resume();
     }
-  }, [handleTranscript, saveConversation, options]);
+  }, [handleTranscript, saveConversation, options, goToIdle]);
 
   /**
    * Avvia l'ascolto in modalità wake word.
@@ -335,25 +354,6 @@ export function useVoiceChat(options?: UseVoiceChatOptions): UseVoiceChatReturn 
     wakeWordRef.current.start();
     setListeningMode('wake_word');
   }, [listeningMode, connectToGemini]);
-
-  /**
-   * Ferma completamente l'ascolto (sia wake word che Gemini).
-   */
-  const stopListening = useCallback(() => {
-    // Ferma wake word manager
-    wakeWordRef.current?.dispose();
-    wakeWordRef.current = null;
-    
-    // Ferma client Gemini
-    clientRef.current?.dispose();
-    clientRef.current = null;
-    
-    setListeningMode('idle');
-    setIsMuted(false);
-    setAudioLevel(0);
-    setOutputAudioLevel(0);
-    setConnectionState('disconnected');
-  }, []);
 
   const toggleMute = useCallback(() => {
     if (!clientRef.current) return;
@@ -392,7 +392,7 @@ export function useVoiceChat(options?: UseVoiceChatOptions): UseVoiceChatReturn 
     connectionState,
     listeningMode,
     startListening,
-    stopListening,
+    stopListening: goToIdle,
     toggleMute,
     clearConversation,
   };

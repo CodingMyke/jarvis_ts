@@ -7,8 +7,10 @@ export type { ParameterProperty };
  * Contiene le azioni che il tool può eseguire.
  */
 export interface ToolContext {
-  /** Termina la conversazione e disconnette */
+  /** Termina la conversazione e disconnette (torna in ascolto della parola chiave) */
   endConversation: (delayMs?: number) => void;
+  /** Disattiva completamente l'assistente: orb grigio, non in ascolto nemmeno della parola chiave */
+  disableCompletely: (delayMs?: number) => void;
 }
 
 /**

@@ -8,6 +8,11 @@ export {
 } from "./end-conversation.tool";
 
 export {
+  disableAssistantTool,
+  DISABLE_ASSISTANT_TOOL_NAME,
+} from "./disable-assistant.tool";
+
+export {
   getCalendarEventsTool,
   GET_CALENDAR_EVENTS_TOOL_NAME,
 } from "./get-calendar-events.tool";
