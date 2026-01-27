@@ -4,6 +4,7 @@ import { useCallback, useMemo, useState, useRef } from "react";
 import { VoiceOrb } from "@/app/components";
 import { FloatingChat, UpcomingEvents, TimerDisplay, TodoList } from "@/app/components/organisms";
 import { useVoiceChat } from "@/app/hooks/useVoiceChat";
+import { JARVIS_CONFIG } from "@/app/lib/voice-chat/jarvis.config";
 import type { UIDayEvents, UICalendarEvent } from "@/app/lib/calendar/actions";
 import { CREATE_CALENDAR_EVENT_TOOL_NAME } from "@/app/lib/voice-chat/tools/definitions/create-calendar-event.tool";
 import { UPDATE_CALENDAR_EVENT_TOOL_NAME } from "@/app/lib/voice-chat/tools/definitions/update-calendar-event.tool";
@@ -190,16 +191,17 @@ export function ChatbotPageClient({ initialEvents }: ChatbotPageClientProps) {
   }, [isListening, stopListening, startListening]);
 
   const status = useMemo(() => {
+    const name = JARVIS_CONFIG.assistantName;
     switch (listeningMode) {
       case "wake_word":
         return {
-          label: 'In ascolto... Dì "Jarvis"',
+          label: `In attesa... Dì "${name}"`,
           color: "text-yellow-400",
           dotColor: "bg-yellow-400 shadow-[0_0_10px_rgba(250,204,21,0.5)]",
         };
       case "connected":
         return {
-          label: "Connesso con Jarvis",
+          label: `${name} è in ascolto`,
           color: "text-accent",
           dotColor: "bg-accent shadow-[0_0_10px_var(--accent-glow)]",
         };

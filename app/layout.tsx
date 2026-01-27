@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { TimerProvider, TodoProvider } from "@/app/components/organisms";
+import { JARVIS_CONFIG } from "@/app/lib/voice-chat/jarvis.config";
 
 export const metadata: Metadata = {
-  title: "Jarvis AI Chatbot",
+  title: `${JARVIS_CONFIG.assistantName} AI Chatbot`,
   description: "AI Chatbot Interface",
 };
 

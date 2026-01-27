@@ -3,6 +3,7 @@
 import { useRef, useEffect, RefObject } from "react";
 import { ChatBubble } from "@/app/components/molecules";
 import { Message } from "@/app/lib/speech";
+import { JARVIS_CONFIG } from "@/app/lib/voice-chat/jarvis.config";
 
 interface MessageListProps {
   messages: Message[];
@@ -19,9 +20,11 @@ function useAutoScroll(messages: Message[]): RefObject<HTMLDivElement | null> {
   return endRef;
 }
 
+const defaultWelcomeMessage = `Dì "${JARVIS_CONFIG.assistantName}" per iniziare una conversazione.`;
+
 export function MessageList({
   messages,
-  welcomeMessage = 'Dì "Jarvis" per iniziare una conversazione.',
+  welcomeMessage = defaultWelcomeMessage,
 }: MessageListProps) {
   const endRef = useAutoScroll(messages);
 
