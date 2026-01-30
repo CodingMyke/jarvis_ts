@@ -1,6 +1,6 @@
 "use client";
 
-import { memo, useRef, useEffect, useState, RefObject } from "react";
+import { memo, useRef, useEffect, useState } from "react";
 import { ChatBubble } from "@/app/components/molecules";
 import { Message } from "@/app/lib/speech";
 import { ChevronUpIcon, ChevronDownIcon, TrashIcon } from "@/app/components/atoms/icons";

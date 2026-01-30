@@ -7,9 +7,13 @@
     "dev:debug": "NODE_OPTIONS='--inspect' next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "gen-supabase-types": "supabase gen types typescript --project-id surbhsaedsnkcpswwann > app/lib/supabase/database.types.ts"
+
   },
   "dependencies": {
+    "@supabase/ssr": "^0.8.0",
+    "@supabase/supabase-js": "^2.93.3",
     "next": "16.0.5",
     "react": "19.2.0",
     "react-dom": "19.2.0",
@@ -18,6 +22,7 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
+    "supabase": "^2",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
