@@ -9,9 +9,9 @@
     "start": "next start",
     "lint": "eslint",
     "gen-supabase-types": "supabase gen types typescript --project-id surbhsaedsnkcpswwann > app/lib/supabase/database.types.ts"
-
   },
   "dependencies": {
+    "@google/genai": "^1.38.0",
     "@supabase/ssr": "^0.8.0",
     "@supabase/supabase-js": "^2.93.3",
     "next": "16.0.5",
@@ -22,12 +22,12 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
-    "supabase": "^2",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.0.5",
+    "supabase": "^2",
     "tailwindcss": "^4",
     "typescript": "^5"
   }
