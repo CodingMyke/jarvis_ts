@@ -6,11 +6,13 @@ import { AUDIO_INPUT_SAMPLE_RATE } from '../config';
  * Gestisce la cattura audio dal microfono usando Web Audio API.
  * Converte l'audio in formato PCM 16-bit 16kHz per l'invio al server.
  */
+const AUDIO_CAPTURE_WORKLET_URL = '/audio-capture-processor.worklet.js';
+
 export class AudioInputManager {
   private audioContext: AudioContext | null = null;
   private mediaStream: MediaStream | null = null;
   private sourceNode: MediaStreamAudioSourceNode | null = null;
-  private processorNode: ScriptProcessorNode | null = null;
+  private workletNode: AudioWorkletNode | null = null;
   
   private isCapturing = false;
   private isMuted = false;
@@ -47,29 +49,26 @@ export class AudioInputManager {
 
       // Connetti il microfono all'AudioContext
       this.sourceNode = this.audioContext.createMediaStreamSource(this.mediaStream);
-      
-      // Usa ScriptProcessor per compatibilità (AudioWorklet non supportato ovunque)
-      const bufferSize = 4096;
-      this.processorNode = this.audioContext.createScriptProcessor(bufferSize, 1, 1);
-      
-      this.processorNode.onaudioprocess = (event) => {
+
+      const workletUrl = new URL(AUDIO_CAPTURE_WORKLET_URL, window.location.origin).href;
+      await this.audioContext.audioWorklet.addModule(workletUrl);
+
+      this.workletNode = new AudioWorkletNode(this.audioContext, 'audio-capture-processor');
+
+      this.workletNode.port.onmessage = (event: MessageEvent<{ samples: Float32Array }>) => {
         if (this.isMuted) return;
-        
-        const inputData = event.inputBuffer.getChannelData(0);
-        const samples = new Float32Array(inputData);
-        
-        // Calcola livello audio
+        const samples = event.data.samples;
+
         if (this.options.onLevelChange) {
           const level = calculateAudioLevel(samples);
           this.options.onLevelChange(level);
         }
-        
-        // Accumula campioni
+
         this.audioBuffer.push(samples);
       };
-      
-      this.sourceNode.connect(this.processorNode);
-      this.processorNode.connect(this.audioContext.destination);
+
+      this.sourceNode.connect(this.workletNode);
+      this.workletNode.connect(this.audioContext.destination);
       
       // Invia chunk a intervalli regolari
       this.chunkInterval = setInterval(() => {
@@ -143,9 +142,10 @@ export class AudioInputManager {
       this.chunkInterval = null;
     }
     
-    if (this.processorNode) {
-      this.processorNode.disconnect();
-      this.processorNode = null;
+    if (this.workletNode) {
+      this.workletNode.disconnect();
+      this.workletNode.port.onmessage = null;
+      this.workletNode = null;
     }
     
     if (this.sourceNode) {

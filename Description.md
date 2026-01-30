@@ -514,7 +514,7 @@ Implementazione completa che:
 
 Requisiti:
 - Usa `navigator.mediaDevices.getUserMedia()` per accesso microfono
-- Usa `AudioContext` + `ScriptProcessorNode` o `AudioWorklet` per processing
+- Usa `AudioContext` + `AudioWorkletNode` per processing
 - Converte Float32 → Int16 PCM
 - Chunking a intervalli regolari (~100ms)
 - Calcolo audio level per visualizzazione
