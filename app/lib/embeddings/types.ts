@@ -23,7 +23,7 @@ export type EmbedTaskType =
 export interface EmbedOptions {
   /** Task type per ottimizzare l'embedding (es. RETRIEVAL_QUERY per query, RETRIEVAL_DOCUMENT per documenti) */
   taskType?: EmbedTaskType;
-  /** Dimensionalità dell'output (768, 1536 o 3072). Default: 3072. */
+  /** Dimensionalità dell'output (768, 1536 o 3072). Default: 768. */
   outputDimensionality?: 768 | 1536 | 3072;
 }
 

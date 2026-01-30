@@ -1,6 +1,9 @@
 import { GoogleGenAI } from "@google/genai";
 import type { EmbeddingProvider, EmbedOptions } from "./types";
-import { GEMINI_EMBEDDING_MODEL } from "./config";
+import {
+  GEMINI_EMBEDDING_MODEL,
+  DEFAULT_OUTPUT_DIMENSIONALITY,
+} from "./config";
 
 /**
  * Mappa da EmbedTaskType pubblico al taskType della API Gemini.
@@ -60,13 +63,16 @@ export class GeminiEmbeddingProvider implements EmbeddingProvider {
 
     const client = this.getClient();
     const taskType = toGeminiTaskType(options?.taskType);
-    const outputDimensionality = options?.outputDimensionality;
+    const outputDimensionality =
+      options?.outputDimensionality ?? DEFAULT_OUTPUT_DIMENSIONALITY;
 
     const response = await client.models.embedContent({
       model: GEMINI_EMBEDDING_MODEL,
       contents: texts,
-      ...(taskType && { taskType }),
-      ...(outputDimensionality && { outputDimensionality }),
+      config: {
+        ...(taskType && { taskType }),
+        outputDimensionality,
+      },
     });
 
     const rawEmbeddings = response.embeddings ?? [];
