@@ -30,7 +30,7 @@ function createMiddlewareClient(request: NextRequest) {
   return { supabase, response: supabaseResponse };
 }
 
-const ASSISTANT_PATHS = ["/assistant", "/setup"];
+const ASSISTANT_PATHS = ["/assistant", "/setup", "/settings"];
 const LOGIN_PATH = "/";
 
 export async function middleware(request: NextRequest) {

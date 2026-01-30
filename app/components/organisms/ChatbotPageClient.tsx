@@ -1,7 +1,8 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useMemo, useState, useRef } from "react";
-import { VoiceOrb } from "@/app/components";
+import { VoiceOrb, GearIcon } from "@/app/components";
 import { FloatingChat, UpcomingEvents, TimerDisplay, TodoList } from "@/app/components/organisms";
 import { useVoiceChat } from "@/app/hooks/useVoiceChat";
 import { JARVIS_CONFIG } from "@/app/lib/voice-chat/jarvis.config";
@@ -245,6 +246,15 @@ export function ChatbotPageClient({ initialEvents }: ChatbotPageClientProps) {
         {/* Spacer for balance */}
         <div className="w-24" />
       </div>
+
+      {/* Settings - Bottom Left */}
+      <Link
+        href="/settings"
+        className="absolute bottom-6 left-6 flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-muted transition-colors hover:bg-white/10 hover:text-foreground focus:outline-none focus:ring-2 focus:ring-accent/20"
+        aria-label="Impostazioni"
+      >
+        <GearIcon className="h-5 w-5" />
+      </Link>
 
       {/* Status indicator - Bottom Center */}
       <div className="absolute bottom-6 left-1/2 -translate-x-1/2">

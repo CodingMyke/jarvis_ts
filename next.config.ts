@@ -4,9 +4,16 @@ const nextConfig: NextConfig = {
   // Ottimizzazioni per performance e bundle size
   compress: true,
   
-  // Ottimizza le immagini
+  // Ottimizza le immagini (avatar Google da user_metadata)
   images: {
     formats: ['image/avif', 'image/webp'],
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'lh3.googleusercontent.com',
+        pathname: '/**',
+      },
+    ],
   },
   
   // Ottimizzazioni del bundle
