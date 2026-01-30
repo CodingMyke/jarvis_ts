@@ -10,15 +10,16 @@ type EpisodicMemoryInsert = Database["public"]["Tables"]["episodic_memory"]["Ins
 type EpisodicMemoryUpdate = Database["public"]["Tables"]["episodic_memory"]["Update"];
 type EpisodicMemoryRow = Database["public"]["Tables"]["episodic_memory"]["Row"];
 
-/** Genera l'embedding per il contenuto e lo restituisce come stringa JSON, o null se fallisce. */
-async function embeddingForContent(content: string): Promise<string | null> {
-  try {
-    const vector = await embed(content, { taskType: "RETRIEVAL_DOCUMENT" });
-    return vector.length > 0 ? JSON.stringify(vector) : null;
-  } catch (err) {
-    console.error("[embeddingForContent episodic]", err);
-    return null;
-  }
+const EMBED_OPTIONS = { taskType: "RETRIEVAL_DOCUMENT" as const };
+
+const EMBEDDING_REQUIRED_ERROR =
+  "Impossibile generare l'embedding. Verificare la configurazione del servizio (es. GEMINI_API_KEY).";
+
+/** Genera l'embedding per il contenuto (obbligatorio per il salvataggio). */
+async function embeddingForContent(content: string): Promise<string> {
+  const vector = await embed(content, EMBED_OPTIONS);
+  if (vector.length === 0) throw new Error(EMBEDDING_REQUIRED_ERROR);
+  return JSON.stringify(vector);
 }
 
 export type CreateEpisodicMemoryResult =
@@ -54,7 +55,14 @@ export async function createEpisodicMemory(
     return { success: false, error: "Il contenuto non può essere vuoto" };
   }
 
-  const embedding = await embeddingForContent(content);
+  let embedding: string;
+  try {
+    embedding = await embeddingForContent(content);
+  } catch (err) {
+    console.error("[createEpisodicMemory] embedding failed", err);
+    return { success: false, error: EMBEDDING_REQUIRED_ERROR };
+  }
+
   const row: EpisodicMemoryInsert = {
     user_id: userId,
     content,
@@ -136,8 +144,13 @@ export async function updateEpisodicMemory(
   if (body.content !== undefined) {
     const content = String(body.content).trim();
     if (!content) return { success: false, error: "Il contenuto non può essere vuoto" };
-    updates.content = content;
-    updates.embedding = await embeddingForContent(content);
+    try {
+      updates.content = content;
+      updates.embedding = await embeddingForContent(content);
+    } catch (err) {
+      console.error("[updateEpisodicMemory] embedding failed", err);
+      return { success: false, error: EMBEDDING_REQUIRED_ERROR };
+    }
   }
   if (body.importance !== undefined) updates.importance = body.importance;
   if (body.metadata !== undefined) updates.metadata = body.metadata;

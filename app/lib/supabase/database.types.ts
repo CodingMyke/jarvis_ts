@@ -18,7 +18,7 @@ export type Database = {
         Row: {
           content: string
           created_at: string
-          embedding: string | null
+          embedding: string
           id: string
           importance: string
           metadata: Json
@@ -28,7 +28,7 @@ export type Database = {
         Insert: {
           content: string
           created_at?: string
-          embedding?: string | null
+          embedding: string
           id?: string
           importance?: string
           metadata?: Json
@@ -38,7 +38,7 @@ export type Database = {
         Update: {
           content?: string
           created_at?: string
-          embedding?: string | null
+          embedding?: string
           id?: string
           importance?: string
           metadata?: Json
@@ -51,7 +51,7 @@ export type Database = {
         Row: {
           content: string
           created_at: string
-          embedding: string | null
+          embedding: string
           id: string
           importance: string
           key: string | null
@@ -61,7 +61,7 @@ export type Database = {
         Insert: {
           content: string
           created_at?: string
-          embedding?: string | null
+          embedding: string
           id?: string
           importance?: string
           key?: string | null
@@ -71,7 +71,7 @@ export type Database = {
         Update: {
           content?: string
           created_at?: string
-          embedding?: string | null
+          embedding?: string
           id?: string
           importance?: string
           key?: string | null
@@ -85,7 +85,24 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      match_episodic_memory: {
+        Args: { match_count?: number; query_embedding: string }
+        Returns: {
+          content: string
+          created_at: string
+          id: string
+          importance: string
+          similarity: number
+        }[]
+      }
+      match_semantic_memory: {
+        Args: { match_count?: number; query_embedding: string }
+        Returns: {
+          content: string
+          id: string
+          similarity: number
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never
