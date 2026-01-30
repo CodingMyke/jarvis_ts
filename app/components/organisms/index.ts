@@ -1,4 +1,5 @@
 export { Header } from "./Header";
+export { LoginPageClient } from "./LoginPageClient";
 export { MessageList } from "./MessageList";
 export { ChatInput } from "./ChatInput";
 export { FloatingChat } from "./FloatingChat";

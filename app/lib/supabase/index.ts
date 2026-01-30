@@ -20,3 +20,4 @@ export {
 } from "./database.service";
 export { createClient as createServerClient } from "./server";
 export { createClient as createBrowserClient } from "./client";
+export { signInWithGoogle, signOut } from "./auth";

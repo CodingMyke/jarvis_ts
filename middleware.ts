@@ -30,11 +30,43 @@ function createMiddlewareClient(request: NextRequest) {
   return { supabase, response: supabaseResponse };
 }
 
+const ASSISTANT_PATHS = ["/assistant", "/setup"];
+const LOGIN_PATH = "/";
+
 export async function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl;
   const { supabase, response } = createMiddlewareClient(request);
-  if (supabase) {
-    await supabase.auth.getUser();
+
+  if (!supabase) {
+    return response;
   }
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  const isProtectedPath = ASSISTANT_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`));
+  const isLoginPath = pathname === LOGIN_PATH;
+  const isAuthCallback = pathname.startsWith("/auth/");
+
+  if (isAuthCallback) {
+    return response;
+  }
+
+  if (isProtectedPath && !user) {
+    const loginUrl = new URL(LOGIN_PATH, request.url);
+    const redirectRes = NextResponse.redirect(loginUrl);
+    response.cookies.getAll().forEach((c) => redirectRes.cookies.set(c.name, c.value, c));
+    return redirectRes;
+  }
+
+  if (isLoginPath && user) {
+    const assistantUrl = new URL("/assistant", request.url);
+    const redirectRes = NextResponse.redirect(assistantUrl);
+    response.cookies.getAll().forEach((c) => redirectRes.cookies.set(c.name, c.value, c));
+    return redirectRes;
+  }
+
   return response;
 }
 
