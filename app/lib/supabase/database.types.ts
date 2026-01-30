@@ -14,21 +14,69 @@ export type Database = {
   }
   public: {
     Tables: {
-      test: {
+      episodic_memory: {
         Row: {
+          content: string
           created_at: string
+          embedding: string | null
           id: string
-          text: string
+          importance: string
+          metadata: Json
+          ttl_days: number | null
+          user_id: string
         }
         Insert: {
+          content: string
           created_at?: string
+          embedding?: string | null
           id?: string
-          text: string
+          importance?: string
+          metadata?: Json
+          ttl_days?: number | null
+          user_id: string
         }
         Update: {
+          content?: string
           created_at?: string
+          embedding?: string | null
           id?: string
-          text?: string
+          importance?: string
+          metadata?: Json
+          ttl_days?: number | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      semantic_memory: {
+        Row: {
+          content: string
+          created_at: string
+          embedding: string | null
+          id: string
+          importance: string
+          key: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          embedding?: string | null
+          id?: string
+          importance?: string
+          key?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          embedding?: string | null
+          id?: string
+          importance?: string
+          key?: string | null
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
