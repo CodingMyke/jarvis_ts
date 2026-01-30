@@ -39,3 +39,37 @@ export interface MemoryErrorResponse {
 export type CreateSemanticMemoryResponse =
   | CreateSemanticMemorySuccessResponse
   | MemoryErrorResponse;
+
+/** Payload per aggiornare un record (PATCH body). */
+export interface UpdateSemanticMemoryRequest {
+  /** ID del record da aggiornare. */
+  id: string;
+  content?: string;
+  key?: string | null;
+  importance?: string;
+}
+
+/** Risposta GET lista. */
+export interface GetSemanticMemoriesSuccessResponse {
+  success: true;
+  memories: SemanticMemoryResponse[];
+  count: number;
+}
+
+/** Risposta GET singolo (quando ?id= presente). */
+export interface GetSemanticMemorySuccessResponse {
+  success: true;
+  memory: SemanticMemoryResponse;
+}
+
+/** Risposta PATCH. */
+export interface UpdateSemanticMemorySuccessResponse {
+  success: true;
+  memory: SemanticMemoryResponse;
+}
+
+/** Risposta DELETE. */
+export interface DeleteSemanticMemorySuccessResponse {
+  success: true;
+  deleted: { id: string };
+}

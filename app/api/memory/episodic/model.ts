@@ -43,3 +43,38 @@ export interface MemoryErrorResponse {
 export type CreateEpisodicMemoryResponse =
   | CreateEpisodicMemorySuccessResponse
   | MemoryErrorResponse;
+
+/** Payload per aggiornare un record (PATCH body). */
+export interface UpdateEpisodicMemoryRequest {
+  /** ID del record da aggiornare. */
+  id: string;
+  content?: string;
+  importance?: string;
+  metadata?: Json;
+  ttl_days?: number | null;
+}
+
+/** Risposta GET lista. */
+export interface GetEpisodicMemoriesSuccessResponse {
+  success: true;
+  memories: EpisodicMemoryResponse[];
+  count: number;
+}
+
+/** Risposta GET singolo (quando ?id= presente). */
+export interface GetEpisodicMemorySuccessResponse {
+  success: true;
+  memory: EpisodicMemoryResponse;
+}
+
+/** Risposta PATCH. */
+export interface UpdateEpisodicMemorySuccessResponse {
+  success: true;
+  memory: EpisodicMemoryResponse;
+}
+
+/** Risposta DELETE. */
+export interface DeleteEpisodicMemorySuccessResponse {
+  success: true;
+  deleted: { id: string };
+}

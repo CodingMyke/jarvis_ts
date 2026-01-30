@@ -1,12 +1,32 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/app/lib/supabase/database.types";
-import type { CreateSemanticMemoryRequest } from "./model";
+import type {
+  CreateSemanticMemoryRequest,
+  UpdateSemanticMemoryRequest,
+} from "./model";
 
 type SemanticMemoryInsert = Database["public"]["Tables"]["semantic_memory"]["Insert"];
+type SemanticMemoryUpdate = Database["public"]["Tables"]["semantic_memory"]["Update"];
 type SemanticMemoryRow = Database["public"]["Tables"]["semantic_memory"]["Row"];
 
 export type CreateSemanticMemoryResult =
   | { success: true; memory: SemanticMemoryRow }
+  | { success: false; error: string };
+
+export type GetSemanticMemoriesResult =
+  | { success: true; memories: SemanticMemoryRow[] }
+  | { success: false; error: string };
+
+export type GetSemanticMemoryResult =
+  | { success: true; memory: SemanticMemoryRow }
+  | { success: false; error: string };
+
+export type UpdateSemanticMemoryResult =
+  | { success: true; memory: SemanticMemoryRow }
+  | { success: false; error: string };
+
+export type DeleteSemanticMemoryResult =
+  | { success: true }
   | { success: false; error: string };
 
 /**
@@ -44,4 +64,106 @@ export async function createSemanticMemory(
   }
 
   return { success: true, memory: data as SemanticMemoryRow };
+}
+
+/**
+ * Legge tutti i record di memoria semantica dell'utente.
+ */
+export async function getSemanticMemories(
+  supabase: SupabaseClient<Database>,
+  userId: string
+): Promise<GetSemanticMemoriesResult> {
+  const { data, error } = await supabase
+    .from("semantic_memory")
+    .select("*")
+    .eq("user_id", userId)
+    .order("updated_at", { ascending: false });
+
+  if (error) {
+    console.error("[getSemanticMemories]", error);
+    return { success: false, error: error.message };
+  }
+  return { success: true, memories: (data ?? []) as SemanticMemoryRow[] };
+}
+
+/**
+ * Legge un singolo record per id (solo se appartiene all'utente).
+ */
+export async function getSemanticMemoryById(
+  supabase: SupabaseClient<Database>,
+  userId: string,
+  id: string
+): Promise<GetSemanticMemoryResult> {
+  const { data, error } = await supabase
+    .from("semantic_memory")
+    .select("*")
+    .eq("user_id", userId)
+    .eq("id", id)
+    .maybeSingle();
+
+  if (error) {
+    console.error("[getSemanticMemoryById]", error);
+    return { success: false, error: error.message };
+  }
+  if (!data) {
+    return { success: false, error: "Record non trovato" };
+  }
+  return { success: true, memory: data as SemanticMemoryRow };
+}
+
+/**
+ * Aggiorna un record di memoria semantica (solo se appartiene all'utente).
+ */
+export async function updateSemanticMemory(
+  supabase: SupabaseClient<Database>,
+  userId: string,
+  id: string,
+  body: Omit<UpdateSemanticMemoryRequest, "id">
+): Promise<UpdateSemanticMemoryResult> {
+  const updates: SemanticMemoryUpdate = { updated_at: new Date().toISOString() };
+  if (body.content !== undefined) {
+    const content = String(body.content).trim();
+    if (!content) return { success: false, error: "Il contenuto non può essere vuoto" };
+    updates.content = content;
+  }
+  if (body.key !== undefined) updates.key = body.key;
+  if (body.importance !== undefined) updates.importance = body.importance;
+
+  const { data, error } = await supabase
+    .from("semantic_memory")
+    .update(updates)
+    .eq("user_id", userId)
+    .eq("id", id)
+    .select()
+    .maybeSingle();
+
+  if (error) {
+    console.error("[updateSemanticMemory]", error);
+    return { success: false, error: error.message };
+  }
+  if (!data) {
+    return { success: false, error: "Record non trovato" };
+  }
+  return { success: true, memory: data as SemanticMemoryRow };
+}
+
+/**
+ * Elimina un record di memoria semantica (solo se appartiene all'utente).
+ */
+export async function deleteSemanticMemory(
+  supabase: SupabaseClient<Database>,
+  userId: string,
+  id: string
+): Promise<DeleteSemanticMemoryResult> {
+  const { error } = await supabase
+    .from("semantic_memory")
+    .delete()
+    .eq("user_id", userId)
+    .eq("id", id);
+
+  if (error) {
+    console.error("[deleteSemanticMemory]", error);
+    return { success: false, error: error.message };
+  }
+  return { success: true };
 }
