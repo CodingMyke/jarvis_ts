@@ -10,10 +10,9 @@ export const searchEpisodicMemoriesTool: SystemToolDefinition = {
   name: SEARCH_EPISODIC_MEMORIES_TOOL_NAME,
 
   description:
-    "Cerca nelle memorie episodiche dell'utente per contenuto semantico (eventi/episodi simili per significato). " +
-    "Usa questo tool quando l'utente chiede di trovare episodi o eventi relativi a un argomento o a qualcosa che è successo. " +
-    "Parametri: query (testo da cercare), match_count opzionale (numero massimo di risultati, default 5). " +
-    "Esempi: 'cerca episodi sui viaggi', 'trova memorie su quando abbiamo parlato di lavoro'.",
+    "Usa quando devi 'ricordare' eventi o episodi relativi a un argomento (cercati per significato). " +
+    "Parametri: query (testo/concept da cercare), match_count opzionale (default 5). " +
+    "Non annunciare la ricerca a meno che non serva (es. domanda che richiede tempo); spesso rispondi direttamente senza dire che stai pensando o cercando.",
 
   parameters: {
     type: "object",

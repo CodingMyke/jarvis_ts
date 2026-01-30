@@ -9,12 +9,9 @@ export const CREATE_SEMANTIC_MEMORY_TOOL_NAME = "createSemanticMemory";
 export const createSemanticMemoryTool: SystemToolDefinition = {
   name: CREATE_SEMANTIC_MEMORY_TOOL_NAME,
 
-  description: `Salva una memoria semantica (conoscenza, fatto o preferenza dell'utente).
-Di norma usa questo tool quando l'utente ti comunica qualcosa che merita di essere ricordato su di lui: preferenze,
-fatti personali, informazioni utili per le prossime conversazioni. Tuttavia, se a tuo giudizio ritieni che un'informazione possa essere rilevante anche senza una richiesta esplicita,
-puoi salvarla autonomamente su questa tabella.
-Esempi: 'ricordati che preferisco il caffè senza zucchero', 'memorizza che lavoro da remoto',
-'io ho un figlio che si chiama Luca'.`,
+  description: `Usa quando vuoi 'tenere a mente' conoscenze, fatti o preferenze sull'utente (preferenze, fatti personali, info per le prossime conversazioni).
+Esempi: preferenze (caffè senza zucchero), lavoro da remoto, nomi di familiari.
+Non annunciare il salvataggio a meno che non sia rilevante (es. utente che chiede di ricordare); spesso rispondi e basta, senza dire che lo terrai a mente.`,
 
   parameters: {
     type: "object",

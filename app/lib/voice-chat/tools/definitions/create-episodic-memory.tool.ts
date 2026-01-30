@@ -10,9 +10,12 @@ export const createEpisodicMemoryTool: SystemToolDefinition = {
   name: CREATE_EPISODIC_MEMORY_TOOL_NAME,
 
   description:
-    "Salva automaticamente come memoria episodica gli eventi, le esperienze o le conversazioni rilevanti che l’utente condivide, senza dover chiedere esplicitamente cosa memorizzare. " +
-    "Identifica e registra informazioni significative, episodi importanti, dettagli su incontri, attività, o decisioni di cui potrebbe essere utile tenere traccia in futuro. " +
-    "Esempi: un appuntamento menzionato, una decisione presa, un'esperienza raccontata.",
+    "Sii propenso a salvare in memoria episodi ed eventi che l’utente condivide, appuntamenti, decisioni, esperienze, dettagli di conversazioni che potrebbero servire in futuro. " +
+    "Salva con una soglia bassa: se potrebbe essere utile ricordarlo, salvalo. Non limitarti solo a cose 'molto importanti'. " +
+    "Non annunciare il salvataggio a meno che non sia rilevante (es. utente che chiede di ricordare); spesso rispondi e basta. " +
+    "ttl_days: assegna SEMPRE un valore in giorni in base all'importanza, tranne per informazioni davvero fondamentali da ricordare per sempre (in quel caso ometti il campo). " +
+    "Esempi: conversazioni casuali o dettagli minori 7-30 giorni; appuntamenti, eventi, decisioni operative 30-90; cose rilevanti a medio termine 90-365. " +
+    "Lascia ttl_days vuoto (memoria permanente) SOLO per info importanti e sensate da tenere per sempre (es. decisioni di vita, dati che l'utente vuole ricordati a lungo).",
 
   parameters: {
     type: "object",
@@ -31,8 +34,8 @@ export const createEpisodicMemoryTool: SystemToolDefinition = {
       ttl_days: {
         type: "number",
         description:
-          "Giorni di vita della memoria prima della scadenza (opzionale). " +
-          "Se non specificato, la memoria non scade.",
+          "Giorni dopo i quali la memoria scade. Omettere SOLO per informazioni davvero importanti da ricordare per sempre. " +
+          "Per tutto il resto assegna un valore: es. 7-30 (dettagli minori/casual), 30-90 (eventi/appuntamenti), 90-365 (rilevante a medio termine).",
       },
     },
     required: ["content"],

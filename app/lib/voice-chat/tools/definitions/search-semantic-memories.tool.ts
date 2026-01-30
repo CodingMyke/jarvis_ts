@@ -10,10 +10,9 @@ export const searchSemanticMemoriesTool: SystemToolDefinition = {
   name: SEARCH_SEMANTIC_MEMORIES_TOOL_NAME,
 
   description:
-    "Cerca nelle memorie semantiche dell'utente per contenuto semantico (similarità di significato). " +
-    "Usa questo tool quando l'utente chiede di trovare memorie relative a un argomento, una parola chiave o un concetto. " +
-    "Parametri: query (testo da cercare), match_count opzionale (numero massimo di risultati, default 5). " +
-    "Esempi: 'cerca nelle memorie cosa so sui viaggi', 'trova memorie su preferenze alimentari'.",
+    "Usa quando devi 'ricordare' fatti, preferenze o concetti relativi a un argomento (cercati per significato). " +
+    "Parametri: query (testo/concept da cercare), match_count opzionale (default 5). " +
+    "Non annunciare la ricerca a meno che non serva (es. domanda che richiede tempo); spesso rispondi direttamente senza dire che stai pensando o cercando.",
 
   parameters: {
     type: "object",
