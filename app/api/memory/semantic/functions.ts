@@ -4,10 +4,22 @@ import type {
   CreateSemanticMemoryRequest,
   UpdateSemanticMemoryRequest,
 } from "./model";
+import { embed } from "@/app/lib/embeddings";
 
 type SemanticMemoryInsert = Database["public"]["Tables"]["semantic_memory"]["Insert"];
 type SemanticMemoryUpdate = Database["public"]["Tables"]["semantic_memory"]["Update"];
 type SemanticMemoryRow = Database["public"]["Tables"]["semantic_memory"]["Row"];
+
+/** Genera l'embedding per il contenuto e lo restituisce come stringa JSON, o null se fallisce. */
+async function embeddingForContent(content: string): Promise<string | null> {
+  try {
+    const vector = await embed(content, { taskType: "RETRIEVAL_DOCUMENT" });
+    return vector.length > 0 ? JSON.stringify(vector) : null;
+  } catch (err) {
+    console.error("[embeddingForContent semantic]", err);
+    return null;
+  }
+}
 
 export type CreateSemanticMemoryResult =
   | { success: true; memory: SemanticMemoryRow }
@@ -43,6 +55,7 @@ export async function createSemanticMemory(
   }
 
   const now = new Date().toISOString();
+  const embedding = await embeddingForContent(content);
   const row: SemanticMemoryInsert = {
     user_id: userId,
     content,
@@ -50,6 +63,7 @@ export async function createSemanticMemory(
     importance: body.importance ?? "medium",
     created_at: now,
     updated_at: now,
+    embedding,
   };
 
   const { data, error } = await supabase
@@ -125,6 +139,7 @@ export async function updateSemanticMemory(
     const content = String(body.content).trim();
     if (!content) return { success: false, error: "Il contenuto non può essere vuoto" };
     updates.content = content;
+    updates.embedding = await embeddingForContent(content);
   }
   if (body.key !== undefined) updates.key = body.key;
   if (body.importance !== undefined) updates.importance = body.importance;

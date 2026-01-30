@@ -4,10 +4,22 @@ import type {
   CreateEpisodicMemoryRequest,
   UpdateEpisodicMemoryRequest,
 } from "./model";
+import { embed } from "@/app/lib/embeddings";
 
 type EpisodicMemoryInsert = Database["public"]["Tables"]["episodic_memory"]["Insert"];
 type EpisodicMemoryUpdate = Database["public"]["Tables"]["episodic_memory"]["Update"];
 type EpisodicMemoryRow = Database["public"]["Tables"]["episodic_memory"]["Row"];
+
+/** Genera l'embedding per il contenuto e lo restituisce come stringa JSON, o null se fallisce. */
+async function embeddingForContent(content: string): Promise<string | null> {
+  try {
+    const vector = await embed(content, { taskType: "RETRIEVAL_DOCUMENT" });
+    return vector.length > 0 ? JSON.stringify(vector) : null;
+  } catch (err) {
+    console.error("[embeddingForContent episodic]", err);
+    return null;
+  }
+}
 
 export type CreateEpisodicMemoryResult =
   | { success: true; memory: EpisodicMemoryRow }
@@ -42,12 +54,14 @@ export async function createEpisodicMemory(
     return { success: false, error: "Il contenuto non può essere vuoto" };
   }
 
+  const embedding = await embeddingForContent(content);
   const row: EpisodicMemoryInsert = {
     user_id: userId,
     content,
     importance: body.importance ?? "medium",
     metadata: body.metadata ?? {},
     ttl_days: body.ttl_days ?? null,
+    embedding,
   };
 
   const { data, error } = await supabase
@@ -123,6 +137,7 @@ export async function updateEpisodicMemory(
     const content = String(body.content).trim();
     if (!content) return { success: false, error: "Il contenuto non può essere vuoto" };
     updates.content = content;
+    updates.embedding = await embeddingForContent(content);
   }
   if (body.importance !== undefined) updates.importance = body.importance;
   if (body.metadata !== undefined) updates.metadata = body.metadata;
