@@ -1,0 +1,98 @@
+import type { SystemToolDefinition } from "../types";
+
+export const SEARCH_EPISODIC_MEMORIES_TOOL_NAME = "searchEpisodicMemories";
+
+/**
+ * Tool per cercare nelle memorie episodiche per similarità semantica.
+ * Chiama POST /api/memory/episodic/search. Richiede autenticazione Supabase.
+ */
+export const searchEpisodicMemoriesTool: SystemToolDefinition = {
+  name: SEARCH_EPISODIC_MEMORIES_TOOL_NAME,
+
+  description:
+    "Cerca nelle memorie episodiche dell'utente per contenuto semantico (eventi/episodi simili per significato). " +
+    "Usa questo tool quando l'utente chiede di trovare episodi o eventi relativi a un argomento o a qualcosa che è successo. " +
+    "Parametri: query (testo da cercare), match_count opzionale (numero massimo di risultati, default 5). " +
+    "Esempi: 'cerca episodi sui viaggi', 'trova memorie su quando abbiamo parlato di lavoro'.",
+
+  parameters: {
+    type: "object",
+    properties: {
+      query: {
+        type: "string",
+        description:
+          "Testo o concetto da cercare nelle memorie episodiche. Restituisce gli episodi più simili per significato.",
+      },
+      match_count: {
+        type: "number",
+        description:
+          "Numero massimo di memorie da restituire (opzionale, default 5).",
+      },
+    },
+    required: ["query"],
+  },
+
+  execute: async (args) => {
+    try {
+      const query = args.query as string;
+      const matchCount = args.match_count as number | undefined;
+      const body: { query: string; match_count?: number } = { query: query?.trim() ?? "" };
+      if (typeof matchCount === "number" && matchCount > 0) body.match_count = matchCount;
+
+      const response = await fetch("/api/memory/episodic/search", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+        credentials: "include",
+      });
+      const data = await response.json();
+
+      if (response.status === 401) {
+        return {
+          result: {
+            success: false,
+            error: "UNAUTHORIZED",
+            errorMessage: "Utente non autenticato. Effettua il login per accedere alle memorie.",
+          },
+        };
+      }
+
+      if (!response.ok) {
+        return {
+          result: {
+            success: false,
+            error: data.error || "EXECUTION_ERROR",
+            errorMessage: data.message || data.errorMessage || "Errore nella ricerca episodica.",
+          },
+        };
+      }
+
+      if (!data.success) {
+        return {
+          result: {
+            success: false,
+            error: data.error || "UNKNOWN_ERROR",
+            errorMessage: data.message || data.errorMessage || "Errore nella ricerca.",
+          },
+        };
+      }
+
+      return {
+        result: {
+          success: true,
+          memories: data.memories ?? [],
+          count: data.count ?? 0,
+        },
+      };
+    } catch (error) {
+      console.error("[searchEpisodicMemoriesTool] Errore:", error);
+      return {
+        result: {
+          success: false,
+          error: "EXECUTION_ERROR",
+          errorMessage: error instanceof Error ? error.message : "Errore sconosciuto",
+        },
+      };
+    }
+  },
+};

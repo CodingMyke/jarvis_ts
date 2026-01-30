@@ -11,6 +11,7 @@ type SemanticMemoryUpdate = Database["public"]["Tables"]["semantic_memory"]["Upd
 type SemanticMemoryRow = Database["public"]["Tables"]["semantic_memory"]["Row"];
 
 const EMBED_OPTIONS = { taskType: "RETRIEVAL_DOCUMENT" as const };
+const EMBED_OPTIONS_QUERY = { taskType: "RETRIEVAL_QUERY" as const };
 
 const EMBEDDING_REQUIRED_ERROR =
   "Impossibile generare l'embedding. Verificare la configurazione del servizio (es. GEMINI_API_KEY).";
@@ -40,6 +41,10 @@ export type UpdateSemanticMemoryResult =
 
 export type DeleteSemanticMemoryResult =
   | { success: true }
+  | { success: false; error: string };
+
+export type SearchSemanticMemoriesResult =
+  | { success: true; memories: { id: string; content: string; similarity: number }[] }
   | { success: false; error: string };
 
 /**
@@ -194,4 +199,47 @@ export async function deleteSemanticMemory(
     return { success: false, error: error.message };
   }
   return { success: true };
+}
+
+/**
+ * Ricerca semantica nelle memorie semantiche tramite RPC match_semantic_memory.
+ * Richiede query testuale; opzionale match_count (default 5).
+ */
+export async function searchSemanticMemoriesByContent(
+  supabase: SupabaseClient<Database>,
+  _userId: string,
+  query: string,
+  matchCount: number = 5
+): Promise<SearchSemanticMemoriesResult> {
+  const q = typeof query === "string" ? query.trim() : "";
+  if (!q) {
+    return { success: false, error: "La query di ricerca non può essere vuota" };
+  }
+
+  let queryEmbedding: string;
+  try {
+    const vector = await embed(q, EMBED_OPTIONS_QUERY);
+    if (vector.length === 0) throw new Error(EMBEDDING_REQUIRED_ERROR);
+    queryEmbedding = JSON.stringify(vector);
+  } catch (err) {
+    console.error("[searchSemanticMemoriesByContent] embedding failed", err);
+    return { success: false, error: EMBEDDING_REQUIRED_ERROR };
+  }
+
+  const { data, error } = await supabase.rpc("match_semantic_memory", {
+    query_embedding: queryEmbedding,
+    match_count: matchCount,
+  });
+
+  if (error) {
+    console.error("[searchSemanticMemoriesByContent]", error);
+    return { success: false, error: error.message };
+  }
+
+  const memories = (data ?? []).map((row: { id: string; content: string; similarity: number }) => ({
+    id: row.id,
+    content: row.content,
+    similarity: row.similarity,
+  }));
+  return { success: true, memories };
 }

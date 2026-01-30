@@ -83,6 +83,11 @@ export {
 } from "./get-semantic-memories.tool";
 
 export {
+  searchSemanticMemoriesTool,
+  SEARCH_SEMANTIC_MEMORIES_TOOL_NAME,
+} from "./search-semantic-memories.tool";
+
+export {
   createSemanticMemoryTool,
   CREATE_SEMANTIC_MEMORY_TOOL_NAME,
 } from "./create-semantic-memory.tool";
@@ -101,6 +106,11 @@ export {
   getEpisodicMemoriesTool,
   GET_EPISODIC_MEMORIES_TOOL_NAME,
 } from "./get-episodic-memories.tool";
+
+export {
+  searchEpisodicMemoriesTool,
+  SEARCH_EPISODIC_MEMORIES_TOOL_NAME,
+} from "./search-episodic-memories.tool";
 
 export {
   createEpisodicMemoryTool,

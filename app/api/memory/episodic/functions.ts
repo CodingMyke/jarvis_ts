@@ -11,6 +11,7 @@ type EpisodicMemoryUpdate = Database["public"]["Tables"]["episodic_memory"]["Upd
 type EpisodicMemoryRow = Database["public"]["Tables"]["episodic_memory"]["Row"];
 
 const EMBED_OPTIONS = { taskType: "RETRIEVAL_DOCUMENT" as const };
+const EMBED_OPTIONS_QUERY = { taskType: "RETRIEVAL_QUERY" as const };
 
 const EMBEDDING_REQUIRED_ERROR =
   "Impossibile generare l'embedding. Verificare la configurazione del servizio (es. GEMINI_API_KEY).";
@@ -40,6 +41,10 @@ export type UpdateEpisodicMemoryResult =
 
 export type DeleteEpisodicMemoryResult =
   | { success: true }
+  | { success: false; error: string };
+
+export type SearchEpisodicMemoriesResult =
+  | { success: true; memories: { id: string; content: string; importance: string; created_at: string; similarity: number }[] }
   | { success: false; error: string };
 
 /**
@@ -197,4 +202,51 @@ export async function deleteEpisodicMemory(
     return { success: false, error: error.message };
   }
   return { success: true };
+}
+
+/**
+ * Ricerca semantica nelle memorie episodiche tramite RPC match_episodic_memory.
+ * Richiede query testuale; opzionale match_count (default 5).
+ */
+export async function searchEpisodicMemoriesByContent(
+  supabase: SupabaseClient<Database>,
+  _userId: string,
+  query: string,
+  matchCount: number = 5
+): Promise<SearchEpisodicMemoriesResult> {
+  const q = typeof query === "string" ? query.trim() : "";
+  if (!q) {
+    return { success: false, error: "La query di ricerca non può essere vuota" };
+  }
+
+  let queryEmbedding: string;
+  try {
+    const vector = await embed(q, EMBED_OPTIONS_QUERY);
+    if (vector.length === 0) throw new Error(EMBEDDING_REQUIRED_ERROR);
+    queryEmbedding = JSON.stringify(vector);
+  } catch (err) {
+    console.error("[searchEpisodicMemoriesByContent] embedding failed", err);
+    return { success: false, error: EMBEDDING_REQUIRED_ERROR };
+  }
+
+  const { data, error } = await supabase.rpc("match_episodic_memory", {
+    query_embedding: queryEmbedding,
+    match_count: matchCount,
+  });
+
+  if (error) {
+    console.error("[searchEpisodicMemoriesByContent]", error);
+    return { success: false, error: error.message };
+  }
+
+  const memories = (data ?? []).map(
+    (row: { id: string; content: string; importance: string; created_at: string; similarity: number }) => ({
+      id: row.id,
+      content: row.content,
+      importance: row.importance,
+      created_at: row.created_at,
+      similarity: row.similarity,
+    })
+  );
+  return { success: true, memories };
 }
