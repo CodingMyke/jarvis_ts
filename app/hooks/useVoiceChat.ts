@@ -204,7 +204,7 @@ export function useVoiceChat(options?: UseVoiceChatOptions): UseVoiceChatReturn 
     setConnectionState("disconnected");
     currentMessageIdRef.current = { user: null, ai: null };
     setListeningMode("wake_word");
-    connectToGeminiRef.current("Riprendi");
+    connectToGeminiRef.current(`Ciao ${JARVIS_CONFIG.assistantName}`);
   }, [clearConversation]);
 
   /**
