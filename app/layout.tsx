@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import { TimerProvider, TodoProvider } from "@/app/components/organisms";
+import { TimerProvider } from "@/app/components/organisms";
 import { JARVIS_CONFIG } from "@/app/lib/voice-chat/jarvis.config";
 
 export const metadata: Metadata = {
@@ -16,9 +16,7 @@ export default function RootLayout({
   return (
     <html lang="it" suppressHydrationWarning>
       <body className="antialiased" suppressHydrationWarning>
-        <TimerProvider>
-          <TodoProvider>{children}</TodoProvider>
-        </TimerProvider>
+        <TimerProvider>{children}</TimerProvider>
       </body>
     </html>
   );

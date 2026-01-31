@@ -24,8 +24,14 @@ function toTodo(t: { id: string; text: string; completed: boolean; createdAt?: n
   };
 }
 
-export function TodoProvider({ children }: { children: React.ReactNode }) {
-  const [todos, setTodos] = useState<Todo[]>([]);
+interface TodoProviderProps {
+  children: React.ReactNode;
+  /** Task caricati lato server (prima volta); se presenti si evita il fetch al mount. */
+  initialTodos?: Todo[];
+}
+
+export function TodoProvider({ children, initialTodos }: TodoProviderProps) {
+  const [todos, setTodos] = useState<Todo[]>(initialTodos ?? []);
 
   const loadTasks = useCallback(async () => {
     try {
@@ -42,8 +48,10 @@ export function TodoProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
-    loadTasks();
-  }, [loadTasks]);
+    if (initialTodos === undefined) {
+      queueMicrotask(() => void loadTasks());
+    }
+  }, [loadTasks, initialTodos]);
 
   // Aggiorna la lista quando l'assistente modifica i task (create/update/delete via tool)
   useEffect(() => {

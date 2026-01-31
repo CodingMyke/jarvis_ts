@@ -18,4 +18,5 @@ export {
   deleteAllTasks,
   isTasksConfigured,
 } from "./tasks.service";
+export { fetchTasks } from "./actions";
 export { TODOS_CHANGED_EVENT, notifyTodosChanged } from "./todos-changed.event";
