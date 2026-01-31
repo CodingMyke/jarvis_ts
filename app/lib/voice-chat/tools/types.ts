@@ -15,6 +15,10 @@ export interface ToolContext {
   clearConversation: () => void;
   /** Passa a un'altra chat: termina la conversazione corrente e riapre quella chat (history utente + assistente aggiornate). */
   switchToChat?: (chatId: string) => void;
+  /** Crea una nuova chat e passa a essa. Il messaggio corrente ("crea nuova chat") non viene salvato nella chat attuale e non riceve risposta. */
+  createNewChat?: () => void;
+  /** Restituisce true se la chat corrente è vuota o non contiene conversazione sostanziale (es. solo wake word / saluto). */
+  getIsCurrentChatEmpty?: () => boolean;
 }
 
 /**

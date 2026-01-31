@@ -19,6 +19,23 @@ const INACTIVITY_MS = 20_000;
 /** Ritardo prima di disconnettere e riaprire dopo clearChat (consente l'invio della risposta del tool). */
 const CLEAR_AND_RECONNECT_DELAY_MS = 400;
 
+/** Chat vuota o solo wake word/saluto: nessuna conversazione sostanziale. */
+function isCurrentChatEffectivelyEmpty(messages: Message[]): boolean {
+  if (messages.length === 0) return true;
+  if (messages.length === 1) {
+    const m = messages[0];
+    return m.isUser && (m.text?.trim().length ?? 0) <= 50;
+  }
+  if (messages.length === 2) {
+    const userMsg = messages.find((m) => m.isUser);
+    const aiMsg = messages.find((m) => !m.isUser);
+    const userLen = (userMsg?.text?.trim().length ?? 0) <= 80;
+    const aiLen = (aiMsg?.text?.trim().length ?? 0) <= 80;
+    return !!userMsg && !!aiMsg && userLen && aiLen;
+  }
+  return false;
+}
+
 export interface UseVoiceChatReturn {
   isConnected: boolean;
   isListening: boolean;
@@ -234,6 +251,58 @@ export function useVoiceChat(options?: UseVoiceChatOptions): UseVoiceChatReturn 
   );
 
   /**
+   * Crea una nuova chat e passa a essa (usato dal tool createNewChat).
+   * Salva la chat corrente escludendo l'ultimo turn (il messaggio "crea nuova chat"
+   * e eventuale risposta): quel messaggio non viene salvato e non riceve risposta.
+   */
+  const createNewChatAndReconnect = useCallback(async () => {
+    if (inactivityTimeoutRef.current) {
+      clearTimeout(inactivityTimeoutRef.current);
+      inactivityTimeoutRef.current = null;
+    }
+    const current = messagesRef.current;
+    const lastUserIndex = current.findLastIndex((m) => m.isUser);
+    const messagesToSave = lastUserIndex >= 0 ? current.slice(0, lastUserIndex) : current;
+    if (messagesToSave.length > 0 && chatIdRef.current) {
+      await saveConversation(messagesToSave);
+    }
+    try {
+      const res = await fetch("/api/chats", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ turns: [] }),
+        credentials: "same-origin",
+      });
+      if (!res.ok) {
+        console.error("[useVoiceChat] POST /api/chats (createNewChat) failed", res.status);
+        return;
+      }
+      const data = (await res.json()) as { success?: boolean; chat?: { id: string } };
+      if (!data.success || !data.chat?.id) return;
+      const newChatId = data.chat.id;
+      chatIdRef.current = newChatId;
+      setChatId(newChatId);
+      setMessages([]);
+      lastSavedTurnCountRef.current = 0;
+      currentMessageIdRef.current = { user: null, ai: null };
+      const client = clientRef.current;
+      clientRef.current = null;
+      client?.dispose();
+      setIsMuted(false);
+      setAudioLevel(0);
+      setOutputAudioLevel(0);
+      setConnectionState("disconnected");
+      setListeningMode("wake_word");
+      wakeWordRef.current?.resume();
+      setTimeout(() => {
+        connectToGeminiRef.current();
+      }, CLEAR_AND_RECONNECT_DELAY_MS);
+    } catch (err) {
+      console.error("[useVoiceChat] createNewChat failed", err);
+    }
+  }, [saveConversation]);
+
+  /**
    * Annulla il timeout di inattività (es. utente ha ripreso a parlare).
    */
   const clearInactivityTimeout = useCallback(() => {
@@ -376,6 +445,13 @@ export function useVoiceChat(options?: UseVoiceChatOptions): UseVoiceChatReturn 
             CLEAR_AND_RECONNECT_DELAY_MS
           );
         },
+        onCreateNewChat: () => {
+          setTimeout(
+            () => createNewChatAndReconnect(),
+            CLEAR_AND_RECONNECT_DELAY_MS
+          );
+        },
+        getIsCurrentChatEmpty: () => isCurrentChatEffectivelyEmpty(messagesRef.current),
       });
 
       clientRef.current = client;
@@ -461,7 +537,7 @@ export function useVoiceChat(options?: UseVoiceChatOptions): UseVoiceChatReturn 
       setListeningMode('wake_word');
       wakeWordRef.current?.resume();
     }
-  }, [handleTranscript, saveConversation, options, goToIdle, goToWakeWord, scheduleInactivityTimeout, clearConversationAndReconnect, switchToChatAndReconnect]);
+  }, [handleTranscript, saveConversation, options, goToIdle, goToWakeWord, scheduleInactivityTimeout, clearConversationAndReconnect, switchToChatAndReconnect, createNewChatAndReconnect]);
 
   useEffect(() => {
     connectToGeminiRef.current = connectToGemini;

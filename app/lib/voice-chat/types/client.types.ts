@@ -47,5 +47,9 @@ export interface VoiceChatClientOptions {
   onClearConversation?: () => void;
   /** Chiamato quando l'assistente passa a un'altra chat: termina conversazione e riapre quella chat. */
   onSwitchToChat?: (chatId: string) => void;
+  /** Chiamato quando l'assistente crea una nuova chat: il messaggio corrente non viene salvato e non riceve risposta; si passa alla nuova chat. */
+  onCreateNewChat?: () => void;
+  /** Restituisce true se la chat corrente è vuota o senza conversazione sostanziale (per evitare di creare una nuova chat quando l'utente è già su una nuova). */
+  getIsCurrentChatEmpty?: () => boolean;
   onToolExecuted?: (toolName: string, result: unknown) => void;
 }

@@ -199,6 +199,12 @@ export class VoiceChatClient {
             this.options.onSwitchToChat?.(chatId);
           }
         : undefined,
+      createNewChat: this.options.onCreateNewChat
+        ? () => {
+            this.options.onCreateNewChat?.();
+          }
+        : undefined,
+      getIsCurrentChatEmpty: this.options.getIsCurrentChatEmpty,
     };
 
     // Search in background solo se nello stesso turn c'è un write (deduplicazione).

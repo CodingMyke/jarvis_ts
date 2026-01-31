@@ -141,3 +141,8 @@ export {
   switchToChatTool,
   SWITCH_TO_CHAT_TOOL_NAME,
 } from "./switch-to-chat.tool";
+
+export {
+  createNewChatTool,
+  CREATE_NEW_CHAT_TOOL_NAME,
+} from "./create-new-chat.tool";
