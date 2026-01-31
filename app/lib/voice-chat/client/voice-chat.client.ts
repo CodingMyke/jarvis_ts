@@ -155,8 +155,8 @@ export class VoiceChatClient {
     });
 
     this.provider.on("turnComplete", () => {
-      // Flush remaining audio chunks when turn is complete
       this.audioOutput?.flush();
+      this.options.onTurnComplete?.();
     });
 
     this.provider.on("interrupted", () => {

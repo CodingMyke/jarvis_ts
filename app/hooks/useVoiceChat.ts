@@ -208,8 +208,19 @@ export function useVoiceChat(options?: UseVoiceChatOptions): UseVoiceChatReturn 
   }, [clearConversation]);
 
   /**
+   * Annulla il timeout di inattività (es. utente ha ripreso a parlare).
+   */
+  const clearInactivityTimeout = useCallback(() => {
+    if (inactivityTimeoutRef.current) {
+      clearTimeout(inactivityTimeoutRef.current);
+      inactivityTimeoutRef.current = null;
+    }
+  }, []);
+
+  /**
    * Programma il ritorno a wake word dopo INACTIVITY_MS senza input utente.
-   * Va chiamato a ogni messaggio utente (incluso il primo dopo la wake word).
+   * Va chiamato solo quando l'assistente ha terminato il turno (onTurnComplete):
+   * in attesa di messaggio utente, se non arriva in 20s disconnetto.
    */
   const scheduleInactivityTimeout = useCallback(() => {
     if (inactivityTimeoutRef.current) clearTimeout(inactivityTimeoutRef.current);
@@ -219,7 +230,7 @@ export function useVoiceChat(options?: UseVoiceChatOptions): UseVoiceChatReturn 
 
   const handleTranscript = useCallback((text: string, type: 'input' | 'output' | 'thinking'): void => {
     if (type === 'input') {
-      scheduleInactivityTimeout();
+      clearInactivityTimeout();
       // Messaggio utente - reset AI message id
       currentMessageIdRef.current.ai = null;
       
@@ -265,7 +276,7 @@ export function useVoiceChat(options?: UseVoiceChatOptions): UseVoiceChatReturn 
         setMessages((prev) => [...prev, message]);
       }
     }
-  }, [scheduleInactivityTimeout]);
+  }, [clearInactivityTimeout]);
 
   /**
    * Connette a Gemini e invia il messaggio iniziale con la wake word.
@@ -324,6 +335,7 @@ export function useVoiceChat(options?: UseVoiceChatOptions): UseVoiceChatReturn 
           console.log('[useVoiceChat] conversation ended by assistant');
           goToWakeWord();
         },
+        onTurnComplete: scheduleInactivityTimeout,
         onDisableCompletely: goToIdle,
         onClearConversation: () => {
           setTimeout(
@@ -359,8 +371,7 @@ export function useVoiceChat(options?: UseVoiceChatOptions): UseVoiceChatReturn 
       currentMessageIdRef.current = { user: null, ai: null };
       
       client.sendText(initialMessage);
-      scheduleInactivityTimeout();
-      
+
     } catch (err) {
       console.error('[useVoiceChat] catch error:', err);
       const voiceError = err instanceof VoiceChatError

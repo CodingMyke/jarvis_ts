@@ -90,7 +90,9 @@ export class GeminiProvider implements VoiceChatProvider {
       };
 
       this.ws.onclose = (event) => {
-        console.log('[GeminiProvider] WebSocket closed:', event.code, event.reason);
+        const reason = event.reason || '(nessuna)';
+        const motivation = `code=${event.code} reason="${reason}" wasClean=${event.wasClean}`;
+        console.log('[GeminiProvider] WebSocket chiuso. Motivazione:', motivation);
         this.emit('disconnected', { reason: event.reason || 'Connection closed' });
         
         // Se non abbiamo completato il setup, reject la promise

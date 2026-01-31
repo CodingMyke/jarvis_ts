@@ -39,6 +39,8 @@ export interface VoiceChatClientOptions {
   onAudioLevel?: (level: number) => void;
   onOutputAudioLevel?: (level: number) => void;
   onEndConversation?: () => void;
+  /** Chiamato quando l'assistente ha terminato il suo turno (utile per avviare timeout di inattività) */
+  onTurnComplete?: () => void;
   /** Chiamato quando l'assistente deve disattivarsi completamente (orb grigio, niente ascolto) */
   onDisableCompletely?: () => void;
   /** Chiamato quando l'assistente deve cancellare tutta la chat (stesso effetto del pulsante cestino) */
