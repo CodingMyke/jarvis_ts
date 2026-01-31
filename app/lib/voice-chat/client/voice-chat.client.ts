@@ -199,9 +199,7 @@ export class VoiceChatClient {
             this.options.onDeleteChatById!(id)
         : undefined,
       switchToChat: this.options.onSwitchToChat
-        ? (chatId: string) => {
-            this.options.onSwitchToChat?.(chatId);
-          }
+        ? (chatId: string) => this.options.onSwitchToChat!(chatId)
         : undefined,
       createNewChat: this.options.onCreateNewChat
         ? () => {

@@ -21,9 +21,9 @@ import { GEMINI_MODEL } from '../../config';
 
 const GEMINI_WS_URL = 'wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContent';
 
-/** Rimuove token di controllo che a volte compaiono nella trascrizione Gemini (es. <ctrl46>). */
+/** Rimuove token di controllo che a volte compaiono nella trascrizione Gemini (es. <ctrl46>). Non fa trim per non perdere gli spazi tra chunk quando la trascrizione è concatenata in streaming. */
 function stripControlTokens(text: string): string {
-  return text.replace(/<ctrl\d+>/gi, "").trim();
+  return text.replace(/<ctrl\d+>/gi, "");
 }
 
 /** Mappa i codici di chiusura WebSocket a una motivazione leggibile (RFC 6455). */

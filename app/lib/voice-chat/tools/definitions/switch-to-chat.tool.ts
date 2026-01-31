@@ -45,7 +45,16 @@ export const switchToChatTool: SystemToolDefinition = {
         },
       };
     }
-    context.switchToChat(chatId);
+    const switchResult = await Promise.resolve(context.switchToChat(chatId));
+    if (switchResult && typeof switchResult === "object" && switchResult.success === false) {
+      return {
+        result: {
+          success: false,
+          error: switchResult.error ?? "SWITCH_FAILED",
+          errorMessage: switchResult.error ?? "Impossibile passare a quella chat. Verifica di usare il chat_id restituito da searchChats.",
+        },
+      };
+    }
     return {
       result: {
         success: true,

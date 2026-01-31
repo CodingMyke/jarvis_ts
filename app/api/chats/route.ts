@@ -20,6 +20,9 @@ const UNAUTHORIZED = {
   message: "Utente non autenticato",
 };
 
+/** Formato UUID (8-4-4-4-12 hex). Usato per rifiutare id non validi e restituire 400 invece di 500. */
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 async function ensureAuth(): Promise<{
   authorized: boolean;
   supabase: SupabaseClient<Database> | null;
@@ -75,7 +78,14 @@ export async function GET(request: NextRequest) {
     const search = request.nextUrl.searchParams.get("search");
 
     if (id?.trim()) {
-      const result = await getChatById(auth.supabase!, auth.userId!, id.trim());
+      const idTrim = id.trim();
+      if (!UUID_REGEX.test(idTrim)) {
+        return NextResponse.json(
+          { success: false, error: "INVALID_ID", message: "ID chat non valido. Usa il chat_id restituito da searchChats o listChats." },
+          { status: 400 }
+        );
+      }
+      const result = await getChatById(auth.supabase!, auth.userId!, idTrim);
       if (!result.success) {
         const status = result.error === "Chat non trovata" ? 404 : 500;
         return NextResponse.json(

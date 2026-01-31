@@ -47,8 +47,8 @@ export interface VoiceChatClientOptions {
   onDeleteCurrentChat?: () => Promise<{ success: boolean; error?: string }>;
   /** Chiamato quando l'assistente deve eliminare una chat per id (qualsiasi chat). Ritorna esito per il tool. */
   onDeleteChatById?: (id: string) => Promise<{ success: boolean; error?: string }>;
-  /** Chiamato quando l'assistente passa a un'altra chat: termina conversazione e riapre quella chat. */
-  onSwitchToChat?: (chatId: string) => void;
+  /** Chiamato quando l'assistente passa a un'altra chat. Valida la chat (GET) prima di switchare; ritorna esito per il tool. */
+  onSwitchToChat?: (chatId: string) => void | Promise<{ success: boolean; error?: string }>;
   /** Chiamato quando l'assistente crea una nuova chat: il messaggio corrente non viene salvato e non riceve risposta; si passa alla nuova chat. */
   onCreateNewChat?: () => void;
   /** Restituisce true se la chat corrente è vuota o senza conversazione sostanziale (per evitare di creare una nuova chat quando l'utente è già su una nuova). */

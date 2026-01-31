@@ -487,11 +487,17 @@ export function useVoiceChat(options?: UseVoiceChatOptions): UseVoiceChatReturn 
         onDisableCompletely: goToIdle,
         onDeleteCurrentChat: performDeleteChat,
         onDeleteChatById: performDeleteChatById,
-        onSwitchToChat: (newChatId: string) => {
+        onSwitchToChat: async (newChatId: string) => {
+          const res = await fetch(`/api/chats?id=${encodeURIComponent(newChatId)}`, { credentials: "same-origin" });
+          if (!res.ok) {
+            const body = await res.json().catch(() => ({})) as { message?: string };
+            return { success: false, error: body.message ?? "Chat non trovata" };
+          }
           setTimeout(
             () => switchToChatAndReconnect(newChatId),
             DELETE_AND_RECONNECT_DELAY_MS
           );
+          return { success: true };
         },
         onCreateNewChat: () => {
           setTimeout(

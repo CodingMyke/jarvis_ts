@@ -15,8 +15,8 @@ export interface ToolContext {
   deleteCurrentChat: () => Promise<{ success: boolean; error?: string }>;
   /** Elimina una chat per id (qualsiasi chat). Se id è la chat corrente, il client può riconnettere; altrimenti solo DELETE API. Ritorna esito. */
   deleteChatById?: (id: string) => Promise<{ success: boolean; error?: string }>;
-  /** Passa a un'altra chat: termina la conversazione corrente e riapre quella chat (history utente + assistente aggiornate). */
-  switchToChat?: (chatId: string) => void;
+  /** Passa a un'altra chat: termina la conversazione corrente e riapre quella chat. Ritorna esito (success/error) per il tool. */
+  switchToChat?: (chatId: string) => void | Promise<{ success: boolean; error?: string }>;
   /** Crea una nuova chat e passa a essa. Il messaggio corrente ("crea nuova chat") non viene salvato nella chat attuale e non riceve risposta. */
   createNewChat?: () => void;
   /** Restituisce true se la chat corrente è vuota o non contiene conversazione sostanziale (es. solo wake word / saluto). */
