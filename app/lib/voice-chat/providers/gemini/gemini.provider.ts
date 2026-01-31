@@ -21,6 +21,11 @@ import { GEMINI_MODEL } from '../../config';
 
 const GEMINI_WS_URL = 'wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContent';
 
+/** Rimuove token di controllo che a volte compaiono nella trascrizione Gemini (es. <ctrl46>). */
+function stripControlTokens(text: string): string {
+  return text.replace(/<ctrl\d+>/gi, "").trim();
+}
+
 /** Mappa i codici di chiusura WebSocket a una motivazione leggibile (RFC 6455). */
 function closeCodeToReason(code: number): string {
   const reasons: Record<number, string> = {
@@ -240,25 +245,24 @@ export class GeminiProvider implements VoiceChatProvider {
         
         // Text transcript (solo thinking, output arriva da outputTranscription)
         if (part.text && part.thought) {
-          this.emit('transcript', { text: part.text, type: 'thinking' });
+          const cleaned = stripControlTokens(part.text);
+          if (cleaned) this.emit('transcript', { text: cleaned, type: 'thinking' });
         }
       }
     }
 
     // Input transcript
     if (message.serverContent?.inputTranscription?.text) {
-      this.emit('transcript', { 
-        text: message.serverContent.inputTranscription.text, 
-        type: 'input' 
-      });
+      const text = stripControlTokens(message.serverContent.inputTranscription.text);
+      if (text) this.emit('transcript', { text, type: 'input' });
     }
 
-    // Output transcript - rimuovi caratteri ripetuti anomali alla fine
+    // Output transcript - rimuovi token di controllo e caratteri ripetuti anomali
     if (message.serverContent?.outputTranscription?.text) {
       let text = message.serverContent.outputTranscription.text;
-      // Rimuovi sequenze di caratteri ripetuti alla fine (es. "1111111" o "......")
+      text = stripControlTokens(text);
       text = text.replace(/(.)\1{5,}$/, '');
-      if (text.trim()) {
+      if (text) {
         this.emit('transcript', { 
           text, 
           type: 'output' 
