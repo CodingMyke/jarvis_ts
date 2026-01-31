@@ -131,3 +131,8 @@ export {
   deleteEpisodicMemoryTool,
   DELETE_EPISODIC_MEMORY_TOOL_NAME,
 } from "./delete-episodic-memory.tool";
+
+export {
+  searchChatsTool,
+  SEARCH_CHATS_TOOL_NAME,
+} from "./search-chats.tool";

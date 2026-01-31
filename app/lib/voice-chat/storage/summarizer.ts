@@ -14,20 +14,31 @@ export async function summarizeConversation(
 }
 
 /**
- * Crea i turns del riassunto nel formato Gemini.
+ * Crea un singolo turno summary (per compattazione assistant_history).
+ * Forma: { role: 'model', parts: [{ text: summary }] }.
+ */
+export function createSummaryTurn(summary: string): ConversationTurn {
+  return {
+    role: "model",
+    parts: [{ text: summary }],
+  };
+}
+
+/**
+ * Crea i turns del riassunto nel formato Gemini (legacy: user + model).
  */
 export function createSummaryTurns(summary: string): ConversationTurn[] {
   return [
     {
-      role: 'user',
+      role: "user",
       parts: [
         {
-          text: 'Ecco un riassunto della nostra conversazione precedente per contesto:',
+          text: "Ecco un riassunto della nostra conversazione precedente per contesto:",
         },
       ],
     },
     {
-      role: 'model',
+      role: "model",
       parts: [{ text: summary }],
     },
   ];

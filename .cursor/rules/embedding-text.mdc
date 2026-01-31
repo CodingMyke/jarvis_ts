@@ -1,0 +1,20 @@
+---
+description: Regola vincolante per rappresentazione testuale degli embedding
+globs: 
+alwaysApply: true
+---
+
+# Embedding e rappresentazione testuale
+
+Qualsiasi cosa abbia un **embedding** DEVE avere anche una **rappresentazione testuale in chiaro**.
+
+Motivi:
+- **Debug**: ispezionare il contenuto senza decodificare vettori
+- **Qualità**: verificare cosa viene indicizzato
+- **Spiegabilità**: capire perché un match semantico ha restituito un certo risultato
+
+Esempi:
+- Memorie episodiche/semantiche: `content` (testo) + `embedding`
+- Chat: `summary_text` (testo) + `summary_embedding` per la ricerca semantica
+
+Non salvare mai solo un vettore senza il testo da cui deriva.

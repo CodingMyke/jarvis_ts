@@ -14,6 +14,42 @@ export type Database = {
   }
   public: {
     Tables: {
+      chats: {
+        Row: {
+          assistant_history: Json
+          created_at: string
+          full_history: Json
+          id: string
+          last_activity_at: string
+          summary_embedding: string | null
+          summary_text: string | null
+          title: string | null
+          user_id: string
+        }
+        Insert: {
+          assistant_history?: Json
+          created_at?: string
+          full_history?: Json
+          id?: string
+          last_activity_at?: string
+          summary_embedding?: string | null
+          summary_text?: string | null
+          title?: string | null
+          user_id: string
+        }
+        Update: {
+          assistant_history?: Json
+          created_at?: string
+          full_history?: Json
+          id?: string
+          last_activity_at?: string
+          summary_embedding?: string | null
+          summary_text?: string | null
+          title?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       episodic_memory: {
         Row: {
           content: string
@@ -101,6 +137,21 @@ export type Database = {
           content: string
           id: string
           similarity: number
+        }[]
+      }
+      search_chats_semantic: {
+        Args: {
+          p_limit?: number
+          p_max_distance?: number
+          p_query_embedding: string
+        }
+        Returns: {
+          chat_id: string
+          distance: number
+          last_activity_at: string
+          similarity: number
+          summary_text: string
+          title: string
         }[]
       }
     }

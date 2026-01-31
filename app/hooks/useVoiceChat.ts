@@ -8,8 +8,6 @@ import {
   VoiceChatError,
   WakeWordManager,
   ConversationStorage,
-  summarizeConversation,
-  createSummaryTurns,
   type ConnectionState,
 } from "@/app/lib/voice-chat";
 import { JARVIS_CONFIG } from "@/app/lib/voice-chat/jarvis.config";
@@ -30,6 +28,8 @@ export interface UseVoiceChatReturn {
   error: VoiceChatError | null;
   connectionState: ConnectionState;
   listeningMode: ListeningMode;
+  /** ID chat corrente (backend); null se non ancora creata/caricata. */
+  chatId: string | null;
   startListening: () => void;
   stopListening: () => void;
   toggleMute: () => void;
@@ -37,6 +37,8 @@ export interface UseVoiceChatReturn {
 }
 
 export interface UseVoiceChatOptions {
+  /** ID chat da caricare all'avvio (GET); se assente la chat resta vuota e il record si crea al primo salvataggio. */
+  initialChatId?: string | null;
   onToolExecuted?: (toolName: string, result: unknown) => void;
 }
 
@@ -53,7 +55,9 @@ export function useVoiceChat(options?: UseVoiceChatOptions): UseVoiceChatReturn 
   const messagesRef = useRef<Message[]>([]);
   const inactivityTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const connectToGeminiRef = useRef<(msg: string) => Promise<void>>(null as unknown as (msg: string) => Promise<void>);
-  
+  const chatIdRef = useRef<string | null>(options?.initialChatId ?? null);
+  const lastSavedTurnCountRef = useRef(0);
+
   const [connectionState, setConnectionState] = useState<ConnectionState>('disconnected');
   const [listeningMode, setListeningMode] = useState<ListeningMode>('idle');
   const [isMuted, setIsMuted] = useState(false);
@@ -61,73 +65,61 @@ export function useVoiceChat(options?: UseVoiceChatOptions): UseVoiceChatReturn 
   const [audioLevel, setAudioLevel] = useState(0);
   const [outputAudioLevel, setOutputAudioLevel] = useState(0);
   const [error, setError] = useState<VoiceChatError | null>(null);
+  const [chatId, setChatId] = useState<string | null>(options?.initialChatId ?? null);
 
   // Mantieni messagesRef sincronizzato con lo state
   useEffect(() => {
     messagesRef.current = messages;
   }, [messages]);
 
-  // Carica la history al mount
-  useEffect(() => {
-    const saved = storageRef.current.load();
-    if (saved && saved.turns.length > 0) {
-      // Se la conversazione è riassunta ma il riassunto è vuoto, puliscila e non caricarla
-      if (saved.isSummarized) {
-        const summaryTurn = saved.turns.find(t => t.role === 'model');
-        const summaryText = summaryTurn?.parts.map(p => p.text).join(' ') || '';
-        
-        // Se il riassunto è vuoto, pulisci la conversazione salvata e non caricarla
-        if (!summaryText || summaryText.trim() === '') {
-          console.log('[useVoiceChat] saved conversation has empty summary, clearing it');
-          storageRef.current.clear();
-          return;
-        }
-      }
-      
-      const loadedMessages: Message[] = saved.turns.map((turn, index) => ({
-        id: `history-${index}`,
-        text: turn.parts.map((p) => p.text).join(' '),
-        isUser: turn.role === 'user',
-        thinking: turn.thinking,
-      }));
-      setMessages(loadedMessages);
-      console.log('[useVoiceChat] loaded history:', loadedMessages.length, 'messages');
-    }
-  }, []);
-
   /**
-   * Salva la conversazione corrente nel localStorage.
-   * Se i messaggi utente sono >= 20, genera prima un riassunto.
+   * Salva la conversazione: se chatId presente, PATCH /api/chats (append delta);
+   * se nessun chatId ma ci sono messaggi, POST per creare la chat (record creato al primo salvataggio).
    */
   const saveConversation = useCallback(async (currentMessages: Message[]) => {
-    const storage = storageRef.current;
-    
-    // Non salvare conversazioni vuote
     if (currentMessages.length === 0) return;
 
-    if (storage.needsSummarization(currentMessages)) {
-      console.log('[useVoiceChat] generating summary...');
+    const cid = chatIdRef.current;
+    const storage = storageRef.current;
+    const turns = storage.messagesToTurns(currentMessages);
+
+    if (cid) {
+      const from = lastSavedTurnCountRef.current;
+      const newTurns = turns.slice(from);
+      if (newTurns.length === 0) return;
       try {
-        const turns = storage.messagesToTurns(currentMessages);
-        const summary = await summarizeConversation(turns);
-        
-        // Se il riassunto è vuoto o fallisce, salva la conversazione completa invece del riassunto
-        if (!summary || summary.trim() === '') {
-          console.log('[useVoiceChat] summary is empty, saving full conversation instead');
-          storage.save(currentMessages, false);
-          return;
+        const res = await fetch("/api/chats", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id: cid, turns: newTurns }),
+          credentials: "same-origin",
+        });
+        if (res.ok) {
+          lastSavedTurnCountRef.current = turns.length;
         }
-        
-        const summaryTurns = createSummaryTurns(summary);
-        storage.saveTurns(summaryTurns, true);
-        console.log('[useVoiceChat] summary saved');
       } catch (err) {
-        console.error('[useVoiceChat] failed to summarize, saving full conversation:', err);
-        storage.save(currentMessages, false);
+        console.error("[useVoiceChat] PATCH /api/chats failed", err);
       }
-    } else {
-      console.log('[useVoiceChat] saving full conversation');
-      storage.save(currentMessages, false);
+      return;
+    }
+
+    try {
+      const res = await fetch("/api/chats", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ turns }),
+        credentials: "same-origin",
+      });
+      if (res.ok) {
+        const data = (await res.json()) as { success?: boolean; chat?: { id: string } };
+        if (data.success && data.chat?.id) {
+          chatIdRef.current = data.chat.id;
+          setChatId(data.chat.id);
+          lastSavedTurnCountRef.current = turns.length;
+        }
+      }
+    } catch (err) {
+      console.error("[useVoiceChat] POST /api/chats failed", err);
     }
   }, []);
 
@@ -175,14 +167,15 @@ export function useVoiceChat(options?: UseVoiceChatOptions): UseVoiceChatReturn 
   }, [saveConversation]);
 
   /**
-   * Cancella tutta la conversazione (stato e localStorage).
-   * Stesso effetto del pulsante cestino in UI.
+   * Cancella tutta la conversazione (stato e chatId). Stesso effetto del pulsante cestino in UI.
    */
   const clearConversation = useCallback(() => {
     setMessages([]);
+    chatIdRef.current = null;
+    setChatId(null);
+    lastSavedTurnCountRef.current = 0;
     storageRef.current.clear();
     currentMessageIdRef.current = { user: null, ai: null };
-    console.log('[useVoiceChat] conversation cleared');
   }, []);
 
   /**
@@ -349,28 +342,65 @@ export function useVoiceChat(options?: UseVoiceChatOptions): UseVoiceChatReturn 
 
       await client.connect();
       await client.startListening();
-      
-      setListeningMode('connected');
-      
-      // Carica e invia la history precedente (se esiste)
-      const savedConversation = storageRef.current.load();
-      if (savedConversation && savedConversation.turns.length > 0) {
-        console.log('[useVoiceChat] sending previous conversation history:', 
-          savedConversation.isSummarized ? 'summarized' : 'full',
-          savedConversation.turns.length, 'turns'
-        );
-        // turnComplete: false -> il modello aspetta altro input
-        client.sendHistory(savedConversation.turns, false);
+      setListeningMode("connected");
+
+      let assistantHistoryToSend: { role: "user" | "model"; parts: { text: string }[]; thinking?: string }[] | null = null;
+      const cid = chatIdRef.current;
+
+      if (cid) {
+        const res = await fetch(`/api/chats?id=${encodeURIComponent(cid)}`, { credentials: "same-origin" });
+        if (res.ok) {
+          const data = (await res.json()) as { success: boolean; chat?: { full_history: unknown[]; assistant_history: unknown[] } };
+          if (data.success && data.chat) {
+            const full = Array.isArray(data.chat.full_history) ? data.chat.full_history : [];
+            const asst = Array.isArray(data.chat.assistant_history) ? data.chat.assistant_history : [];
+            type TurnLike = { role: string; parts: { text: string }[]; thinking?: string };
+            const loadedMessages: Message[] = (full as TurnLike[]).map((turn, i) => ({
+              id: `history-${i}`,
+              text: turn.parts?.map((p) => p.text).join(" ") ?? "",
+              isUser: turn.role === "user",
+              thinking: turn.thinking,
+            }));
+            setMessages(loadedMessages);
+            lastSavedTurnCountRef.current = full.length;
+            assistantHistoryToSend = asst as { role: "user" | "model"; parts: { text: string }[]; thinking?: string }[];
+          }
+        } else {
+          chatIdRef.current = null;
+          setChatId(null);
+        }
       }
-      
-      // Invia il messaggio iniziale che contiene la wake word
-      // Aggiungi il messaggio utente alla lista
+
+      if (assistantHistoryToSend && assistantHistoryToSend.length > 0) {
+        client.sendHistory(assistantHistoryToSend, false);
+      }
+
       const messageId = `${Date.now()}-user`;
       setMessages((prev) => [...prev, { id: messageId, text: initialMessage, isUser: true }]);
-      // Reset entrambi per evitare concatenazioni con messaggi della sessione precedente
       currentMessageIdRef.current = { user: null, ai: null };
-      
       client.sendText(initialMessage);
+
+      if (!chatIdRef.current) {
+        const firstTurn = { role: "user" as const, parts: [{ text: initialMessage }] };
+        try {
+          const res = await fetch("/api/chats", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ turns: [firstTurn] }),
+            credentials: "same-origin",
+          });
+          if (res.ok) {
+            const data = (await res.json()) as { success?: boolean; chat?: { id: string } };
+            if (data.success && data.chat?.id) {
+              chatIdRef.current = data.chat.id;
+              setChatId(data.chat.id);
+              lastSavedTurnCountRef.current = 1;
+            }
+          }
+        } catch (err) {
+          console.error("[useVoiceChat] POST /api/chats (first message) failed", err);
+        }
+      }
 
     } catch (err) {
       console.error('[useVoiceChat] catch error:', err);
@@ -447,8 +477,8 @@ export function useVoiceChat(options?: UseVoiceChatOptions): UseVoiceChatReturn 
   }, []);
 
   return {
-    isConnected: connectionState === 'connected',
-    isListening: listeningMode !== 'idle',
+    isConnected: connectionState === "connected",
+    isListening: listeningMode !== "idle",
     isMuted,
     messages,
     audioLevel,
@@ -456,6 +486,7 @@ export function useVoiceChat(options?: UseVoiceChatOptions): UseVoiceChatReturn 
     error,
     connectionState,
     listeningMode,
+    chatId,
     startListening,
     stopListening: goToIdle,
     toggleMute,
