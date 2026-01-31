@@ -11,10 +11,9 @@ export const updateSemanticMemoryTool: SystemToolDefinition = {
 
   description:
     "Aggiorna una memoria semantica esistente (contenuto, chiave o importanza). " +
-    "Usa questo tool quando l'utente chiede di modificare qualcosa che avevi memorizzato, " +
-    "di correggere un ricordo o di aggiornare una preferenza. " +
-    "Usa getSemanticMemories per ottenere gli ID delle memorie. " +
-    "Esempi: 'correggi il ricordo sul caffè, prendo due zuccheri', 'aggiorna la memoria sul lavoro'.",
+    "Usa questo tool quando: (1) l'utente chiede di modificare/correggere qualcosa che avevi memorizzato; (2) hai trovato con searchSemanticMemories una memoria che si riferisce allo STESSO fatto/preferenza e vuoi integrare nuove informazioni: in quel caso passa in content un testo che unisce il contenuto già presente con le nuove informazioni. " +
+    "Usa getSemanticMemories o searchSemanticMemories per ottenere gli ID. " +
+    "Esempi: 'correggi il ricordo sul caffè, prendo due zuccheri', 'aggiorna la memoria sul lavoro', integrare un dettaglio in un fatto già salvato.",
 
   parameters: {
     type: "object",

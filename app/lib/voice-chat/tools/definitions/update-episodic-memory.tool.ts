@@ -11,10 +11,9 @@ export const updateEpisodicMemoryTool: SystemToolDefinition = {
 
   description:
     "Aggiorna una memoria episodica esistente (contenuto, importanza, ttl). " +
-    "Usa questo tool quando l'utente chiede di modificare un episodio memorizzato, " +
-    "di correggere un evento o di aggiornare i dettagli. " +
-    "Usa getEpisodicMemories per ottenere gli ID delle memorie. " +
-    "Esempi: 'correggi il ricordo sulla riunione', 'aggiorna l'episodio del mare'.",
+    "Usa questo tool quando: (1) l'utente chiede di modificare/correggere un episodio memorizzato; (2) hai trovato con searchEpisodicMemories una memoria che si riferisce allo STESSO evento e vuoi integrare nuove informazioni: in quel caso passa in content un testo che unisce il contenuto già presente con le nuove informazioni. " +
+    "Usa getEpisodicMemories o searchEpisodicMemories per ottenere gli ID. " +
+    "Esempi: 'correggi il ricordo sulla riunione', 'aggiorna l'episodio del mare', integrare un dettaglio in un episodio già salvato.",
 
   parameters: {
     type: "object",

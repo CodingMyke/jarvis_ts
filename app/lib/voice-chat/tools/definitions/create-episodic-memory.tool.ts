@@ -15,7 +15,8 @@ export const createEpisodicMemoryTool: SystemToolDefinition = {
     "Non annunciare il salvataggio a meno che non sia rilevante (es. utente che chiede di ricordare); spesso rispondi e basta. " +
     "ttl_days: assegna SEMPRE un valore in giorni in base all'importanza, tranne per informazioni davvero fondamentali da ricordare per sempre (in quel caso ometti il campo). " +
     "Esempi: conversazioni casuali o dettagli minori 7-30 giorni; appuntamenti, eventi, decisioni operative 30-90; cose rilevanti a medio termine 90-365. " +
-    "Lascia ttl_days vuoto (memoria permanente) SOLO per info importanti e sensate da tenere per sempre (es. decisioni di vita, dati che l'utente vuole ricordati a lungo).",
+    "Lascia ttl_days vuoto (memoria permanente) SOLO per info importanti e sensate da tenere per sempre (es. decisioni di vita, dati che l'utente vuole ricordati a lungo). " +
+    "EVITA DUPLICATI: prima di creare, usa searchEpisodicMemories con una query legata all'episodio che vuoi salvare. Se trovi una memoria che si riferisce allo STESSO evento/episodio (stessa riunione, stesso appuntamento, stessa decisione), NON creare una nuova: usa updateEpisodicMemory con quell'id e un content che unisce il contenuto esistente con le nuove informazioni. Crea una nuova memoria SOLO se non esiste un record che si riferisce esattamente alla stessa cosa. Se due episodi sono solo simili ma distinti (es. due riunioni diverse con la stessa persona), crea un nuovo record.",
 
   parameters: {
     type: "object",
