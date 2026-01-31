@@ -17,6 +17,8 @@ import { JARVIS_CONFIG } from "@/app/lib/voice-chat/jarvis.config";
 type ListeningMode = "idle" | "wake_word" | "connected";
 
 const INACTIVITY_MS = 20_000;
+/** Ritardo prima di disconnettere e riaprire dopo clearChat (consente l'invio della risposta del tool). */
+const CLEAR_AND_RECONNECT_DELAY_MS = 400;
 
 export interface UseVoiceChatReturn {
   isConnected: boolean;
@@ -50,6 +52,7 @@ export function useVoiceChat(options?: UseVoiceChatOptions): UseVoiceChatReturn 
   const storageRef = useRef<ConversationStorage>(new ConversationStorage());
   const messagesRef = useRef<Message[]>([]);
   const inactivityTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const connectToGeminiRef = useRef<(msg: string) => Promise<void>>(null as unknown as (msg: string) => Promise<void>);
   
   const [connectionState, setConnectionState] = useState<ConnectionState>('disconnected');
   const [listeningMode, setListeningMode] = useState<ListeningMode>('idle');
@@ -172,6 +175,39 @@ export function useVoiceChat(options?: UseVoiceChatOptions): UseVoiceChatReturn 
   }, [saveConversation]);
 
   /**
+   * Cancella tutta la conversazione (stato e localStorage).
+   * Stesso effetto del pulsante cestino in UI.
+   */
+  const clearConversation = useCallback(() => {
+    setMessages([]);
+    storageRef.current.clear();
+    currentMessageIdRef.current = { user: null, ai: null };
+    console.log('[useVoiceChat] conversation cleared');
+  }, []);
+
+  /**
+   * Chiusura connessione e riapertura pulita (usato dal tool clearChat).
+   * Dopo un breve delay per permettere la risposta del tool: clear, disconnect, reconnect.
+   */
+  const clearConversationAndReconnect = useCallback(() => {
+    clearConversation();
+    if (inactivityTimeoutRef.current) {
+      clearTimeout(inactivityTimeoutRef.current);
+      inactivityTimeoutRef.current = null;
+    }
+    const client = clientRef.current;
+    clientRef.current = null;
+    client?.dispose();
+    setIsMuted(false);
+    setAudioLevel(0);
+    setOutputAudioLevel(0);
+    setConnectionState("disconnected");
+    currentMessageIdRef.current = { user: null, ai: null };
+    setListeningMode("wake_word");
+    connectToGeminiRef.current("Riprendi");
+  }, [clearConversation]);
+
+  /**
    * Programma il ritorno a wake word dopo INACTIVITY_MS senza input utente.
    * Va chiamato a ogni messaggio utente (incluso il primo dopo la wake word).
    */
@@ -289,6 +325,12 @@ export function useVoiceChat(options?: UseVoiceChatOptions): UseVoiceChatReturn 
           goToWakeWord();
         },
         onDisableCompletely: goToIdle,
+        onClearConversation: () => {
+          setTimeout(
+            () => clearConversationAndReconnect(),
+            CLEAR_AND_RECONNECT_DELAY_MS
+          );
+        },
       });
 
       clientRef.current = client;
@@ -337,7 +379,11 @@ export function useVoiceChat(options?: UseVoiceChatOptions): UseVoiceChatReturn 
       setListeningMode('wake_word');
       wakeWordRef.current?.resume();
     }
-  }, [handleTranscript, saveConversation, options, goToIdle, goToWakeWord, scheduleInactivityTimeout]);
+  }, [handleTranscript, saveConversation, options, goToIdle, goToWakeWord, scheduleInactivityTimeout, clearConversationAndReconnect]);
+
+  useEffect(() => {
+    connectToGeminiRef.current = connectToGemini;
+  }, [connectToGemini]);
 
   /**
    * Avvia l'ascolto in modalità wake word.
@@ -376,16 +422,6 @@ export function useVoiceChat(options?: UseVoiceChatOptions): UseVoiceChatReturn 
     clientRef.current.setMuted(newMuted);
     setIsMuted(newMuted);
   }, [isMuted]);
-
-  /**
-   * Cancella tutta la conversazione (stato e localStorage).
-   */
-  const clearConversation = useCallback(() => {
-    setMessages([]);
-    storageRef.current.clear();
-    currentMessageIdRef.current = { user: null, ai: null };
-    console.log('[useVoiceChat] conversation cleared');
-  }, []);
 
   // Cleanup on unmount
   useEffect(() => {

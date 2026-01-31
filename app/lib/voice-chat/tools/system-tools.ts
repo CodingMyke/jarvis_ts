@@ -1,5 +1,6 @@
 import type { SystemToolDefinition, ToolDeclaration } from "./types";
 import { endConversationTool } from "./definitions/end-conversation.tool";
+import { clearChatTool } from "./definitions/clear-chat.tool";
 import { disableAssistantTool } from "./definitions/disable-assistant.tool";
 import { getCalendarEventsTool } from "./definitions/get-calendar-events.tool";
 import { startTimerTool } from "./definitions/start-timer.tool";
@@ -31,6 +32,7 @@ import { deleteEpisodicMemoryTool } from "./definitions/delete-episodic-memory.t
  */
 export const SYSTEM_TOOLS: SystemToolDefinition[] = [
   endConversationTool,
+  clearChatTool,
   disableAssistantTool,
   getCalendarEventsTool,
   createCalendarEventTool,

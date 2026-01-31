@@ -11,6 +11,8 @@ export interface ToolContext {
   endConversation: (delayMs?: number) => void;
   /** Disattiva completamente l'assistente: orb grigio, non in ascolto nemmeno della parola chiave */
   disableCompletely: (delayMs?: number) => void;
+  /** Cancella tutta la chat (messaggi e storage). Stesso effetto del pulsante cestino in UI. */
+  clearConversation: () => void;
 }
 
 /**

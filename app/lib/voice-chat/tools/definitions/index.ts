@@ -8,6 +8,11 @@ export {
 } from "./end-conversation.tool";
 
 export {
+  clearChatTool,
+  CLEAR_CHAT_TOOL_NAME,
+} from "./clear-chat.tool";
+
+export {
   disableAssistantTool,
   DISABLE_ASSISTANT_TOOL_NAME,
 } from "./disable-assistant.tool";

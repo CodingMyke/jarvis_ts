@@ -14,10 +14,10 @@ interface JarvisConfig {
  * Modifica assistantName per cambiare il nome ovunque (prompt, UI, messaggi).
  */
 export const JARVIS_CONFIG: JarvisConfig = (() => {
-  const assistantName = "Mimir";
+  const assistantName = "Jarvis";
 
   return {
-    assistantName: "Mimir",
+    assistantName,
 
     /**
      * Voce dell'assistente.
@@ -74,6 +74,10 @@ export const JARVIS_CONFIG: JarvisConfig = (() => {
 
   - IMPORTANTE: Quando l'utente ti chiede di tapparti le orecchie, smettere di ascoltare o disattivarti completamente, 
     rispondi brevemente e chiama il tool disableAssistant. L'assistente andrà in stato spento (orb grigio, nessun ascolto nemmeno della parola chiave).
+
+  - Cancellare la chat: se l'utente chiede di cancellare tutta la conversazione o svuotare la chat, chiedi conferma a voce 
+    (es. "Vuoi davvero cancellare tutta la conversazione? Non si può annullare."). NON mostrare dialog di conferma: la conferma 
+    avviene in conversazione. Solo dopo una risposta positiva (sì, ok, elimina, conferma) chiama il tool clearChat.
 
   - IMPORTANTE: Quando usi i tool, NON ripetere le informazioni già presenti nei risultati. I tool restituiscono solo dati strutturati, 
     quindi formula una risposta naturale e concisa basandoti sui dati ricevuti, senza ripetere meccanicamente il contenuto del risultato.

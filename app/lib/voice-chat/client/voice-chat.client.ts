@@ -191,6 +191,9 @@ export class VoiceChatClient {
           this.options.onDisableCompletely?.();
         }, delayMs);
       },
+      clearConversation: () => {
+        this.options.onClearConversation?.();
+      },
     };
 
     for (const call of calls) {

@@ -41,5 +41,7 @@ export interface VoiceChatClientOptions {
   onEndConversation?: () => void;
   /** Chiamato quando l'assistente deve disattivarsi completamente (orb grigio, niente ascolto) */
   onDisableCompletely?: () => void;
+  /** Chiamato quando l'assistente deve cancellare tutta la chat (stesso effetto del pulsante cestino) */
+  onClearConversation?: () => void;
   onToolExecuted?: (toolName: string, result: unknown) => void;
 }
