@@ -11,7 +11,7 @@ export const createSemanticMemoryTool: SystemToolDefinition = {
 
   description: `Sii propenso a salvare in memoria conoscenze, fatti e preferenze sull'utente quando è opportuno: preferenze (cibo, orari, strumenti), fatti personali, lavoro, progetti, familiari, informazioni che potrebbero servire in future conversazioni.
 Salva con una soglia bassa: se potrebbe essere utile ricordarlo in seguito, salvalo. Non limitarti solo a cose 'molto importanti'. Esempi: preferenze (caffè senza zucchero, editor preferito), lavoro da remoto, nomi, tecnologie che usa, obiettivi menzionati.
-Non annunciare il salvataggio a meno che non sia rilevante (es. utente che chiede di ricordare); spesso rispondi e basta.
+Durante un dialogo normale non dire che hai salvato; rispondi solo sul contenuto. Se l'utente ti chiede esplicitamente di ricordare qualcosa (es. 'ricordamelo', 'salvalo') allora conferma che l'hai fatto (es. 'fatto', 'me lo ricorderò').
 EVITA DUPLICATI: prima di creare, usa searchSemanticMemories con una query legata al fatto/preferenza che vuoi salvare. Se trovi una memoria che si riferisce allo STESSO fatto o alla STESSA preferenza (stesso tema, stessa entità), NON creare una nuova: usa updateSemanticMemory con quell'id e un content che unisce il contenuto esistente con le nuove informazioni. Crea una nuova memoria SOLO se non esiste un record che si riferisce esattamente alla stessa cosa. Se due ricordi sono solo simili ma distinti (es. due preferenze diverse sullo stesso argomento), crea un nuovo record.`,
 
   parameters: {
