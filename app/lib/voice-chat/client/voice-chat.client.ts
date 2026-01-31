@@ -369,6 +369,14 @@ export class VoiceChatClient {
       })),
     ];
 
+    let systemText = config.systemPrompt ?? "";
+    const ctx = this.options.getCurrentChatContext?.() ?? null;
+    if (ctx) {
+      const created = formatChatContextDate(ctx.created_at);
+      const lastActivity = formatChatContextDate(ctx.last_activity_at);
+      systemText += `\n\nCONVERSAZIONE CORRENTE (informazioni sempre valide):\n- ID chat: ${ctx.id}\n- Titolo: ${ctx.title?.trim() || "(nessuno)"}\n- Creata il: ${created}\n- Ultimo messaggio inviato dall'utente: ${lastActivity}\n`;
+    }
+
     return {
       model: `models/${GEMINI_MODEL}`,
       generationConfig: {
@@ -381,12 +389,21 @@ export class VoiceChatClient {
           },
         },
       },
-      systemInstruction: config.systemPrompt
-        ? { parts: [{ text: config.systemPrompt }] }
-        : undefined,
+      systemInstruction: systemText ? { parts: [{ text: systemText }] } : undefined,
       tools: [{ functionDeclarations: allToolDeclarations }],
       inputAudioTranscription: {},
       outputAudioTranscription: {},
     };
+  }
+}
+
+function formatChatContextDate(iso: string): string {
+  if (!iso?.trim()) return "non disponibile";
+  try {
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return "non disponibile";
+    return d.toLocaleString("it-IT", { dateStyle: "long", timeStyle: "short" });
+  } catch {
+    return "non disponibile";
   }
 }

@@ -29,6 +29,14 @@ export interface VoiceChatConfig {
   systemPrompt?: string;
 }
 
+/** Contesto della conversazione corrente (iniettato nel system prompt). */
+export interface CurrentChatContext {
+  id: string;
+  title: string | null;
+  created_at: string;
+  last_activity_at: string;
+}
+
 export interface VoiceChatClientOptions {
   provider: import('../providers/base.provider').VoiceChatProvider;
   config?: VoiceChatConfig;
@@ -53,5 +61,7 @@ export interface VoiceChatClientOptions {
   onCreateNewChat?: () => void;
   /** Restituisce true se la chat corrente è vuota o senza conversazione sostanziale (per evitare di creare una nuova chat quando l'utente è già su una nuova). */
   getIsCurrentChatEmpty?: () => boolean;
+  /** Restituisce il contesto della conversazione corrente (id, titolo, date) per iniettarlo nel system prompt. */
+  getCurrentChatContext?: () => CurrentChatContext | null;
   onToolExecuted?: (toolName: string, result: unknown) => void;
 }

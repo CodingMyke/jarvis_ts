@@ -77,6 +77,9 @@ export function useVoiceChat(options?: UseVoiceChatOptions): UseVoiceChatReturn 
   const inactivityTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const connectToGeminiRef = useRef<(msg?: string) => Promise<void>>(null as unknown as (msg?: string) => Promise<void>);
   const chatIdRef = useRef<string | null>(options?.initialChatId ?? null);
+  const chatTitleRef = useRef<string | null>(null);
+  const chatCreatedAtRef = useRef<string | null>(null);
+  const chatLastActivityAtRef = useRef<string | null>(null);
   const lastSavedTurnCountRef = useRef(0);
 
   const [connectionState, setConnectionState] = useState<ConnectionState>('disconnected');
@@ -118,8 +121,16 @@ export function useVoiceChat(options?: UseVoiceChatOptions): UseVoiceChatReturn 
         });
         if (res.ok) {
           lastSavedTurnCountRef.current = turns.length;
-          const data = (await res.json()) as { success?: boolean; chat?: { id: string; title?: string | null } };
-          if (data.chat?.title !== undefined) setChatTitle(data.chat.title ?? null);
+          const data = (await res.json()) as { success?: boolean; chat?: { id: string; title?: string | null; created_at?: string; last_activity_at?: string } };
+          if (data.chat) {
+            if (data.chat.title !== undefined) {
+              const t = data.chat.title ?? null;
+              setChatTitle(t);
+              chatTitleRef.current = t;
+            }
+            if (data.chat.created_at !== undefined) chatCreatedAtRef.current = data.chat.created_at ?? null;
+            if (data.chat.last_activity_at !== undefined) chatLastActivityAtRef.current = data.chat.last_activity_at ?? null;
+          }
         }
       } catch (err) {
         console.error("[useVoiceChat] PATCH /api/chats failed", err);
@@ -135,11 +146,17 @@ export function useVoiceChat(options?: UseVoiceChatOptions): UseVoiceChatReturn 
         credentials: "same-origin",
       });
       if (res.ok) {
-        const data = (await res.json()) as { success?: boolean; chat?: { id: string; title?: string | null } };
+        const data = (await res.json()) as { success?: boolean; chat?: { id: string; title?: string | null; created_at?: string; last_activity_at?: string } };
         if (data.success && data.chat?.id) {
           chatIdRef.current = data.chat.id;
           setChatId(data.chat.id);
-          if (data.chat.title !== undefined) setChatTitle(data.chat.title ?? null);
+          if (data.chat.title !== undefined) {
+            const t = data.chat.title ?? null;
+            setChatTitle(t);
+            chatTitleRef.current = t;
+          }
+          if (data.chat.created_at !== undefined) chatCreatedAtRef.current = data.chat.created_at ?? null;
+          if (data.chat.last_activity_at !== undefined) chatLastActivityAtRef.current = data.chat.last_activity_at ?? null;
           lastSavedTurnCountRef.current = turns.length;
         }
       }
@@ -197,6 +214,9 @@ export function useVoiceChat(options?: UseVoiceChatOptions): UseVoiceChatReturn 
   const clearConversation = useCallback(() => {
     setMessages([]);
     chatIdRef.current = null;
+    chatTitleRef.current = null;
+    chatCreatedAtRef.current = null;
+    chatLastActivityAtRef.current = null;
     setChatId(null);
     setChatTitle(null);
     lastSavedTurnCountRef.current = 0;
@@ -291,6 +311,9 @@ export function useVoiceChat(options?: UseVoiceChatOptions): UseVoiceChatReturn 
       saveConversation(messagesRef.current);
       chatIdRef.current = newChatId;
       setChatId(newChatId);
+      chatTitleRef.current = null;
+      chatCreatedAtRef.current = null;
+      chatLastActivityAtRef.current = null;
       setMessages([]);
       currentMessageIdRef.current = { user: null, ai: null };
       const client = clientRef.current;
@@ -336,12 +359,18 @@ export function useVoiceChat(options?: UseVoiceChatOptions): UseVoiceChatReturn 
         console.error("[useVoiceChat] POST /api/chats (createNewChat) failed", res.status);
         return;
       }
-      const data = (await res.json()) as { success?: boolean; chat?: { id: string; title?: string | null } };
+      const data = (await res.json()) as { success?: boolean; chat?: { id: string; title?: string | null; created_at?: string; last_activity_at?: string } };
       if (!data.success || !data.chat?.id) return;
       const newChatId = data.chat.id;
       chatIdRef.current = newChatId;
       setChatId(newChatId);
-      if (data.chat.title !== undefined) setChatTitle(data.chat.title ?? null);
+      if (data.chat.title !== undefined) {
+        const t = data.chat.title ?? null;
+        setChatTitle(t);
+        chatTitleRef.current = t;
+      }
+      if (data.chat.created_at !== undefined) chatCreatedAtRef.current = data.chat.created_at ?? null;
+      if (data.chat.last_activity_at !== undefined) chatLastActivityAtRef.current = data.chat.last_activity_at ?? null;
       setMessages([]);
       lastSavedTurnCountRef.current = 0;
       currentMessageIdRef.current = { user: null, ai: null };
@@ -447,6 +476,44 @@ export function useVoiceChat(options?: UseVoiceChatOptions): UseVoiceChatReturn 
     setError(null);
 
     try {
+      // Se abbiamo già un chatId, carichiamo subito la chat per popolare refs (titolo, date)
+      // così il system prompt in buildSessionConfig avrà il contesto completo.
+      let assistantHistoryToSend: ConversationTurn[] | null = null;
+      const cid = chatIdRef.current;
+      if (cid) {
+        const res = await fetch(`/api/chats?id=${encodeURIComponent(cid)}`, { credentials: "same-origin" });
+        if (res.ok) {
+          const data = (await res.json()) as { success: boolean; chat?: { full_history: ConversationTurn[]; assistant_history: ConversationTurn[]; title?: string | null; created_at?: string; last_activity_at?: string } };
+          if (data.success && data.chat) {
+            if (data.chat.title !== undefined) {
+              const t = data.chat.title ?? null;
+              setChatTitle(t);
+              chatTitleRef.current = t;
+            }
+            if (data.chat.created_at !== undefined) chatCreatedAtRef.current = data.chat.created_at ?? null;
+            if (data.chat.last_activity_at !== undefined) chatLastActivityAtRef.current = data.chat.last_activity_at ?? null;
+            const full = Array.isArray(data.chat.full_history) ? data.chat.full_history : [];
+            const asst = Array.isArray(data.chat.assistant_history) ? data.chat.assistant_history : [];
+            const loadedMessages: Message[] = full.map((turn, i) => ({
+              id: `history-${i}`,
+              text: turn.parts?.map((p) => p.text).join(" ") ?? "",
+              isUser: turn.role === "user",
+              thinking: turn.thinking,
+            }));
+            setMessages(loadedMessages);
+            lastSavedTurnCountRef.current = full.length;
+            assistantHistoryToSend = asst;
+          }
+        } else {
+          chatIdRef.current = null;
+          chatTitleRef.current = null;
+          chatCreatedAtRef.current = null;
+          chatLastActivityAtRef.current = null;
+          setChatId(null);
+          setChatTitle(null);
+        }
+      }
+
       const provider = new GeminiProvider();
 
       const client = new VoiceChatClient({
@@ -514,6 +581,16 @@ export function useVoiceChat(options?: UseVoiceChatOptions): UseVoiceChatReturn 
           );
         },
         getIsCurrentChatEmpty: () => isCurrentChatEffectivelyEmpty(messagesRef.current),
+        getCurrentChatContext: () => {
+          const id = chatIdRef.current;
+          if (!id) return null;
+          return {
+            id,
+            title: chatTitleRef.current ?? null,
+            created_at: chatCreatedAtRef.current ?? "",
+            last_activity_at: chatLastActivityAtRef.current ?? "",
+          };
+        },
       });
 
       clientRef.current = client;
@@ -521,34 +598,6 @@ export function useVoiceChat(options?: UseVoiceChatOptions): UseVoiceChatReturn 
       await client.connect();
       await client.startListening();
       setListeningMode("connected");
-
-      let assistantHistoryToSend: ConversationTurn[] | null = null;
-      const cid = chatIdRef.current;
-
-      if (cid) {
-        const res = await fetch(`/api/chats?id=${encodeURIComponent(cid)}`, { credentials: "same-origin" });
-        if (res.ok) {
-          const data = (await res.json()) as { success: boolean; chat?: { full_history: ConversationTurn[]; assistant_history: ConversationTurn[]; title?: string | null } };
-          if (data.success && data.chat) {
-            if (data.chat.title !== undefined) setChatTitle(data.chat.title ?? null);
-            const full = Array.isArray(data.chat.full_history) ? data.chat.full_history : [];
-            const asst = Array.isArray(data.chat.assistant_history) ? data.chat.assistant_history : [];
-            const loadedMessages: Message[] = full.map((turn, i) => ({
-              id: `history-${i}`,
-              text: turn.parts?.map((p) => p.text).join(" ") ?? "",
-              isUser: turn.role === "user",
-              thinking: turn.thinking,
-            }));
-            setMessages(loadedMessages);
-            lastSavedTurnCountRef.current = full.length;
-            assistantHistoryToSend = asst;
-          }
-        } else {
-          chatIdRef.current = null;
-          setChatId(null);
-          setChatTitle(null);
-        }
-      }
 
       if (assistantHistoryToSend && assistantHistoryToSend.length > 0) {
         client.sendHistory(assistantHistoryToSend, false);
@@ -570,10 +619,17 @@ export function useVoiceChat(options?: UseVoiceChatOptions): UseVoiceChatReturn 
               credentials: "same-origin",
             });
             if (res.ok) {
-              const data = (await res.json()) as { success?: boolean; chat?: { id: string } };
+              const data = (await res.json()) as { success?: boolean; chat?: { id: string; title?: string | null; created_at?: string; last_activity_at?: string } };
               if (data.success && data.chat?.id) {
                 chatIdRef.current = data.chat.id;
                 setChatId(data.chat.id);
+                if (data.chat.title !== undefined) {
+                  const t = data.chat.title ?? null;
+                  setChatTitle(t);
+                  chatTitleRef.current = t;
+                }
+                if (data.chat.created_at !== undefined) chatCreatedAtRef.current = data.chat.created_at ?? null;
+                if (data.chat.last_activity_at !== undefined) chatLastActivityAtRef.current = data.chat.last_activity_at ?? null;
                 lastSavedTurnCountRef.current = 1;
               }
             }
