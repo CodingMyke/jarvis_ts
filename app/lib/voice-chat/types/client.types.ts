@@ -45,5 +45,7 @@ export interface VoiceChatClientOptions {
   onDisableCompletely?: () => void;
   /** Chiamato quando l'assistente deve cancellare tutta la chat (stesso effetto del pulsante cestino) */
   onClearConversation?: () => void;
+  /** Chiamato quando l'assistente passa a un'altra chat: termina conversazione e riapre quella chat. */
+  onSwitchToChat?: (chatId: string) => void;
   onToolExecuted?: (toolName: string, result: unknown) => void;
 }

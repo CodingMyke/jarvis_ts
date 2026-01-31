@@ -113,7 +113,21 @@ export class GeminiProvider implements VoiceChatProvider {
         const motivation = `code=${event.code} reason="${reason}" wasClean=${event.wasClean}`;
         console.log('[GeminiProvider] WebSocket chiuso. Motivazione:', motivation);
         this.emit('disconnected', { reason });
-        
+
+        // Code 1008 = policy violation: server chiude perché un'operazione non è supportata/abilitata
+        const isPolicyOrNotSupported =
+          event.code === 1008 ||
+          /not implemented|not supported|not enabled/i.test(reason);
+        if (isPolicyOrNotSupported && isSetupComplete) {
+          this.emit('error', {
+            error: new VoiceChatError(
+              'Connessione chiusa dal server: operazione non supportata o non abilitata. Verifica che l\'API Gemini Live sia abilitata per la tua chiave.',
+              'CONNECTION_FAILED',
+              true
+            ),
+          });
+        }
+
         if (!isSetupComplete) {
           reject(new VoiceChatError(
             `Connection closed: ${reason}`,

@@ -9,6 +9,7 @@ import {
   WakeWordManager,
   ConversationStorage,
   type ConnectionState,
+  type ConversationTurn,
 } from "@/app/lib/voice-chat";
 import { JARVIS_CONFIG } from "@/app/lib/voice-chat/jarvis.config";
 
@@ -54,7 +55,7 @@ export function useVoiceChat(options?: UseVoiceChatOptions): UseVoiceChatReturn 
   const storageRef = useRef<ConversationStorage>(new ConversationStorage());
   const messagesRef = useRef<Message[]>([]);
   const inactivityTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const connectToGeminiRef = useRef<(msg: string) => Promise<void>>(null as unknown as (msg: string) => Promise<void>);
+  const connectToGeminiRef = useRef<(msg?: string) => Promise<void>>(null as unknown as (msg?: string) => Promise<void>);
   const chatIdRef = useRef<string | null>(options?.initialChatId ?? null);
   const lastSavedTurnCountRef = useRef(0);
 
@@ -201,6 +202,38 @@ export function useVoiceChat(options?: UseVoiceChatOptions): UseVoiceChatReturn 
   }, [clearConversation]);
 
   /**
+   * Passa a un'altra chat: salva la corrente, imposta il nuovo chatId, termina
+   * la conversazione e riapre sulla chat indicata (usato dal tool switchToChat).
+   * L'utente vedrà full_history, l'assistente riceverà assistant_history.
+   */
+  const switchToChatAndReconnect = useCallback(
+    (newChatId: string) => {
+      if (inactivityTimeoutRef.current) {
+        clearTimeout(inactivityTimeoutRef.current);
+        inactivityTimeoutRef.current = null;
+      }
+      saveConversation(messagesRef.current);
+      chatIdRef.current = newChatId;
+      setChatId(newChatId);
+      setMessages([]);
+      currentMessageIdRef.current = { user: null, ai: null };
+      const client = clientRef.current;
+      clientRef.current = null;
+      client?.dispose();
+      setIsMuted(false);
+      setAudioLevel(0);
+      setOutputAudioLevel(0);
+      setConnectionState("disconnected");
+      setListeningMode("wake_word");
+      wakeWordRef.current?.resume();
+      setTimeout(() => {
+        connectToGeminiRef.current();
+      }, CLEAR_AND_RECONNECT_DELAY_MS);
+    },
+    [saveConversation]
+  );
+
+  /**
    * Annulla il timeout di inattività (es. utente ha ripreso a parlare).
    */
   const clearInactivityTimeout = useCallback(() => {
@@ -272,9 +305,10 @@ export function useVoiceChat(options?: UseVoiceChatOptions): UseVoiceChatReturn 
   }, [clearInactivityTimeout]);
 
   /**
-   * Connette a Gemini e invia il messaggio iniziale con la wake word.
+   * Connette a Gemini. Se initialMessage è fornito (es. wake word), lo invia e lo aggiunge alla UI;
+   * altrimenti (es. switch chat) solo connessione e caricamento history, nessun messaggio aggiunto.
    */
-  const connectToGemini = useCallback(async (initialMessage: string) => {
+  const connectToGemini = useCallback(async (initialMessage?: string) => {
     // Evita connessioni multiple
     if (clientRef.current) {
       console.log('[useVoiceChat] client already exists');
@@ -336,6 +370,12 @@ export function useVoiceChat(options?: UseVoiceChatOptions): UseVoiceChatReturn 
             CLEAR_AND_RECONNECT_DELAY_MS
           );
         },
+        onSwitchToChat: (newChatId: string) => {
+          setTimeout(
+            () => switchToChatAndReconnect(newChatId),
+            CLEAR_AND_RECONNECT_DELAY_MS
+          );
+        },
       });
 
       clientRef.current = client;
@@ -344,18 +384,17 @@ export function useVoiceChat(options?: UseVoiceChatOptions): UseVoiceChatReturn 
       await client.startListening();
       setListeningMode("connected");
 
-      let assistantHistoryToSend: { role: "user" | "model"; parts: { text: string }[]; thinking?: string }[] | null = null;
+      let assistantHistoryToSend: ConversationTurn[] | null = null;
       const cid = chatIdRef.current;
 
       if (cid) {
         const res = await fetch(`/api/chats?id=${encodeURIComponent(cid)}`, { credentials: "same-origin" });
         if (res.ok) {
-          const data = (await res.json()) as { success: boolean; chat?: { full_history: unknown[]; assistant_history: unknown[] } };
+          const data = (await res.json()) as { success: boolean; chat?: { full_history: ConversationTurn[]; assistant_history: ConversationTurn[] } };
           if (data.success && data.chat) {
             const full = Array.isArray(data.chat.full_history) ? data.chat.full_history : [];
             const asst = Array.isArray(data.chat.assistant_history) ? data.chat.assistant_history : [];
-            type TurnLike = { role: string; parts: { text: string }[]; thinking?: string };
-            const loadedMessages: Message[] = (full as TurnLike[]).map((turn, i) => ({
+            const loadedMessages: Message[] = full.map((turn, i) => ({
               id: `history-${i}`,
               text: turn.parts?.map((p) => p.text).join(" ") ?? "",
               isUser: turn.role === "user",
@@ -363,7 +402,7 @@ export function useVoiceChat(options?: UseVoiceChatOptions): UseVoiceChatReturn 
             }));
             setMessages(loadedMessages);
             lastSavedTurnCountRef.current = full.length;
-            assistantHistoryToSend = asst as { role: "user" | "model"; parts: { text: string }[]; thinking?: string }[];
+            assistantHistoryToSend = asst;
           }
         } else {
           chatIdRef.current = null;
@@ -375,30 +414,32 @@ export function useVoiceChat(options?: UseVoiceChatOptions): UseVoiceChatReturn 
         client.sendHistory(assistantHistoryToSend, false);
       }
 
-      const messageId = `${Date.now()}-user`;
-      setMessages((prev) => [...prev, { id: messageId, text: initialMessage, isUser: true }]);
-      currentMessageIdRef.current = { user: null, ai: null };
-      client.sendText(initialMessage);
-
-      if (!chatIdRef.current) {
-        const firstTurn = { role: "user" as const, parts: [{ text: initialMessage }] };
-        try {
-          const res = await fetch("/api/chats", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ turns: [firstTurn] }),
-            credentials: "same-origin",
-          });
-          if (res.ok) {
-            const data = (await res.json()) as { success?: boolean; chat?: { id: string } };
-            if (data.success && data.chat?.id) {
-              chatIdRef.current = data.chat.id;
-              setChatId(data.chat.id);
-              lastSavedTurnCountRef.current = 1;
+      const hasInitialMessage = typeof initialMessage === "string" && initialMessage.trim().length > 0;
+      if (hasInitialMessage) {
+        const messageId = `${Date.now()}-user`;
+        setMessages((prev) => [...prev, { id: messageId, text: initialMessage, isUser: true }]);
+        currentMessageIdRef.current = { user: null, ai: null };
+        client.sendText(initialMessage);
+        if (!chatIdRef.current) {
+          const firstTurn: ConversationTurn = { role: "user", parts: [{ text: initialMessage }] };
+          try {
+            const res = await fetch("/api/chats", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ turns: [firstTurn] }),
+              credentials: "same-origin",
+            });
+            if (res.ok) {
+              const data = (await res.json()) as { success?: boolean; chat?: { id: string } };
+              if (data.success && data.chat?.id) {
+                chatIdRef.current = data.chat.id;
+                setChatId(data.chat.id);
+                lastSavedTurnCountRef.current = 1;
+              }
             }
+          } catch (err) {
+            console.error("[useVoiceChat] POST /api/chats (first message) failed", err);
           }
-        } catch (err) {
-          console.error("[useVoiceChat] POST /api/chats (first message) failed", err);
         }
       }
 
@@ -420,7 +461,7 @@ export function useVoiceChat(options?: UseVoiceChatOptions): UseVoiceChatReturn 
       setListeningMode('wake_word');
       wakeWordRef.current?.resume();
     }
-  }, [handleTranscript, saveConversation, options, goToIdle, goToWakeWord, scheduleInactivityTimeout, clearConversationAndReconnect]);
+  }, [handleTranscript, saveConversation, options, goToIdle, goToWakeWord, scheduleInactivityTimeout, clearConversationAndReconnect, switchToChatAndReconnect]);
 
   useEffect(() => {
     connectToGeminiRef.current = connectToGemini;

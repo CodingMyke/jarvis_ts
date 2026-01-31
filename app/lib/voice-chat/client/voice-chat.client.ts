@@ -194,6 +194,11 @@ export class VoiceChatClient {
       clearConversation: () => {
         this.options.onClearConversation?.();
       },
+      switchToChat: this.options.onSwitchToChat
+        ? (chatId: string) => {
+            this.options.onSwitchToChat?.(chatId);
+          }
+        : undefined,
     };
 
     // Search in background solo se nello stesso turn c'è un write (deduplicazione).

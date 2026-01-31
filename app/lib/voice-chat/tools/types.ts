@@ -13,6 +13,8 @@ export interface ToolContext {
   disableCompletely: (delayMs?: number) => void;
   /** Cancella tutta la chat (messaggi e storage). Stesso effetto del pulsante cestino in UI. */
   clearConversation: () => void;
+  /** Passa a un'altra chat: termina la conversazione corrente e riapre quella chat (history utente + assistente aggiornate). */
+  switchToChat?: (chatId: string) => void;
 }
 
 /**
