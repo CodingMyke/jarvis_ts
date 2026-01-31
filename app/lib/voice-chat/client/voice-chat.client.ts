@@ -191,9 +191,9 @@ export class VoiceChatClient {
           this.options.onDisableCompletely?.();
         }, delayMs);
       },
-      clearConversation: () => {
-        this.options.onClearConversation?.();
-      },
+      deleteCurrentChat: () =>
+        this.options.onDeleteCurrentChat?.() ??
+        Promise.resolve({ success: false, error: "Non disponibile" }),
       switchToChat: this.options.onSwitchToChat
         ? (chatId: string) => {
             this.options.onSwitchToChat?.(chatId);

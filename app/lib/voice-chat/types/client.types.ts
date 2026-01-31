@@ -43,8 +43,8 @@ export interface VoiceChatClientOptions {
   onTurnComplete?: () => void;
   /** Chiamato quando l'assistente deve disattivarsi completamente (orb grigio, niente ascolto) */
   onDisableCompletely?: () => void;
-  /** Chiamato quando l'assistente deve cancellare tutta la chat (stesso effetto del pulsante cestino) */
-  onClearConversation?: () => void;
+  /** Chiamato quando l'assistente deve eliminare la chat dal database; ritorna esito per il tool. */
+  onDeleteCurrentChat?: () => Promise<{ success: boolean; error?: string }>;
   /** Chiamato quando l'assistente passa a un'altra chat: termina conversazione e riapre quella chat. */
   onSwitchToChat?: (chatId: string) => void;
   /** Chiamato quando l'assistente crea una nuova chat: il messaggio corrente non viene salvato e non riceve risposta; si passa alla nuova chat. */

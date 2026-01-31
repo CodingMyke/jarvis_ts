@@ -1,6 +1,6 @@
 import type { SystemToolDefinition, ToolDeclaration } from "./types";
 import { endConversationTool } from "./definitions/end-conversation.tool";
-import { clearChatTool } from "./definitions/clear-chat.tool";
+import { deleteChatTool } from "./definitions/delete-chat.tool";
 import { disableAssistantTool } from "./definitions/disable-assistant.tool";
 import { getCalendarEventsTool } from "./definitions/get-calendar-events.tool";
 import { startTimerTool } from "./definitions/start-timer.tool";
@@ -64,7 +64,7 @@ export const MEMORY_SEARCH_TOOL_NAMES = new Set<string>([
  */
 export const SYSTEM_TOOLS: SystemToolDefinition[] = [
   endConversationTool,
-  clearChatTool,
+  deleteChatTool,
   disableAssistantTool,
   getCalendarEventsTool,
   createCalendarEventTool,

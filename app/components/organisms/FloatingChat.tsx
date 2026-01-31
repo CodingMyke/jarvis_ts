@@ -7,7 +7,8 @@ import { ChevronUpIcon, ChevronDownIcon, TrashIcon } from "@/app/components/atom
 
 interface FloatingChatProps {
   messages: Message[];
-  onReset?: () => void;
+  /** Chiamato dopo conferma per eliminare la chat dal database. */
+  onDeleteChat?: () => void;
 }
 
 function useAutoScroll(messages: Message[], isExpanded: boolean) {
@@ -56,7 +57,7 @@ function useAutoScroll(messages: Message[], isExpanded: boolean) {
   return containerRef;
 }
 
-function useFloatingChat(onReset?: () => void) {
+function useFloatingChat(onDeleteChat?: () => void) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   const [dialogState, setDialogState] = useState<"closed" | "opening" | "open" | "closing">("closed");
@@ -65,20 +66,20 @@ function useFloatingChat(onReset?: () => void) {
   const handleMouseEnter = () => setIsHovered(true);
   const handleMouseLeave = () => setIsHovered(false);
 
-  const openResetDialog = () => {
+  const openDeleteDialog = () => {
     setDialogState("opening");
     requestAnimationFrame(() => setDialogState("open"));
   };
 
-  const closeResetDialog = () => {
+  const closeDeleteDialog = () => {
     setDialogState("closing");
     setTimeout(() => setDialogState("closed"), 300); // matches --transition-fast
   };
 
-  const confirmReset = () => {
-    onReset?.();
+  const confirmDelete = () => {
+    onDeleteChat?.();
     setIsExpanded(false);
-    closeResetDialog();
+    closeDeleteDialog();
   };
 
   const showControls = isHovered || isExpanded;
@@ -94,13 +95,13 @@ function useFloatingChat(onReset?: () => void) {
     toggleExpanded,
     handleMouseEnter,
     handleMouseLeave,
-    openResetDialog,
-    closeResetDialog,
-    confirmReset,
+    openDeleteDialog,
+    closeDeleteDialog,
+    confirmDelete,
   };
 }
 
-function FloatingChatComponent({ messages, onReset }: FloatingChatProps) {
+function FloatingChatComponent({ messages, onDeleteChat }: FloatingChatProps) {
   const {
     isExpanded,
     showControls,
@@ -109,10 +110,10 @@ function FloatingChatComponent({ messages, onReset }: FloatingChatProps) {
     toggleExpanded,
     handleMouseEnter,
     handleMouseLeave,
-    openResetDialog,
-    closeResetDialog,
-    confirmReset,
-  } = useFloatingChat(onReset);
+    openDeleteDialog,
+    closeDeleteDialog,
+    confirmDelete,
+  } = useFloatingChat(onDeleteChat);
   const scrollContainerRef = useAutoScroll(messages, isExpanded);
 
   if (messages.length === 0) return null;
@@ -160,13 +161,13 @@ function FloatingChatComponent({ messages, onReset }: FloatingChatProps) {
               )}
             </button>
 
-            {/* Reset button - solo quando espanso */}
+            {/* Elimina chat - solo quando espanso */}
             <div className="flex w-10 items-center justify-center">
-              {isExpanded && onReset && (
+              {isExpanded && onDeleteChat && (
                 <button
-                  onClick={openResetDialog}
+                  onClick={openDeleteDialog}
                   className="flex h-8 w-8 items-center justify-center rounded-lg text-muted transition-colors hover:bg-white/10 hover:text-red-400"
-                  aria-label="Reset conversazione"
+                  aria-label="Elimina chat"
                 >
                   <TrashIcon className="h-4 w-4" />
                 </button>
@@ -191,7 +192,7 @@ function FloatingChatComponent({ messages, onReset }: FloatingChatProps) {
         </div>
       </div>
 
-      {/* Reset confirmation dialog */}
+      {/* Conferma eliminazione chat */}
           {isDialogVisible && (
         <div
           className={`fixed inset-0 z-50 flex items-center justify-center transition-[background-color,backdrop-filter] duration-(--transition-fast) ${
@@ -200,7 +201,7 @@ function FloatingChatComponent({ messages, onReset }: FloatingChatProps) {
               : "bg-black/0 backdrop-blur-0"
           }`}
           style={{ willChange: isDialogAnimatedIn ? "backdrop-filter" : "auto" }}
-          onClick={closeResetDialog}
+          onClick={closeDeleteDialog}
         >
           <div
             className={`mx-4 w-full max-w-sm rounded-2xl border border-white/20 bg-black/80 p-6 backdrop-blur-xl transition-[transform,opacity] duration-(--transition-fast) ${
@@ -212,24 +213,24 @@ function FloatingChatComponent({ messages, onReset }: FloatingChatProps) {
             onClick={(e) => e.stopPropagation()}
           >
             <h3 className="mb-2 text-lg font-semibold text-foreground">
-              Reset conversazione
+              Elimina chat
             </h3>
             <p className="mb-6 text-sm text-muted">
-              Sei sicuro di voler cancellare tutta la conversazione? Questa
-              azione eliminerà tutti i messaggi e non può essere annullata.
+              Sei sicuro di voler eliminare definitivamente questa chat? Verrà
+              rimossa dal database e non potrà essere recuperata.
             </p>
             <div className="flex justify-end gap-3">
               <button
-                onClick={closeResetDialog}
+                onClick={closeDeleteDialog}
                 className="rounded-lg px-4 py-2 text-sm text-muted transition-colors hover:bg-white/10 hover:text-foreground"
               >
                 Annulla
               </button>
               <button
-                onClick={confirmReset}
+                onClick={confirmDelete}
                 className="rounded-lg bg-red-500/20 px-4 py-2 text-sm text-red-400 transition-colors hover:bg-red-500/30"
               >
-                Elimina tutto
+                Elimina chat
               </button>
             </div>
           </div>
@@ -253,5 +254,5 @@ export const FloatingChat = memo(FloatingChatComponent, (prev, next) => {
     }
   }
   
-  return prev.onReset === next.onReset;
+  return prev.onDeleteChat === next.onDeleteChat;
 });

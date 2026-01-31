@@ -16,8 +16,8 @@ import { JARVIS_CONFIG } from "@/app/lib/voice-chat/jarvis.config";
 type ListeningMode = "idle" | "wake_word" | "connected";
 
 const INACTIVITY_MS = 20_000;
-/** Ritardo prima di disconnettere e riaprire dopo clearChat (consente l'invio della risposta del tool). */
-const CLEAR_AND_RECONNECT_DELAY_MS = 400;
+/** Ritardo prima di disconnettere e riaprire dopo deleteChat (consente l'invio della risposta del tool). */
+const DELETE_AND_RECONNECT_DELAY_MS = 400;
 
 /** Chat vuota o solo wake word/saluto: nessuna conversazione sostanziale. */
 function isCurrentChatEffectivelyEmpty(messages: Message[]): boolean {
@@ -51,7 +51,8 @@ export interface UseVoiceChatReturn {
   startListening: () => void;
   stopListening: () => void;
   toggleMute: () => void;
-  clearConversation: () => void;
+  /** Elimina la chat corrente dal database e riapre in stato pulito (conferma in UI o a voce). */
+  deleteChat: () => void;
 }
 
 export interface UseVoiceChatOptions {
@@ -197,7 +198,7 @@ export function useVoiceChat(options?: UseVoiceChatOptions): UseVoiceChatReturn 
   }, []);
 
   /**
-   * Chiusura connessione e riapertura pulita (usato dal tool clearChat).
+   * Chiusura connessione e riapertura pulita (usato dal tool deleteChat e dal pulsante Elimina chat).
    * Dopo un breve delay per permettere la risposta del tool: clear, disconnect, reconnect.
    */
   const clearConversationAndReconnect = useCallback(() => {
@@ -217,6 +218,32 @@ export function useVoiceChat(options?: UseVoiceChatOptions): UseVoiceChatReturn 
     setListeningMode("wake_word");
     connectToGeminiRef.current(`Ciao ${JARVIS_CONFIG.assistantName}`);
   }, [clearConversation]);
+
+  /**
+   * Elimina la chat corrente dal database (DELETE /api/chats) e riapre in stato pulito.
+   * Usato dal tool deleteChat (ritorna esito) e dal pulsante Elimina chat in UI.
+   */
+  const performDeleteChat = useCallback(async (): Promise<{ success: boolean; error?: string }> => {
+    const cid = chatIdRef.current;
+    if (!cid) {
+      setTimeout(() => clearConversationAndReconnect(), DELETE_AND_RECONNECT_DELAY_MS);
+      return { success: true };
+    }
+    try {
+      const res = await fetch(`/api/chats?id=${encodeURIComponent(cid)}`, {
+        method: "DELETE",
+        credentials: "same-origin",
+      });
+      if (!res.ok) {
+        const data = (await res.json().catch(() => ({}))) as { message?: string };
+        return { success: false, error: data.message ?? "Eliminazione fallita" };
+      }
+      setTimeout(() => clearConversationAndReconnect(), DELETE_AND_RECONNECT_DELAY_MS);
+      return { success: true };
+    } catch (e) {
+      return { success: false, error: e instanceof Error ? e.message : "Errore di rete" };
+    }
+  }, [clearConversationAndReconnect]);
 
   /**
    * Passa a un'altra chat: salva la corrente, imposta il nuovo chatId, termina
@@ -245,7 +272,7 @@ export function useVoiceChat(options?: UseVoiceChatOptions): UseVoiceChatReturn 
       wakeWordRef.current?.resume();
       setTimeout(() => {
         connectToGeminiRef.current();
-      }, CLEAR_AND_RECONNECT_DELAY_MS);
+      }, DELETE_AND_RECONNECT_DELAY_MS);
     },
     [saveConversation]
   );
@@ -296,7 +323,7 @@ export function useVoiceChat(options?: UseVoiceChatOptions): UseVoiceChatReturn 
       wakeWordRef.current?.resume();
       setTimeout(() => {
         connectToGeminiRef.current();
-      }, CLEAR_AND_RECONNECT_DELAY_MS);
+      }, DELETE_AND_RECONNECT_DELAY_MS);
     } catch (err) {
       console.error("[useVoiceChat] createNewChat failed", err);
     }
@@ -433,22 +460,17 @@ export function useVoiceChat(options?: UseVoiceChatOptions): UseVoiceChatReturn 
         },
         onTurnComplete: scheduleInactivityTimeout,
         onDisableCompletely: goToIdle,
-        onClearConversation: () => {
-          setTimeout(
-            () => clearConversationAndReconnect(),
-            CLEAR_AND_RECONNECT_DELAY_MS
-          );
-        },
+        onDeleteCurrentChat: performDeleteChat,
         onSwitchToChat: (newChatId: string) => {
           setTimeout(
             () => switchToChatAndReconnect(newChatId),
-            CLEAR_AND_RECONNECT_DELAY_MS
+            DELETE_AND_RECONNECT_DELAY_MS
           );
         },
         onCreateNewChat: () => {
           setTimeout(
             () => createNewChatAndReconnect(),
-            CLEAR_AND_RECONNECT_DELAY_MS
+            DELETE_AND_RECONNECT_DELAY_MS
           );
         },
         getIsCurrentChatEmpty: () => isCurrentChatEffectivelyEmpty(messagesRef.current),
@@ -537,7 +559,7 @@ export function useVoiceChat(options?: UseVoiceChatOptions): UseVoiceChatReturn 
       setListeningMode('wake_word');
       wakeWordRef.current?.resume();
     }
-  }, [handleTranscript, saveConversation, options, goToIdle, goToWakeWord, scheduleInactivityTimeout, clearConversationAndReconnect, switchToChatAndReconnect, createNewChatAndReconnect]);
+  }, [handleTranscript, saveConversation, options, goToIdle, goToWakeWord, scheduleInactivityTimeout, performDeleteChat, switchToChatAndReconnect, createNewChatAndReconnect]);
 
   useEffect(() => {
     connectToGeminiRef.current = connectToGemini;
@@ -607,6 +629,8 @@ export function useVoiceChat(options?: UseVoiceChatOptions): UseVoiceChatReturn 
     startListening,
     stopListening: goToIdle,
     toggleMute,
-    clearConversation,
+    deleteChat: () => {
+      performDeleteChat();
+    },
   };
 }

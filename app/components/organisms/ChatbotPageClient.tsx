@@ -176,7 +176,7 @@ export function ChatbotPageClient({ initialEvents }: ChatbotPageClientProps) {
     stopListening,
     error,
     listeningMode,
-    clearConversation,
+    deleteChat,
     outputAudioLevel,
   } = useVoiceChat({ onToolExecuted: handleToolExecuted });
 
@@ -275,7 +275,7 @@ export function ChatbotPageClient({ initialEvents }: ChatbotPageClientProps) {
       </div>
 
       {/* Floating chat */}
-      <FloatingChat messages={messages} onReset={clearConversation} />
+      <FloatingChat messages={messages} onDeleteChat={deleteChat} />
     </div>
   );
 }

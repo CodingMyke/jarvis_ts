@@ -11,8 +11,8 @@ export interface ToolContext {
   endConversation: (delayMs?: number) => void;
   /** Disattiva completamente l'assistente: orb grigio, non in ascolto nemmeno della parola chiave */
   disableCompletely: (delayMs?: number) => void;
-  /** Cancella tutta la chat (messaggi e storage). Stesso effetto del pulsante cestino in UI. */
-  clearConversation: () => void;
+  /** Elimina la chat corrente dal database e riapre in stato pulito. Ritorna esito per il tool. */
+  deleteCurrentChat: () => Promise<{ success: boolean; error?: string }>;
   /** Passa a un'altra chat: termina la conversazione corrente e riapre quella chat (history utente + assistente aggiornate). */
   switchToChat?: (chatId: string) => void;
   /** Crea una nuova chat e passa a essa. Il messaggio corrente ("crea nuova chat") non viene salvato nella chat attuale e non riceve risposta. */
