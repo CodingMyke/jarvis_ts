@@ -10,13 +10,7 @@ export const createEpisodicMemoryTool: SystemToolDefinition = {
   name: CREATE_EPISODIC_MEMORY_TOOL_NAME,
 
   description:
-    "Sii propenso a salvare in memoria episodi ed eventi che l’utente condivide, appuntamenti, decisioni, esperienze, dettagli di conversazioni che potrebbero servire in futuro. " +
-    "Salva con una soglia bassa: se potrebbe essere utile ricordarlo, salvalo. Non limitarti solo a cose 'molto importanti'. " +
-    "Durante un dialogo normale non dire che hai salvato; rispondi solo sul contenuto. Se l'utente ti chiede esplicitamente di ricordare qualcosa (es. 'ricordamelo', 'salvalo') allora conferma che l'hai fatto (es. 'fatto', 'me lo ricorderò'). " +
-    "ttl_days: assegna SEMPRE un valore in giorni in base all'importanza, tranne per informazioni davvero fondamentali da ricordare per sempre (in quel caso ometti il campo). " +
-    "Esempi: conversazioni casuali o dettagli minori 7-30 giorni; appuntamenti, eventi, decisioni operative 30-90; cose rilevanti a medio termine 90-365. " +
-    "Lascia ttl_days vuoto (memoria permanente) SOLO per info importanti e sensate da tenere per sempre (es. decisioni di vita, dati che l'utente vuole ricordati a lungo). " +
-    "Per salvare usa SOLO questo tool: non chiamare searchEpisodicMemories per deduplicazione. Il server aggiorna automaticamente un record esistente molto simile; altrimenti crea un nuovo record.",
+    "Memoria EPISODICA: solo cose che SONO SUCCESSE in un momento o contesto specifico (quando/dove/in quale conversazione). USA per: eventi, appuntamenti, decisioni prese in un certo contesto, dettagli di una conversazione, \"l'altro giorno abbiamo parlato di...\", esperienze. NON usare per fatti atemporali (preferenze, chi è, abitudini) — quelli vanno in memoria semantica. Esempi corretti: \"Riunione con Mario il 30/01 per il progetto X\", \"Oggi ha deciso di usare React per il nuovo corso\". Salva con soglia bassa; ttl_days: assegna in base all'importanza (7-30 minori, 30-90 eventi, 90-365 medio termine); ometti solo per info da tenere per sempre. Usa SOLO questo tool (no search per deduplicazione); il server aggiorna record simili.",
 
   parameters: {
     type: "object",
@@ -24,8 +18,7 @@ export const createEpisodicMemoryTool: SystemToolDefinition = {
       content: {
         type: "string",
         description:
-          "Contenuto della memoria episodica: descrizione dell'evento o dell'episodio da ricordare. " +
-          "Esempi: 'Riunione con Mario il 30/01 per il progetto X', 'Uscita al mare con la famiglia'.",
+          "Descrizione di qualcosa che È SUCCESSO (evento, conversazione, decisione in un contesto). Esempi: 'Riunione con Mario il 30/01 per il progetto X', 'Oggi ha deciso di usare React per il corso'.",
       },
       importance: {
         type: "string",

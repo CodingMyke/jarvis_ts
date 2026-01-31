@@ -9,10 +9,8 @@ export const CREATE_SEMANTIC_MEMORY_TOOL_NAME = "createSemanticMemory";
 export const createSemanticMemoryTool: SystemToolDefinition = {
   name: CREATE_SEMANTIC_MEMORY_TOOL_NAME,
 
-  description: `Sii propenso a salvare in memoria conoscenze, fatti e preferenze sull'utente quando è opportuno: preferenze (cibo, orari, strumenti), fatti personali, lavoro, progetti, familiari, informazioni che potrebbero servire in future conversazioni.
-Salva con una soglia bassa: se potrebbe essere utile ricordarlo in seguito, salvalo. Non limitarti solo a cose 'molto importanti'. Esempi: preferenze (caffè senza zucchero, editor preferito), lavoro da remoto, nomi, tecnologie che usa, obiettivi menzionati.
-Durante un dialogo normale non dire che hai salvato; rispondi solo sul contenuto. Se l'utente ti chiede esplicitamente di ricordare qualcosa (es. 'ricordamelo', 'salvalo') allora conferma che l'hai fatto (es. 'fatto', 'me lo ricorderò').
-Per salvare usa SOLO questo tool: non chiamare searchSemanticMemories per deduplicazione. Il server aggiorna automaticamente un record esistente molto simile; altrimenti crea un nuovo record.`,
+  description: `Memoria SEMANTICA: solo FATTI ATEMPORALI sull'utente (chi è, cosa preferisce, come funziona per lui). USA per: preferenze (cibo, orari, strumenti, editor), fatti personali stabili (lavoro, progetti, familiari, nomi), caratteristiche e abitudini. NON usare per eventi, conversazioni specifiche, "l'altro giorno...", decisioni prese in un contesto, appuntamenti — quelli vanno in memoria episodica.
+Esempi corretti: "Preferisce il caffè senza zucchero", "Lavora da remoto il martedì", "Suo fratello si chiama Marco". Salva con soglia bassa; durante il dialogo non dire che hai salvato; se l'utente chiede "ricordamelo" conferma. Usa SOLO questo tool (no search per deduplicazione); il server aggiorna record simili.`,
 
   parameters: {
     type: "object",
