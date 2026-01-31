@@ -9,8 +9,7 @@ export const CREATE_SEMANTIC_MEMORY_TOOL_NAME = "createSemanticMemory";
 export const createSemanticMemoryTool: SystemToolDefinition = {
   name: CREATE_SEMANTIC_MEMORY_TOOL_NAME,
 
-  description: `Memoria SEMANTICA: solo FATTI ATEMPORALI sull'utente (chi è, cosa preferisce, come funziona per lui). USA per: preferenze (cibo, orari, strumenti, editor), fatti personali stabili (lavoro, progetti, familiari, nomi), caratteristiche e abitudini. NON usare per eventi, conversazioni specifiche, "l'altro giorno...", decisioni prese in un contesto, appuntamenti — quelli vanno in memoria episodica.
-Esempi corretti: "Preferisce il caffè senza zucchero", "Lavora da remoto il martedì", "Suo fratello si chiama Marco". Salva con soglia bassa; durante il dialogo non dire che hai salvato; se l'utente chiede "ricordamelo" conferma. Usa SOLO questo tool (no search per deduplicazione); il server aggiorna record simili.`,
+  description: `Memoria SEMANTICA: salva UNA singola informazione atemporale sull'utente (chi è, cosa preferisce, passioni, come funziona per lui). USA per: preferenze, passioni e interessi (anche se detti di sfuggita, es. "ha la mia stessa passione per X" → salva "l'utente ha passione per X"), fatti personali stabili (lavoro, familiari, nomi di fratelli/cugini), caratteristiche e abitudini. NON usare per eventi, conversazioni, appuntamenti → memoria episodica. Estrai OGNI fatto distinto sull'utente da ogni frase (anche impliciti: "mi piace X perché Y" → salva sia X che Y se Y è un fatto sull'utente). Chiama il tool più volte per ogni fatto semantico distinto. Esempi: "Preferisce il caffè senza zucchero", "Ha passione per lo sviluppo web", "Suo cugino si chiama Simone". Il server aggiorna record simili.`,
 
   parameters: {
     type: "object",

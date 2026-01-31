@@ -10,7 +10,7 @@ export const createEpisodicMemoryTool: SystemToolDefinition = {
   name: CREATE_EPISODIC_MEMORY_TOOL_NAME,
 
   description:
-    "Memoria EPISODICA: salva TUTTE le cose che SONO SUCCESSE o che l'utente racconta (esperienze, cose fatte, cose che vorrebbe fare, interessi menzionati in un contesto). USA per: eventi, appuntamenti, decisioni in un contesto, dettagli di conversazione, \"l'altro giorno...\", esperienze vissute, cose che ha fatto o vuole fare, argomenti di interesse. NON usare per fatti atemporali (preferenze stabili, chi è, abitudini) — quelli vanno in memoria semantica. REGOLA: salva sempre; se ritieni qualcosa di poco conto usa importance 'low' e ttl_days basso (es. 7-14), ma non omettere. ttl_days: 7-14 minori/poco conto, 30-90 eventi normali, 90-365 importante; ometti solo per info da tenere per sempre. Usa SOLO questo tool (no search per deduplicazione); il server aggiorna record simili.",
+    "Memoria EPISODICA: salva UNA singola informazione che È SUCCESSO o che l'utente racconta (evento, esperienza, conversazione, decisione, cosa fatta o da fare). USA per: eventi, appuntamenti, decisioni in un contesto, dettagli di conversazione, \"l'altro giorno...\", esperienze vissute. NON usare per fatti atemporali (preferenze, chi è, abitudini) → memoria semantica. Puoi chiamare questo tool PIÙ VOLTE nello stesso turno: una chiamata per ogni informazione episodica distinta nel messaggio (1 messaggio può produrre 0, 1 o N ricordi episodici). Per ogni chiamata passa SOLO il contenuto di quell'unico \"chunk\". REGOLA: salva sempre; per cose di poco conto usa importance 'low' e ttl_days 7-14. ttl_days: 7-14 minori, 30-90 normali, 90-365 importanti. Il server aggiorna record simili.",
 
   parameters: {
     type: "object",
