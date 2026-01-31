@@ -238,6 +238,7 @@ export class VoiceChatClient {
     if (systemTool) {
       const isBackground = backgroundToolNamesThisTurn.has(call.name);
       if (isBackground) {
+        console.log('[VoiceChatClient] Running background tool:', call.name, '(execute started, response will be synthetic)');
         const isSearch = MEMORY_SEARCH_TOOL_NAMES.has(call.name);
         const syntheticMessage = isSearch
           ? "Ricerca eseguita in background per deduplicazione. Procedi con create; non attendere risultati."

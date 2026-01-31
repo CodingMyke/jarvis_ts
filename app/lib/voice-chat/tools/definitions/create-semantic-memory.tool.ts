@@ -35,6 +35,7 @@ export const createSemanticMemoryTool: SystemToolDefinition = {
   },
 
   execute: async (args) => {
+    console.log("[createSemanticMemoryTool] execute started, args:", { content: (args.content as string)?.slice(0, 80), key: args.key });
     try {
       const content = args.content as string | undefined;
       if (typeof content !== "string" || !content.trim()) {
@@ -47,6 +48,7 @@ export const createSemanticMemoryTool: SystemToolDefinition = {
         };
       }
 
+      console.log("[createSemanticMemoryTool] calling POST /api/memory/semantic");
       const response = await fetch("/api/memory/semantic", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
