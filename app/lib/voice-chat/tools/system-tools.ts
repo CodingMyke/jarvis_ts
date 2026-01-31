@@ -25,6 +25,35 @@ import { searchEpisodicMemoriesTool } from "./definitions/search-episodic-memori
 import { createEpisodicMemoryTool } from "./definitions/create-episodic-memory.tool";
 import { updateEpisodicMemoryTool } from "./definitions/update-episodic-memory.tool";
 import { deleteEpisodicMemoryTool } from "./definitions/delete-episodic-memory.tool";
+import { CREATE_EPISODIC_MEMORY_TOOL_NAME } from "./definitions/create-episodic-memory.tool";
+import { UPDATE_EPISODIC_MEMORY_TOOL_NAME } from "./definitions/update-episodic-memory.tool";
+import { DELETE_EPISODIC_MEMORY_TOOL_NAME } from "./definitions/delete-episodic-memory.tool";
+import { CREATE_SEMANTIC_MEMORY_TOOL_NAME } from "./definitions/create-semantic-memory.tool";
+import { UPDATE_SEMANTIC_MEMORY_TOOL_NAME } from "./definitions/update-semantic-memory.tool";
+import { DELETE_SEMANTIC_MEMORY_TOOL_NAME } from "./definitions/delete-semantic-memory.tool";
+import { SEARCH_EPISODIC_MEMORIES_TOOL_NAME } from "./definitions/search-episodic-memories.tool";
+import { SEARCH_SEMANTIC_MEMORIES_TOOL_NAME } from "./definitions/search-semantic-memories.tool";
+
+/**
+ * Tool di scrittura memoria (create/update/delete): sempre in background.
+ */
+export const BACKGROUND_MEMORY_WRITE_TOOL_NAMES = new Set<string>([
+  CREATE_EPISODIC_MEMORY_TOOL_NAME,
+  UPDATE_EPISODIC_MEMORY_TOOL_NAME,
+  DELETE_EPISODIC_MEMORY_TOOL_NAME,
+  CREATE_SEMANTIC_MEMORY_TOOL_NAME,
+  UPDATE_SEMANTIC_MEMORY_TOOL_NAME,
+  DELETE_SEMANTIC_MEMORY_TOOL_NAME,
+]);
+
+/**
+ * Tool di search memoria. Usati per decidere se la search è "per rispondere" (bloccante)
+ * o "per deduplicazione" (background quando c'è anche un write nello stesso turn).
+ */
+export const MEMORY_SEARCH_TOOL_NAMES = new Set<string>([
+  SEARCH_EPISODIC_MEMORIES_TOOL_NAME,
+  SEARCH_SEMANTIC_MEMORIES_TOOL_NAME,
+]);
 
 /**
  * Tutti i tools di sistema con la loro implementazione.

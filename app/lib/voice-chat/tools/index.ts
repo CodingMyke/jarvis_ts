@@ -1,4 +1,9 @@
-export { SYSTEM_TOOLS, SYSTEM_TOOL_DECLARATIONS } from "./system-tools";
+export {
+  SYSTEM_TOOLS,
+  SYSTEM_TOOL_DECLARATIONS,
+  BACKGROUND_MEMORY_WRITE_TOOL_NAMES,
+  MEMORY_SEARCH_TOOL_NAMES,
+} from "./system-tools";
 export type {
   ToolDeclaration,
   SystemToolDefinition,

@@ -47,8 +47,12 @@ export type SearchEpisodicMemoriesResult =
   | { success: true; memories: { id: string; content: string; importance: string; created_at: string; similarity: number }[] }
   | { success: false; error: string };
 
+/** Soglia di similarità oltre la quale si aggiorna un record esistente invece di creare. */
+const CREATE_OR_UPDATE_SIMILARITY_THRESHOLD = 0.85;
+
 /**
  * Inserisce un record di memoria episodica per l'utente dato.
+ * Se esiste già una memoria molto simile (per deduplicazione), aggiorna quella invece di creare.
  */
 export async function createEpisodicMemory(
   supabase: SupabaseClient<Database>,
@@ -58,6 +62,23 @@ export async function createEpisodicMemory(
   const content = typeof body.content === "string" ? body.content.trim() : "";
   if (!content) {
     return { success: false, error: "Il contenuto non può essere vuoto" };
+  }
+
+  const searchResult = await searchEpisodicMemoriesByContent(supabase, userId, content, 1);
+  if (
+    searchResult.success &&
+    searchResult.memories.length > 0 &&
+    searchResult.memories[0].similarity >= CREATE_OR_UPDATE_SIMILARITY_THRESHOLD
+  ) {
+    const existing = searchResult.memories[0];
+    const mergedContent = [existing.content, content].filter(Boolean).join("\n\n");
+    const updateResult = await updateEpisodicMemory(supabase, userId, existing.id, {
+      content: mergedContent,
+      importance: body.importance,
+      ttl_days: body.ttl_days,
+    });
+    if (!updateResult.success) return { success: false, error: updateResult.error };
+    return { success: true, memory: updateResult.memory };
   }
 
   let embedding: string;

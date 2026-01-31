@@ -14,6 +14,8 @@ import { AUDIO_CHUNK_INTERVAL_MS, AUDIO_OUTPUT_SAMPLE_RATE, DEFAULT_AUDIO_FORMAT
 import {
   SYSTEM_TOOLS,
   SYSTEM_TOOL_DECLARATIONS,
+  BACKGROUND_MEMORY_WRITE_TOOL_NAMES,
+  MEMORY_SEARCH_TOOL_NAMES,
   type ToolContext,
 } from "../tools";
 
@@ -177,9 +179,7 @@ export class VoiceChatClient {
 
   private async handleToolCalls(calls: FunctionCall[]): Promise<void> {
     console.log('[VoiceChatClient] handleToolCalls called with', calls.length, 'calls:', calls.map(c => c.name));
-    const responses: FunctionResponse[] = [];
 
-    // Contesto con le azioni disponibili per i tools
     const toolContext: ToolContext = {
       endConversation: (delayMs = 0) => {
         setTimeout(() => {
@@ -196,81 +196,20 @@ export class VoiceChatClient {
       },
     };
 
-    for (const call of calls) {
-      console.log('[VoiceChatClient] Processing tool call:', call.name, 'with args:', call.args);
-      let executeResult: { result: unknown } | null = null;
-      let toolError: Error | null = null;
-
-      // Cerca prima nei tools di sistema
-      const systemTool = SYSTEM_TOOLS.find((t) => t.name === call.name);
-      if (systemTool) {
-        try {
-          console.log('[VoiceChatClient] Executing system tool:', call.name);
-          executeResult = await systemTool.execute(call.args, toolContext);
-          const resultString = JSON.stringify(executeResult.result);
-          console.log('[VoiceChatClient] Tool', call.name, 'executed successfully, result length:', resultString.length);
-          responses.push({
-            id: call.id,
-            name: call.name,
-            response: { result: resultString },
-          });
-        } catch (error) {
-          toolError = error instanceof Error ? error : new Error(String(error));
-          console.error(`[VoiceChatClient] Error executing system tool "${call.name}":`, toolError);
-          responses.push({
-            id: call.id,
-            name: call.name,
-            response: {
-              result: "",
-              error: toolError.message,
-            },
-          });
-        }
-        
-        // Notifica l'esecuzione del tool
-        if (executeResult) {
-          this.options.onToolExecuted?.(call.name, executeResult.result);
-        }
-        continue;
-      }
-
-      // Poi cerca nei tools utente
-      const userTool = this.tools.find((t) => t.name === call.name);
-      if (userTool) {
-        try {
-          const result = await userTool.execute(call.args);
-          executeResult = { result };
-          responses.push({
-            id: call.id,
-            name: call.name,
-            response: { result: JSON.stringify(result) },
-          });
-        } catch (error) {
-          toolError = error instanceof Error ? error : new Error(String(error));
-          console.error(`[VoiceChatClient] Error executing user tool "${call.name}":`, toolError);
-          responses.push({
-            id: call.id,
-            name: call.name,
-            response: {
-              result: "",
-              error: toolError.message,
-            },
-          });
-        }
-        
-        // Notifica l'esecuzione del tool
-        if (executeResult) {
-          this.options.onToolExecuted?.(call.name, executeResult.result);
-        }
-      } else {
-        console.error(`[VoiceChatClient] Tool "${call.name}" not found`);
-        responses.push({
-          id: call.id,
-          name: call.name,
-          response: { result: "", error: `Tool "${call.name}" not found` },
-        });
-      }
+    // Search in background solo se nello stesso turn c'è un write (deduplicazione).
+    // Se l'utente chiede solo "cerca nelle memorie" la search è bloccante per dare la risposta corretta.
+    const hasMemoryWriteInTurn = calls.some((c) =>
+      BACKGROUND_MEMORY_WRITE_TOOL_NAMES.has(c.name)
+    );
+    const backgroundToolNamesThisTurn = new Set(BACKGROUND_MEMORY_WRITE_TOOL_NAMES);
+    if (hasMemoryWriteInTurn) {
+      MEMORY_SEARCH_TOOL_NAMES.forEach((n) => backgroundToolNamesThisTurn.add(n));
     }
+
+    const responsePromises = calls.map((call) =>
+      this.runSingleToolCall(call, toolContext, backgroundToolNamesThisTurn)
+    );
+    const responses = await Promise.all(responsePromises);
 
     if (responses.length > 0) {
       console.log('[VoiceChatClient] Sending', responses.length, 'tool responses to provider');
@@ -278,6 +217,111 @@ export class VoiceChatClient {
     } else {
       console.warn('[VoiceChatClient] No responses to send for', calls.length, 'tool calls');
     }
+  }
+
+  /**
+   * Esegue un singolo tool e restituisce una promise della risposta da inviare a Gemini.
+   * Per i tool in backgroundToolNamesThisTurn la promise risolve subito (risposta sintetica)
+   * e l'operazione reale prosegue in background.
+   */
+  private runSingleToolCall(
+    call: FunctionCall,
+    toolContext: ToolContext,
+    backgroundToolNamesThisTurn: Set<string>
+  ): Promise<FunctionResponse> {
+    const systemTool = SYSTEM_TOOLS.find((t) => t.name === call.name);
+    if (systemTool) {
+      const isBackground = backgroundToolNamesThisTurn.has(call.name);
+      if (isBackground) {
+        const isSearch = MEMORY_SEARCH_TOOL_NAMES.has(call.name);
+        const syntheticMessage = isSearch
+          ? "Ricerca eseguita in background per deduplicazione. Procedi con create; non attendere risultati."
+          : "Operazione avviata in background. Puoi continuare a parlare.";
+        const synthetic: FunctionResponse = {
+          id: call.id,
+          name: call.name,
+          response: {
+            result: JSON.stringify({
+              ok: true,
+              message: syntheticMessage,
+            }),
+          },
+        };
+        const executePromise = Promise.resolve(
+          systemTool.execute(call.args, toolContext)
+        );
+        executePromise
+          .then((res: { result: unknown }) => {
+            this.options.onToolExecuted?.(call.name, res.result);
+          })
+          .catch((err: unknown) => {
+            const errMsg = err instanceof Error ? err.message : String(err);
+            console.error(
+              `[VoiceChatClient] Background tool "${call.name}" failed:`,
+              errMsg
+            );
+            this.options.onError?.(
+              new VoiceChatError(
+                `Operazione memoria in background fallita: ${errMsg}`,
+                "API_ERROR",
+                false
+              )
+            );
+          });
+        return Promise.resolve(synthetic);
+      }
+      // Tool bloccante: attendiamo il risultato
+      return Promise.resolve(systemTool.execute(call.args, toolContext)).then(
+        (executeResult) => {
+          console.log('[VoiceChatClient] Tool', call.name, 'executed successfully');
+          this.options.onToolExecuted?.(call.name, executeResult.result);
+          return {
+            id: call.id,
+            name: call.name,
+            response: { result: JSON.stringify(executeResult.result) },
+          };
+        },
+        (error) => {
+          const toolError = error instanceof Error ? error : new Error(String(error));
+          console.error(`[VoiceChatClient] Error executing system tool "${call.name}":`, toolError);
+          return {
+            id: call.id,
+            name: call.name,
+            response: { result: "", error: toolError.message },
+          };
+        }
+      );
+    }
+
+    const userTool = this.tools.find((t) => t.name === call.name);
+    if (userTool) {
+      return Promise.resolve(userTool.execute(call.args)).then(
+        (result) => {
+          this.options.onToolExecuted?.(call.name, result);
+          return {
+            id: call.id,
+            name: call.name,
+            response: { result: JSON.stringify(result) },
+          };
+        },
+        (error) => {
+          const toolError = error instanceof Error ? error : new Error(String(error));
+          console.error(`[VoiceChatClient] Error executing user tool "${call.name}":`, toolError);
+          return {
+            id: call.id,
+            name: call.name,
+            response: { result: "", error: toolError.message },
+          };
+        }
+      );
+    }
+
+    console.error(`[VoiceChatClient] Tool "${call.name}" not found`);
+    return Promise.resolve({
+      id: call.id,
+      name: call.name,
+      response: { result: "", error: `Tool "${call.name}" not found` },
+    });
   }
 
   private initAudioOutput(): void {
