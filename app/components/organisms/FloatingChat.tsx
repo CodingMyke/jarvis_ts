@@ -7,6 +7,8 @@ import { ChevronUpIcon, ChevronDownIcon, TrashIcon } from "@/app/components/atom
 
 interface FloatingChatProps {
   messages: Message[];
+  /** Titolo della conversazione; mostrato nell'header solo quando espanso. */
+  title?: string | null;
   /** Chiamato dopo conferma per eliminare la chat dal database. */
   onDeleteChat?: () => void;
 }
@@ -101,7 +103,7 @@ function useFloatingChat(onDeleteChat?: () => void) {
   };
 }
 
-function FloatingChatComponent({ messages, onDeleteChat }: FloatingChatProps) {
+function FloatingChatComponent({ messages, title, onDeleteChat }: FloatingChatProps) {
   const {
     isExpanded,
     showControls,
@@ -137,19 +139,16 @@ function FloatingChatComponent({ messages, onDeleteChat }: FloatingChatProps) {
           }`}
           style={{ willChange: isExpanded ? "backdrop-filter" : "auto" }}
         >
-          {/* Header */}
+          {/* Header: freccia | titolo (se espanso) | delete (se espanso) */}
           <div
-            className={`flex h-10 shrink-0 items-center border-b transition-[border-color,opacity] duration-(--transition-medium) ${
+            className={`flex h-10 shrink-0 items-center gap-2 border-b px-2 transition-[border-color,opacity] duration-(--transition-medium) ${
               isExpanded ? "border-white/10" : "border-transparent"
             }`}
           >
-            {/* Spacer per bilanciare */}
-            <div className="w-10" />
-
-            {/* Toggle button */}
+            {/* Toggle espandi/riduci */}
             <button
               onClick={toggleExpanded}
-              className={`flex h-full flex-1 items-center justify-center transition-opacity duration-(--transition-fast) hover:text-foreground ${
+              className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg transition-opacity duration-(--transition-fast) hover:text-foreground ${
                 showControls ? "text-muted opacity-100" : "opacity-0"
               }`}
               aria-label={isExpanded ? "Riduci chat" : "Espandi chat"}
@@ -161,18 +160,25 @@ function FloatingChatComponent({ messages, onDeleteChat }: FloatingChatProps) {
               )}
             </button>
 
+            {/* Titolo - solo quando espanso */}
+            {isExpanded && (
+              <div className="min-w-0 flex-1 overflow-hidden">
+                <span className="block truncate text-sm text-foreground">
+                  {title?.trim() || "Conversazione"}
+                </span>
+              </div>
+            )}
+
             {/* Elimina chat - solo quando espanso */}
-            <div className="flex w-10 items-center justify-center">
-              {isExpanded && onDeleteChat && (
-                <button
-                  onClick={openDeleteDialog}
-                  className="flex h-8 w-8 items-center justify-center rounded-lg text-muted transition-colors hover:bg-white/10 hover:text-red-400"
-                  aria-label="Elimina chat"
-                >
-                  <TrashIcon className="h-4 w-4" />
-                </button>
-              )}
-            </div>
+            {isExpanded && onDeleteChat && (
+              <button
+                onClick={openDeleteDialog}
+                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-muted transition-colors hover:bg-white/10 hover:text-red-400"
+                aria-label="Elimina chat"
+              >
+                <TrashIcon className="h-4 w-4" />
+              </button>
+            )}
           </div>
 
           {/* Messaggi container */}
@@ -254,5 +260,5 @@ export const FloatingChat = memo(FloatingChatComponent, (prev, next) => {
     }
   }
   
-  return prev.onDeleteChat === next.onDeleteChat;
+  return prev.onDeleteChat === next.onDeleteChat && prev.title === next.title;
 });

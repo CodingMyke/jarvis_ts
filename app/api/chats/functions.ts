@@ -269,6 +269,7 @@ export async function appendToChat(
     summary_embedding: summaryEmbedding,
   };
 
+  // Titolo solo al primo salvataggio quando c'è contenuto; poi cambia solo se lo chiede l'utente
   if (!chat.title && summaryText) {
     try {
       updates.title = await generateChatTitle(summaryText);

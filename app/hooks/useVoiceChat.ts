@@ -48,6 +48,8 @@ export interface UseVoiceChatReturn {
   listeningMode: ListeningMode;
   /** ID chat corrente (backend); null se non ancora creata/caricata. */
   chatId: string | null;
+  /** Titolo della chat corrente; null se assente o chat non ancora caricata. */
+  chatTitle: string | null;
   startListening: () => void;
   stopListening: () => void;
   toggleMute: () => void;
@@ -85,6 +87,7 @@ export function useVoiceChat(options?: UseVoiceChatOptions): UseVoiceChatReturn 
   const [outputAudioLevel, setOutputAudioLevel] = useState(0);
   const [error, setError] = useState<VoiceChatError | null>(null);
   const [chatId, setChatId] = useState<string | null>(options?.initialChatId ?? null);
+  const [chatTitle, setChatTitle] = useState<string | null>(null);
 
   // Mantieni messagesRef sincronizzato con lo state
   useEffect(() => {
@@ -115,6 +118,8 @@ export function useVoiceChat(options?: UseVoiceChatOptions): UseVoiceChatReturn 
         });
         if (res.ok) {
           lastSavedTurnCountRef.current = turns.length;
+          const data = (await res.json()) as { success?: boolean; chat?: { id: string; title?: string | null } };
+          if (data.chat?.title !== undefined) setChatTitle(data.chat.title ?? null);
         }
       } catch (err) {
         console.error("[useVoiceChat] PATCH /api/chats failed", err);
@@ -130,10 +135,11 @@ export function useVoiceChat(options?: UseVoiceChatOptions): UseVoiceChatReturn 
         credentials: "same-origin",
       });
       if (res.ok) {
-        const data = (await res.json()) as { success?: boolean; chat?: { id: string } };
+        const data = (await res.json()) as { success?: boolean; chat?: { id: string; title?: string | null } };
         if (data.success && data.chat?.id) {
           chatIdRef.current = data.chat.id;
           setChatId(data.chat.id);
+          if (data.chat.title !== undefined) setChatTitle(data.chat.title ?? null);
           lastSavedTurnCountRef.current = turns.length;
         }
       }
@@ -192,6 +198,7 @@ export function useVoiceChat(options?: UseVoiceChatOptions): UseVoiceChatReturn 
     setMessages([]);
     chatIdRef.current = null;
     setChatId(null);
+    setChatTitle(null);
     lastSavedTurnCountRef.current = 0;
     storageRef.current.clear();
     currentMessageIdRef.current = { user: null, ai: null };
@@ -329,11 +336,12 @@ export function useVoiceChat(options?: UseVoiceChatOptions): UseVoiceChatReturn 
         console.error("[useVoiceChat] POST /api/chats (createNewChat) failed", res.status);
         return;
       }
-      const data = (await res.json()) as { success?: boolean; chat?: { id: string } };
+      const data = (await res.json()) as { success?: boolean; chat?: { id: string; title?: string | null } };
       if (!data.success || !data.chat?.id) return;
       const newChatId = data.chat.id;
       chatIdRef.current = newChatId;
       setChatId(newChatId);
+      if (data.chat.title !== undefined) setChatTitle(data.chat.title ?? null);
       setMessages([]);
       lastSavedTurnCountRef.current = 0;
       currentMessageIdRef.current = { user: null, ai: null };
@@ -520,8 +528,9 @@ export function useVoiceChat(options?: UseVoiceChatOptions): UseVoiceChatReturn 
       if (cid) {
         const res = await fetch(`/api/chats?id=${encodeURIComponent(cid)}`, { credentials: "same-origin" });
         if (res.ok) {
-          const data = (await res.json()) as { success: boolean; chat?: { full_history: ConversationTurn[]; assistant_history: ConversationTurn[] } };
+          const data = (await res.json()) as { success: boolean; chat?: { full_history: ConversationTurn[]; assistant_history: ConversationTurn[]; title?: string | null } };
           if (data.success && data.chat) {
+            if (data.chat.title !== undefined) setChatTitle(data.chat.title ?? null);
             const full = Array.isArray(data.chat.full_history) ? data.chat.full_history : [];
             const asst = Array.isArray(data.chat.assistant_history) ? data.chat.assistant_history : [];
             const loadedMessages: Message[] = full.map((turn, i) => ({
@@ -537,6 +546,7 @@ export function useVoiceChat(options?: UseVoiceChatOptions): UseVoiceChatReturn 
         } else {
           chatIdRef.current = null;
           setChatId(null);
+          setChatTitle(null);
         }
       }
 
@@ -658,6 +668,7 @@ export function useVoiceChat(options?: UseVoiceChatOptions): UseVoiceChatReturn 
     connectionState,
     listeningMode,
     chatId,
+    chatTitle,
     startListening,
     stopListening: goToIdle,
     toggleMute,

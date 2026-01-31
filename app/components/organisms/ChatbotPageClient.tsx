@@ -178,6 +178,7 @@ export function ChatbotPageClient({ initialEvents }: ChatbotPageClientProps) {
     listeningMode,
     deleteChat,
     outputAudioLevel,
+    chatTitle,
   } = useVoiceChat({ onToolExecuted: handleToolExecuted });
 
   const orbState = useOrbState(listeningMode);
@@ -275,7 +276,7 @@ export function ChatbotPageClient({ initialEvents }: ChatbotPageClientProps) {
       </div>
 
       {/* Floating chat */}
-      <FloatingChat messages={messages} onDeleteChat={deleteChat} />
+      <FloatingChat messages={messages} title={chatTitle ?? undefined} onDeleteChat={deleteChat} />
     </div>
   );
 }
