@@ -10,9 +10,7 @@ export const searchSemanticMemoriesTool: SystemToolDefinition = {
   name: SEARCH_SEMANTIC_MEMORIES_TOOL_NAME,
 
   description:
-    "Usa quando devi 'ricordare' fatti, preferenze o concetti relativi a un argomento (cercati per significato). " +
-    "Parametri: query (testo/concept da cercare), match_count opzionale (default 5). " +
-    "Non annunciare la ricerca a meno che non serva (es. domanda che richiede tempo); spesso rispondi direttamente senza dire che stai pensando o cercando.",
+    "Cerca nelle memorie SEMANTICHE: fatti atemporali sull'utente, preferenze stabili, caratteristiche, relazioni, cose che sa o preferisce in generale (es. preferenze cibo, lavoro, gusti). NON usare per eventi, conversazioni passate o cose che sono successe (usa searchEpisodicMemories). Parametri: query (testo/concept), match_count opzionale (default 5).",
 
   parameters: {
     type: "object",

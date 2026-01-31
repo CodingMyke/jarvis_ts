@@ -21,6 +21,25 @@ import { GEMINI_MODEL } from '../../config';
 
 const GEMINI_WS_URL = 'wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContent';
 
+/** Mappa i codici di chiusura WebSocket a una motivazione leggibile (RFC 6455). */
+function closeCodeToReason(code: number): string {
+  const reasons: Record<number, string> = {
+    1000: 'chiusura normale',
+    1001: 'endpoint in uscita (es. server si spegne)',
+    1002: 'errore di protocollo',
+    1003: 'dato non supportato',
+    1005: 'nessun codice di chiusura ricevuto',
+    1006: 'chiusura anomala (nessun frame di close, es. timeout/rete)',
+    1007: 'payload frame non valido',
+    1008: 'violazione di policy',
+    1009: 'messaggio troppo grande',
+    1010: 'estensione obbligatoria mancante',
+    1011: 'errore interno server',
+    1015: 'fallimento handshake TLS',
+  };
+  return reasons[code] ?? `chiusura con codice ${code}`;
+}
+
 type EventListeners = {
   [E in ProviderEvent]: Set<ProviderEventHandler<E>>;
 };
@@ -90,15 +109,14 @@ export class GeminiProvider implements VoiceChatProvider {
       };
 
       this.ws.onclose = (event) => {
-        const reason = event.reason || '(nessuna)';
+        const reason = event.reason?.trim() || closeCodeToReason(event.code);
         const motivation = `code=${event.code} reason="${reason}" wasClean=${event.wasClean}`;
         console.log('[GeminiProvider] WebSocket chiuso. Motivazione:', motivation);
-        this.emit('disconnected', { reason: event.reason || 'Connection closed' });
+        this.emit('disconnected', { reason });
         
-        // Se non abbiamo completato il setup, reject la promise
         if (!isSetupComplete) {
           reject(new VoiceChatError(
-            `Connection closed: ${event.reason || `code ${event.code}`}`,
+            `Connection closed: ${reason}`,
             'CONNECTION_FAILED',
             true
           ));

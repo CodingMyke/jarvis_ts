@@ -10,7 +10,7 @@ export const createEpisodicMemoryTool: SystemToolDefinition = {
   name: CREATE_EPISODIC_MEMORY_TOOL_NAME,
 
   description:
-    "Memoria EPISODICA: solo cose che SONO SUCCESSE in un momento o contesto specifico (quando/dove/in quale conversazione). USA per: eventi, appuntamenti, decisioni prese in un certo contesto, dettagli di una conversazione, \"l'altro giorno abbiamo parlato di...\", esperienze. NON usare per fatti atemporali (preferenze, chi è, abitudini) — quelli vanno in memoria semantica. Esempi corretti: \"Riunione con Mario il 30/01 per il progetto X\", \"Oggi ha deciso di usare React per il nuovo corso\". Salva con soglia bassa; ttl_days: assegna in base all'importanza (7-30 minori, 30-90 eventi, 90-365 medio termine); ometti solo per info da tenere per sempre. Usa SOLO questo tool (no search per deduplicazione); il server aggiorna record simili.",
+    "Memoria EPISODICA: salva TUTTE le cose che SONO SUCCESSE o che l'utente racconta (esperienze, cose fatte, cose che vorrebbe fare, interessi menzionati in un contesto). USA per: eventi, appuntamenti, decisioni in un contesto, dettagli di conversazione, \"l'altro giorno...\", esperienze vissute, cose che ha fatto o vuole fare, argomenti di interesse. NON usare per fatti atemporali (preferenze stabili, chi è, abitudini) — quelli vanno in memoria semantica. REGOLA: salva sempre; se ritieni qualcosa di poco conto usa importance 'low' e ttl_days basso (es. 7-14), ma non omettere. ttl_days: 7-14 minori/poco conto, 30-90 eventi normali, 90-365 importante; ometti solo per info da tenere per sempre. Usa SOLO questo tool (no search per deduplicazione); il server aggiorna record simili.",
 
   parameters: {
     type: "object",
@@ -18,18 +18,17 @@ export const createEpisodicMemoryTool: SystemToolDefinition = {
       content: {
         type: "string",
         description:
-          "Descrizione di qualcosa che È SUCCESSO (evento, conversazione, decisione in un contesto). Esempi: 'Riunione con Mario il 30/01 per il progetto X', 'Oggi ha deciso di usare React per il corso'.",
+          "Descrizione di qualcosa che è successo o che l'utente ha raccontato: evento, esperienza, conversazione, decisione, cosa fatta o da fare, interesse menzionato. Esempi: 'Riunione con Mario il 30/01', 'Ha raccontato del viaggio a Roma', 'Vuole provare il corso di nuoto', 'Interessato al progetto X'.",
       },
       importance: {
         type: "string",
         description:
-          "Livello di importanza opzionale: 'low', 'medium' (default), 'high'.",
+          "Livello di importanza: 'low' (cose di poco conto — salva comunque), 'medium' (default), 'high'.",
       },
       ttl_days: {
         type: "number",
         description:
-          "Giorni dopo i quali la memoria scade. Omettere SOLO per informazioni davvero importanti da ricordare per sempre. " +
-          "Per tutto il resto assegna un valore: es. 7-30 (dettagli minori/casual), 30-90 (eventi/appuntamenti), 90-365 (rilevante a medio termine).",
+          "Giorni dopo i quali la memoria scade. Per cose di poco conto usa 7-14. Per eventi normali 30-90, per cose importanti 90-365. Omettere solo per info da tenere per sempre.",
       },
     },
     required: ["content"],
