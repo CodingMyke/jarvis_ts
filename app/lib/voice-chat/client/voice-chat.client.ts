@@ -194,6 +194,10 @@ export class VoiceChatClient {
       deleteCurrentChat: () =>
         this.options.onDeleteCurrentChat?.() ??
         Promise.resolve({ success: false, error: "Non disponibile" }),
+      deleteChatById: this.options.onDeleteChatById
+        ? (id: string) =>
+            this.options.onDeleteChatById!(id)
+        : undefined,
       switchToChat: this.options.onSwitchToChat
         ? (chatId: string) => {
             this.options.onSwitchToChat?.(chatId);

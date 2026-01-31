@@ -246,6 +246,31 @@ export function useVoiceChat(options?: UseVoiceChatOptions): UseVoiceChatReturn 
   }, [clearConversationAndReconnect]);
 
   /**
+   * Elimina una chat per id (qualsiasi chat). Se è la chat corrente, riconnette; altrimenti solo DELETE API.
+   * Usato dal tool deleteChat quando l'utente chiede di eliminare un'altra chat.
+   */
+  const performDeleteChatById = useCallback(
+    async (id: string): Promise<{ success: boolean; error?: string }> => {
+      const cid = chatIdRef.current;
+      if (id === cid) return performDeleteChat();
+      try {
+        const res = await fetch(`/api/chats?id=${encodeURIComponent(id)}`, {
+          method: "DELETE",
+          credentials: "same-origin",
+        });
+        if (!res.ok) {
+          const data = (await res.json().catch(() => ({}))) as { message?: string };
+          return { success: false, error: data.message ?? "Eliminazione fallita" };
+        }
+        return { success: true };
+      } catch (e) {
+        return { success: false, error: e instanceof Error ? e.message : "Errore di rete" };
+      }
+    },
+    [performDeleteChat]
+  );
+
+  /**
    * Passa a un'altra chat: salva la corrente, imposta il nuovo chatId, termina
    * la conversazione e riapre sulla chat indicata (usato dal tool switchToChat).
    * L'utente vedrà full_history, l'assistente riceverà assistant_history.
@@ -461,6 +486,7 @@ export function useVoiceChat(options?: UseVoiceChatOptions): UseVoiceChatReturn 
         onTurnComplete: scheduleInactivityTimeout,
         onDisableCompletely: goToIdle,
         onDeleteCurrentChat: performDeleteChat,
+        onDeleteChatById: performDeleteChatById,
         onSwitchToChat: (newChatId: string) => {
           setTimeout(
             () => switchToChatAndReconnect(newChatId),
@@ -559,7 +585,7 @@ export function useVoiceChat(options?: UseVoiceChatOptions): UseVoiceChatReturn 
       setListeningMode('wake_word');
       wakeWordRef.current?.resume();
     }
-  }, [handleTranscript, saveConversation, options, goToIdle, goToWakeWord, scheduleInactivityTimeout, performDeleteChat, switchToChatAndReconnect, createNewChatAndReconnect]);
+  }, [handleTranscript, saveConversation, options, goToIdle, goToWakeWord, scheduleInactivityTimeout, performDeleteChat, performDeleteChatById, switchToChatAndReconnect, createNewChatAndReconnect]);
 
   useEffect(() => {
     connectToGeminiRef.current = connectToGemini;

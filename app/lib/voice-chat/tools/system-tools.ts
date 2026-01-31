@@ -26,6 +26,7 @@ import { createEpisodicMemoryTool } from "./definitions/create-episodic-memory.t
 import { updateEpisodicMemoryTool } from "./definitions/update-episodic-memory.tool";
 import { deleteEpisodicMemoryTool } from "./definitions/delete-episodic-memory.tool";
 import { searchChatsTool } from "./definitions/search-chats.tool";
+import { listChatsTool } from "./definitions/list-chats.tool";
 import { switchToChatTool } from "./definitions/switch-to-chat.tool";
 import { createNewChatTool } from "./definitions/create-new-chat.tool";
 import { CREATE_EPISODIC_MEMORY_TOOL_NAME } from "./definitions/create-episodic-memory.tool";
@@ -90,6 +91,7 @@ export const SYSTEM_TOOLS: SystemToolDefinition[] = [
   updateEpisodicMemoryTool,
   deleteEpisodicMemoryTool,
   searchChatsTool,
+  listChatsTool,
   switchToChatTool,
   createNewChatTool,
 ];

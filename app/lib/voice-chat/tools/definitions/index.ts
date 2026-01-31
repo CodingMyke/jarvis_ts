@@ -138,6 +138,11 @@ export {
 } from "./search-chats.tool";
 
 export {
+  listChatsTool,
+  LIST_CHATS_TOOL_NAME,
+} from "./list-chats.tool";
+
+export {
   switchToChatTool,
   SWITCH_TO_CHAT_TOOL_NAME,
 } from "./switch-to-chat.tool";

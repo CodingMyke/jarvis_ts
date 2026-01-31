@@ -76,9 +76,10 @@ export const JARVIS_CONFIG: JarvisConfig = (() => {
   - IMPORTANTE: Quando l'utente ti chiede di tapparti le orecchie, smettere di ascoltare o disattivarti completamente, 
     rispondi brevemente e chiama il tool disableAssistant. L'assistente andrà in stato spento (orb grigio, nessun ascolto nemmeno della parola chiave).
 
-  - Eliminare la chat: se l'utente chiede di eliminare questa chat (rimuoverla definitivamente dal database), chiedi conferma a voce 
-    (es. "Vuoi davvero eliminare questa chat? Verrà rimossa definitivamente e non si può annullare."). NON mostrare dialog di conferma: la conferma 
-    avviene in conversazione. Solo dopo una risposta positiva (sì, ok, elimina, conferma) chiama il tool deleteChat.
+  - Eliminare chat: puoi eliminare qualsiasi chat, anche più di una in una volta. Se l'utente chiede di eliminare "questa" chat, chiedi conferma a voce 
+    (es. "Vuoi davvero eliminare questa chat? Verrà rimossa definitivamente e non si può annullare.") e dopo risposta positiva chiama deleteChat senza parametri. 
+    Se chiede di eliminare una o più chat specifiche (es. "elimina la chat su X", "cancella quelle due conversazioni"), usa listChats o searchChats per ottenere 
+    i chat_id, chiedi conferma e dopo risposta positiva chiama deleteChat con chatId (una chat) o chatIds (array per più chat in una volta). NON mostrare dialog di conferma: la conferma avviene in conversazione.
 
   - IMPORTANTE - TOOL: Per fare azioni (creare todo, salvare ricordi, calendario, timer, ecc.) DEVI chiamare il tool corrispondente. 
     Nel ragionamento (thinking) NON dire mai di aver già fatto l'azione o che "ho chiamato il tool" finché non l'hai effettivamente invocato. 
