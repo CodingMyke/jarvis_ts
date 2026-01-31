@@ -2,40 +2,61 @@
 
 ## Overview per LLM
 
-Questo documento descrive in dettaglio l'implementazione di un sistema di **voice chat real-time bidirezionale** utilizzando **Google Gemini Live API**. L'obiettivo è creare un'esperienza conversazionale naturale dove l'utente può parlare con l'AI e ricevere risposte vocali in tempo reale, con supporto per interruzioni (barge-in) e trascrizioni live.
+Questo documento descrive l'implementazione di un sistema di **voice chat real-time bidirezionale** con **Google Gemini Live API**. L'assistente vocale supporta wake word, function calling (calendario, todo, timer, memorie episodiche/semantiche), persistenza conversazione e autenticazione (Google + Supabase).
+
+---
+
+## Stato Implementazione (attuale)
+
+- **Voice chat**: Gemini Live API implementata (WebSocket, audio PCM, trascrizioni, barge-in).
+- **Wake word**: ascolto locale con parola chiave configurabile (`jarvis.config.ts`); dopo il wake word si connette a Gemini.
+- **Tools**: calendario (Google Calendar), todo (Google Tasks), timer, memorie episodiche e semantiche (Supabase), clearChat, endConversation, disableAssistant.
+- **Storage conversazione**: `ConversationStorage` (localStorage), riassunto oltre soglia messaggi, caricamento history al mount.
+- **Auth**: Google OAuth + Supabase; API memory/calendar/tasks protette da sessione.
+- **UI**: componenti atomic design, `useVoiceChat` con stati connection/listening, FloatingChat, pagine assistant/settings/setup.
 
 ---
 
 ## Contesto del Progetto
 
-### Stack Tecnologico Esistente
+### Stack Tecnologico
 - **Framework**: Next.js 16.0.5 (App Router)
 - **React**: 19.2.0
 - **TypeScript**: 5
 - **Styling**: Tailwind CSS 4
+- **Voice**: Google Gemini Live API (`@google/genai`)
+- **Auth e DB**: Supabase (auth, episodic_memory, semantic_memory)
+- **Integrazioni**: Google Calendar, Google Tasks (API server-side)
 - **Lingua UI**: Italiano
 
 ### Struttura Attuale
 ```
 jarvis_ts/
 ├── app/
+│   ├── api/
+│   │   ├── auth/           # Google OAuth callback
+│   │   ├── calendar/       # Eventi Google Calendar
+│   │   ├── memory/         # episodic/ e semantic/ (CRUD + search)
+│   │   └── tasks/          # Google Tasks
 │   ├── components/
-│   │   ├── atoms/          # Button, TextInput, Icons
-│   │   ├── molecules/      # ChatBubble, MicrophoneButton
-│   │   └── organisms/      # ChatInput, MessageList, Header
+│   │   ├── atoms/          # Button, VoiceOrb, Icons, EventItem
+│   │   ├── molecules/      # ChatBubble, MicrophoneButton, AuthButton, DayEvents
+│   │   └── organisms/      # ChatbotPageClient, MessageList, Header, FloatingChat, TodoList, TimerDisplay, ecc.
 │   ├── hooks/
-│   │   └── useVoiceChat.ts # Hook attuale (da sostituire)
+│   │   ├── useVoiceChat.ts # Hook voice chat (Gemini Live + wake word + storage)
+│   │   └── useAuth.ts
 │   ├── lib/
-│   │   └── speech/         # Logica speech attuale (Web Speech API)
+│   │   ├── voice-chat/     # Client, provider Gemini, audio, tools, storage
+│   │   ├── speech/         # Tipi Message
+│   │   ├── supabase/       # Auth, DB, server client
+│   │   ├── calendar/       # Google Calendar provider
+│   │   ├── tasks/          # Google Tasks provider
+│   │   ├── embeddings/     # Gemini embeddings (per search memorie)
+│   │   └── timer/          # Timer manager
 │   └── types/
+├── public/
+│   └── audio-capture-processor.worklet.js  # Worklet per cattura microfono
 ```
-
-### Limitazione Attuale
-Il progetto usa attualmente **Web Speech API** del browser che:
-- Non supporta conversazioni naturali bidirezionali
-- Ha latenza alta
-- Non supporta interruzioni
-- Separa STT e TTS in chiamate distinte
 
 ---
 
@@ -230,48 +251,49 @@ gemini-2.5-flash-native-audio-preview-12-2025
 └─────────────────────────────────────────────────────────────┘
 ```
 
-### Struttura Directory da Creare
+### Struttura Directory `lib/voice-chat/` (implementata)
 
 ```
-lib/
-└── voice-chat/
-    ├── index.ts                    # Barrel exports pubblici
-    │
-    ├── types/
-    │   ├── index.ts                # Re-export tutti i tipi
-    │   ├── client.types.ts         # VoiceChatClientOptions, ConnectionState, VoiceChatError
-    │   ├── messages.types.ts       # SetupMessage, RealtimeInputMessage, ServerMessage, etc.
-    │   ├── audio.types.ts          # AudioConfig, AudioChunk, AudioFormat
-    │   └── tools.types.ts          # ToolDefinition, FunctionCall, FunctionResponse
-    │
-    ├── config/
-    │   ├── index.ts                # Re-export config
-    │   ├── default.config.ts       # Configurazione default completa
-    │   └── voices.config.ts        # Lista voci Gemini disponibili
-    │
-    ├── providers/
-    │   ├── index.ts                # Export provider factory
-    │   ├── base.provider.ts        # Interface VoiceChatProvider (astratta)
-    │   └── gemini/
-    │       ├── index.ts            # Export GeminiProvider
-    │       ├── gemini-live.provider.ts   # Implementazione principale
-    │       ├── gemini-connection.ts      # WebSocket management
-    │       └── gemini-messages.ts        # Message builders/parsers
-    │
-    ├── audio/
-    │   ├── index.ts                # Export managers
-    │   ├── audio-input.manager.ts  # Cattura microfono con Web Audio API
-    │   ├── audio-output.manager.ts # Riproduzione con AudioContext
-    │   └── audio-utils.ts          # pcmToBase64, base64ToPcm, etc.
-    │
-    ├── tools/
-    │   ├── index.ts                # Export registry
-    │   ├── tools-registry.ts       # Registro tools (inizialmente vuoto)
-    │   └── tool-executor.ts        # Esecuzione async dei tools
-    │
-    └── client/
-        ├── index.ts                # Export client
-        └── voice-chat.client.ts    # Client principale
+lib/voice-chat/
+├── index.ts                    # Barrel exports pubblici
+├── jarvis.config.ts            # Nome assistente, voce, wake word, system prompt
+│
+├── types/
+│   ├── index.ts
+│   ├── client.types.ts         # VoiceChatClientOptions, ConnectionState, VoiceChatError
+│   ├── messages.types.ts       # SetupMessage, RealtimeInputMessage, ServerMessage, etc.
+│   ├── audio.types.ts          # AudioFormat, AudioChunk, etc.
+│   └── tools.types.ts         # ToolDefinition, FunctionCall, FunctionResponse
+│
+├── config/
+│   ├── index.ts
+│   ├── default.config.ts       # Config default (modello, sample rate, VAD, trascrizioni)
+│   └── voices.config.ts        # GEMINI_VOICES, GeminiVoice
+│
+├── providers/
+│   ├── base.provider.ts        # Interface VoiceChatProvider
+│   └── gemini/
+│       ├── gemini.provider.ts  # Implementazione WebSocket + messaggi
+│       └── gemini-messages.ts  # Builders/parsers messaggi
+│
+├── audio/
+│   ├── audio-input.manager.ts  # Cattura microfono, PCM 16kHz
+│   ├── audio-output.manager.ts # Playback PCM 24kHz, queue, clear su interrupt
+│   ├── audio-utils.ts          # pcmToBase64, base64ToPcm, float32ToInt16, etc.
+│   └── wake-word.manager.ts    # Rilevamento parola chiave locale
+│
+├── tools/
+│   ├── definitions/            # Tool singoli (calendar, todos, timer, memorie, clearChat, endConversation, disableAssistant)
+│   ├── system-tools.ts         # Registrazione tools nel client
+│   └── types.ts
+│
+├── storage/
+│   ├── conversation-storage.ts # Persistenza localStorage, turns, soglia riassunto
+│   ├── summarizer.ts           # Riassunto conversazione (Gemini)
+│   └── types.ts
+│
+└── client/
+    └── voice-chat.client.ts    # Orchestrazione provider, audio, tools, eventi
 ```
 
 ---
@@ -696,139 +718,61 @@ export type GeminiVoice = typeof GEMINI_VOICES[number];
 
 ## Integrazione Hook React
 
-Sostituire l'attuale `app/hooks/useVoiceChat.ts` con:
+L'hook `app/hooks/useVoiceChat.ts` utilizza:
 
-```typescript
-import { useCallback, useRef, useState, useEffect } from 'react';
-import { 
-  VoiceChatClient, 
-  createGeminiProvider,
-  ConnectionState,
-  VoiceChatError 
-} from '@/lib/voice-chat';
-import type { Message } from '@/lib/speech/types';
-
-interface UseVoiceChatReturn {
-  isConnected: boolean;
-  isListening: boolean;
-  isMuted: boolean;
-  messages: Message[];
-  audioLevel: number;
-  error: VoiceChatError | null;
-  connect: () => Promise<void>;
-  disconnect: () => void;
-  toggleMute: () => void;
-}
-
-export function useVoiceChat(): UseVoiceChatReturn {
-  const clientRef = useRef<VoiceChatClient | null>(null);
-  const [state, setState] = useState<ConnectionState>('disconnected');
-  const [isListening, setIsListening] = useState(false);
-  const [isMuted, setIsMuted] = useState(false);
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [audioLevel, setAudioLevel] = useState(0);
-  const [error, setError] = useState<VoiceChatError | null>(null);
-  
-  const connect = useCallback(async () => {
-    const provider = createGeminiProvider();
-    
-    const client = new VoiceChatClient({
-      provider,
-      config: {
-        voice: 'Kore',
-        language: 'it-IT',
-      },
-      tools: [], // Lista vuota, pronta per futuro
-      onTranscript: (text, type) => {
-        setMessages(prev => [...prev, {
-          role: type === 'input' ? 'user' : 'assistant',
-          content: text,
-          timestamp: Date.now(),
-        }]);
-      },
-      onStateChange: setState,
-      onError: setError,
-      onAudioLevel: setAudioLevel,
-    });
-    
-    clientRef.current = client;
-    await client.connect();
-    await client.startListening();
-    setIsListening(true);
-  }, []);
-  
-  const disconnect = useCallback(() => {
-    clientRef.current?.dispose();
-    clientRef.current = null;
-    setIsListening(false);
-    setState('disconnected');
-  }, []);
-  
-  const toggleMute = useCallback(() => {
-    const newMuted = !isMuted;
-    clientRef.current?.setMuted(newMuted);
-    setIsMuted(newMuted);
-  }, [isMuted]);
-  
-  useEffect(() => {
-    return () => {
-      clientRef.current?.dispose();
-    };
-  }, []);
-  
-  return {
-    isConnected: state === 'connected',
-    isListening,
-    isMuted,
-    messages,
-    audioLevel,
-    error,
-    connect,
-    disconnect,
-    toggleMute,
-  };
-}
-```
+- **VoiceChatClient** + **GeminiProvider**: connessione a Gemini Live, invio/ricezione audio e trascrizioni.
+- **WakeWordManager**: ascolto locale fino al rilevamento della parola chiave (configurabile in `jarvis.config.ts`); poi connessione a Gemini e streaming bidirezionale.
+- **ConversationStorage**: salvataggio turns in localStorage, soglia per riassunto, caricamento history al mount; `clearConversation` svuota storage e riconnette dopo clearChat tool.
+- **Stati**: `connectionState`, `listeningMode` (idle | wake_word | connected), `messages`, `audioLevel`, `outputAudioLevel`, `error`.
+- **Inactivity**: timeout di inattività (configurabile) per disconnettere e tornare in ascolto wake word.
+- **API**: i tools chiamano le route `app/api/` (memory, calendar, tasks); l'auth Supabase viene usata lato server per le API protette.
 
 ---
 
-## Dipendenze da Installare
+## Dipendenze
 
-```bash
-npm install @google/genai
-```
+Installate nel progetto:
 
-Nessun'altra dipendenza richiesta - tutto usa API native del browser.
+- `@google/genai`: Gemini Live API (WebSocket) e embeddings (ricerca memorie).
+- `@supabase/supabase-js`, `@supabase/ssr`: Auth e database (memorie episodiche/semantiche).
+- `react-markdown`, `remark-gfm`: Rendering markdown nei messaggi.
+
+Audio: Web Audio API e API native del browser (nessuna libreria audio aggiuntiva).
 
 ---
 
 ## Variabili Ambiente
 
-Creare/aggiornare `.env.local`:
+File `.env.local` (o ambiente di deploy):
+
 ```
-NEXT_PUBLIC_GEMINI_API_KEY=your_api_key_here
+NEXT_PUBLIC_GEMINI_API_KEY=your_gemini_api_key
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
 ```
 
-**NOTA SICUREZZA**: Per produzione, usare ephemeral tokens invece di esporre l'API key nel client.
+Per Google Calendar e Google Tasks sono necessari OAuth e variabili/secret lato server (vedi `app/lib/calendar/GOOGLE_CALENDAR_SETUP.md` e `app/lib/tasks/GOOGLE_TASKS_SETUP.md`).
+
+**NOTA SICUREZZA**: Per produzione, considerare ephemeral tokens per l'API Gemini invece di esporre la key nel client.
 
 ---
 
 ## Checklist Implementazione
 
-1. [ ] Creare struttura directory `lib/voice-chat/`
-2. [ ] Implementare tutti i tipi in `types/`
-3. [ ] Creare configurazioni in `config/`
-4. [ ] Implementare `base.provider.ts` (interface)
-5. [ ] Implementare `gemini-live.provider.ts` (WebSocket + messaggi)
-6. [ ] Implementare `audio-input.manager.ts` (cattura microfono)
-7. [ ] Implementare `audio-output.manager.ts` (playback)
-8. [ ] Implementare `audio-utils.ts` (conversioni)
-9. [ ] Implementare `tools-registry.ts` (vuoto ma funzionante)
-10. [ ] Implementare `voice-chat.client.ts` (orchestrazione)
-11. [ ] Creare tutti i barrel `index.ts`
-12. [ ] Aggiornare `useVoiceChat.ts` hook
-13. [ ] Configurare variabili ambiente
-14. [ ] Testare flusso completo
+1. [x] Creare struttura directory `lib/voice-chat/`
+2. [x] Implementare tutti i tipi in `types/`
+3. [x] Creare configurazioni in `config/` + `jarvis.config.ts`
+4. [x] Implementare `base.provider.ts` (interface)
+5. [x] Implementare `gemini.provider.ts` (WebSocket + messaggi)
+6. [x] Implementare `audio-input.manager.ts` (cattura microfono)
+7. [x] Implementare `audio-output.manager.ts` (playback)
+8. [x] Implementare `audio-utils.ts` (conversioni)
+9. [x] Implementare tools (calendar, todos, timer, memorie episodiche/semantiche, clearChat, endConversation, disableAssistant)
+10. [x] Implementare `voice-chat.client.ts` (orchestrazione)
+11. [x] Wake word (`wake-word.manager.ts`), storage conversazione e riassunto
+12. [x] Aggiornare `useVoiceChat.ts` hook (stati, storage, inactivity, clearChat)
+13. [x] API routes: auth (Google), memory (episodic/semantic), calendar, tasks
+14. [x] Variabili ambiente (Gemini API key, Supabase)
 
 ---
 

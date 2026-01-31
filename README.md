@@ -1,161 +1,137 @@
 # Jarvis AI - Assistente Vocale Interattivo
 
-Un assistente vocale AI intelligente sviluppato con Next.js e TypeScript, che utilizza le API native del browser per il riconoscimento e la sintesi vocale in italiano.
+Assistente vocale AI in tempo reale basato su **Google Gemini Live API**, con wake word, function calling (calendario, todo, timer, memorie) e autenticazione Google + Supabase.
 
-## 🎯 Caratteristiche Principali
+## Caratteristiche principali
 
-- **Riconoscimento Vocale Continuo**: Utilizza la Speech Recognition API per ascoltare continuamente i comandi vocali
-- **Sintesi Vocale Naturale**: Risponde con voce italiana femminile ottimizzata per naturalezza e chiarezza
-- **Attivazione con Parola Chiave**: Risponde solo quando viene menzionato "Jarvis" nella frase
-- **Interfaccia Chat Moderna**: UI pulita e responsive con supporto dark mode
-- **Conversazioni Intelligenti**: Gestisce risposte predefinite e chiusura automatica della conversazione
-- **Scroll Automatico**: I messaggi scorrono automaticamente quando la chat si aggiorna
+- **Voice chat real-time**: streaming bidirezionale con Gemini Live API (WebSocket), bassa latenza e interruzioni naturali (barge-in)
+- **Wake word**: ascolto locale fino al rilevamento della parola chiave (es. "Jarvis"), poi connessione a Gemini
+- **Trascrizioni live**: testo in tempo reale di input e output
+- **Function calling**: strumenti integrati per azioni concrete
+  - **Calendario**: eventi Google Calendar (crea, modifica, elimina, elenco)
+  - **Todo**: Google Tasks (crea, modifica, elimina, elenco)
+  - **Timer**: avvio, pausa, ripresa, stop, stato
+  - **Memorie**: ricordi episodici e semantici (Supabase), creazione/aggiornamento/ricerca/eliminazione
+  - **Controllo sessione**: fine conversazione, cancellazione chat, disattivazione assistente
+- **Persistenza conversazione**: salvataggio in localStorage, riassunto oltre soglia, caricamento history
+- **Autenticazione**: Google OAuth tramite Supabase; API memorie/calendario/tasks protette da sessione
+- **UI**: componenti atomic design, chat con markdown, orb vocale, dark mode, pagine assistant/settings/setup
 
-## 🛠️ Stack Tecnologico
+## Stack tecnologico
 
-- **Framework**: Next.js 16.0.5
-- **UI Library**: React 19.2.0
-- **Language**: TypeScript 5
-- **Styling**: Tailwind CSS 4
-- **APIs**: Web Speech API (Speech Recognition & Speech Synthesis)
+- **Framework**: Next.js 16 (App Router)
+- **UI**: React 19, TypeScript 5, Tailwind CSS 4
+- **Voice**: Google Gemini Live API (`@google/genai`)
+- **Auth e DB**: Supabase (auth, tabelle `episodic_memory`, `semantic_memory`)
+- **Integrazioni**: Google Calendar, Google Tasks (OAuth server-side)
+- **Rendering messaggi**: react-markdown, remark-gfm
 
-## 📋 Prerequisiti
+## Prerequisiti
 
-- Node.js (versione 20 o superiore)
-- Un browser moderno che supporti la Web Speech API (Chrome, Edge, Safari)
-- Microfono funzionante e permessi browser abilitati
+- Node.js 20+
+- Browser moderno con supporto Web Audio API e WebSocket
+- Microfono e permessi browser
+- Account Google (per auth e, opzionalmente, Calendar/Tasks)
+- Chiave API Gemini e progetto Supabase configurati
 
-## 🚀 Installazione
+## Installazione
 
-1. Clona il repository:
-```bash
-git clone <repository-url>
-cd jarvis_ts
-```
+1. Clona il repository e entra nella cartella:
+   ```bash
+   git clone <repository-url>
+   cd jarvis_ts
+   ```
 
 2. Installa le dipendenze:
-```bash
-npm install
-```
+   ```bash
+   npm install
+   ```
 
-3. Avvia il server di sviluppo:
-```bash
-npm run dev
-```
+3. Configura le variabili d'ambiente (`.env.local`):
+   ```
+   NEXT_PUBLIC_GEMINI_API_KEY=your_gemini_api_key
+   NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
+   NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+   ```
+   Per Calendar e Tasks vedi `app/lib/calendar/GOOGLE_CALENDAR_SETUP.md` e `app/lib/tasks/GOOGLE_TASKS_SETUP.md`.
 
-4. Apri [http://localhost:3000](http://localhost:3000) nel tuo browser
+4. Avvia il server di sviluppo:
+   ```bash
+   npm run dev
+   ```
 
-## 💬 Come Utilizzare
+5. Apri [http://localhost:3000](http://localhost:3000).
 
-1. **Avvia la Chat**: Clicca sul pulsante del microfono per iniziare la conversazione
-2. **Parla con Jarvis**: Pronuncia "Jarvis" seguito dal tuo comando (es. "Jarvis, ciao")
-3. **Ricevi Risposte**: Jarvis risponderà sia visivamente che vocalmente
-4. **Termina la Conversazione**: Di' "Jarvis, grazie" per chiudere la chat vocale
+## Utilizzo
 
-### Comandi Supportati
+1. **Login**: accedi con Google (necessario per memorie, calendario e tasks).
+2. **Avvio**: clicca sull’orb del microfono; l’assistente resta in ascolto locale per la parola chiave.
+3. **Attivazione**: pronuncia "Jarvis" (o il wake word configurato); si stabilisce la connessione a Gemini e puoi parlare e ricevere risposte vocali.
+4. **Comandi**: puoi chiedere di creare/modificare eventi, todo, timer, salvare ricordi, cercare nelle memorie, ecc. L’assistente usa i tool in automatico.
+5. **Fine conversazione**: di’ esplicitamente che hai finito (es. "ciao", "grazie a dopo") per far chiamare il tool di fine conversazione; oppure chiedi di "tapparti le orecchie" per disattivare l’assistente.
 
-- "ciao" - Saluto iniziale
-- "come stai" - Chiede come sta Jarvis
-- "chi sei" - Informazioni su Jarvis
-- "cosa puoi fare" - Elenco delle funzionalità
-- "che tempo fa" - Richiesta meteo
-- "che ore sono" - Richiesta orario
-- "grazie" / "grazie mille" - Chiude la conversazione
-- "buongiorno" / "buonasera" / "buonanotte" - Saluti temporali
-- "arrivederci" - Saluto finale
-
-## 🏗️ Struttura del Progetto
+## Struttura del progetto
 
 ```
 jarvis_ts/
 ├── app/
+│   ├── api/                    # Route API
+│   │   ├── auth/                # Google OAuth callback
+│   │   ├── calendar/            # Eventi Google Calendar
+│   │   ├── memory/              # episodic/ e semantic/ (CRUD + search)
+│   │   └── tasks/               # Google Tasks
+│   ├── components/              # Atomic design
+│   │   ├── atoms/               # Button, VoiceOrb, Icons, EventItem
+│   │   ├── molecules/           # ChatBubble, MicrophoneButton, AuthButton
+│   │   └── organisms/           # ChatbotPageClient, MessageList, FloatingChat, ecc.
 │   ├── hooks/
-│   │   └── useVoiceChat.ts      # Hook per gestione chat vocale
-│   ├── types/
-│   │   └── speech-recognition.d.ts  # Type definitions per Speech API
-│   ├── globals.css              # Stili globali con Tailwind
-│   ├── layout.tsx               # Layout principale dell'app
-│   ├── page.tsx                 # Pagina principale del chatbot
-│   └── favicon.ico
-├── public/                      # Asset statici
-├── package.json                 # Dipendenze e script
-├── tsconfig.json               # Configurazione TypeScript
-├── next.config.ts              # Configurazione Next.js
-├── postcss.config.mjs          # Configurazione PostCSS
-├── eslint.config.mjs           # Configurazione ESLint
+│   │   ├── useVoiceChat.ts      # Voice chat (Gemini Live + wake word + storage)
+│   │   └── useAuth.ts
+│   ├── lib/
+│   │   ├── voice-chat/          # Client, provider Gemini, audio, tools, storage
+│   │   ├── supabase/            # Auth e client DB
+│   │   ├── calendar/            # Google Calendar provider
+│   │   ├── tasks/               # Google Tasks provider
+│   │   ├── embeddings/          # Gemini embeddings (ricerca memorie)
+│   │   ├── timer/               # Timer manager
+│   │   └── speech/              # Tipi messaggi
+│   ├── assistant/               # Pagina assistente
+│   ├── settings/                # Impostazioni
+│   └── setup/                   # Setup Calendar/Tasks
+├── public/
+│   └── audio-capture-processor.worklet.js
+├── Description.md               # Specifiche tecniche per LLM
 └── README.md
 ```
 
-## 🔧 Funzionalità Tecniche
-
-### Hook `useVoiceChat`
-
-Il custom hook gestisce tutta la logica della chat vocale:
-
-- **Gestione Stato**: Recording status, messaggi, riferimenti per recognition e speaking
-- **Riconoscimento Vocale**: Configurato per italiano con `continuous: true` e `interimResults: false`
-- **Gestione Errori**: Handling completo per errori di rete, permessi, e no-speech
-- **Controllo Flusso**: Previene sovrapposizioni tra ascolto e risposta
-- **Riavvio Automatico**: Riavvia il recognition dopo ogni risposta vocale
-
-### Caratteristiche UI
-
-- Design responsive e moderno
-- Messaggi con stili differenziati (utente vs AI)
-- Animazioni smooth per scroll automatico
-- Indicatori visivi dello stato di recording
-- Supporto dark mode nativo
-
-## 📜 Script Disponibili
+## Script
 
 ```bash
-npm run dev      # Avvia il server di sviluppo
-npm run build    # Crea build di produzione
-npm run start    # Avvia il server di produzione
-npm run lint     # Esegue il linter
+npm run dev        # Sviluppo
+npm run build      # Build produzione
+npm run start      # Avvio produzione
+npm run lint       # Linter
+npm run gen-supabase-types   # Rigenera tipi Supabase
 ```
 
-## 🔒 Permessi Richiesti
+## Permessi e sicurezza
 
-L'applicazione richiede i seguenti permessi del browser:
-- **Accesso al Microfono**: Necessario per il riconoscimento vocale
-- **Sintesi Vocale**: Generalmente disponibile senza permessi espliciti
+- **Microfono**: richiesto per riconoscimento vocale e wake word.
+- **HTTPS**: consigliato in produzione (obbligatorio per alcune API browser).
+- **API key Gemini**: esposta lato client; in produzione valutare ephemeral tokens.
 
-## 🐛 Risoluzione Problemi
+## Risoluzione problemi
 
-### Il microfono non funziona
-- Verifica i permessi del microfono nelle impostazioni del browser
-- Assicurati di utilizzare HTTPS (obbligatorio per Speech Recognition API)
-- Controlla che il microfono sia funzionante e selezionato come input predefinito
+- **Microfono non funziona**: verifica permessi del browser e che l’input sia il dispositivo corretto.
+- **Nessuna risposta vocale**: controlla volume e che la chiave Gemini sia valida; verifica in console eventuali errori WebSocket.
+- **Memorie/Calendario/Tasks non funzionano**: verifica di essere autenticato e che Supabase/Google siano configurati (vedi documentazione in `app/lib/`).
 
-### La voce non risponde
-- Verifica che il volume del sistema sia attivo
-- Controlla che il browser supporti la Speech Synthesis API
-- Prova a ricaricare la pagina per reinizializzare le voci disponibili
+## Riferimenti
 
-### Il riconoscimento vocale si interrompe
-- Potrebbe essere un problema di connessione di rete (Chrome richiede connessione)
-- Verifica la console per errori specifici
-- Il sistema si riavvia automaticamente in caso di errore "no-speech"
-
-## 🔮 Sviluppi Futuri
-
-- Integrazione con API AI esterne (OpenAI, Claude, etc.)
-- Supporto multilingua
-- Memoria conversazionale persistente
-- Comandi personalizzabili dall'utente
-- Integrazione con servizi esterni (meteo, calendario, etc.)
-- Text-to-speech con voci premium
-- Analisi del sentiment nelle conversazioni
-
-## 📄 Licenza
-
-Progetto privato - Tutti i diritti riservati
-
-## 🙏 Crediti
-
-Sviluppato con ❤️ utilizzando:
+- [Gemini Live API](https://ai.google.dev/gemini-api/docs/live)
 - [Next.js](https://nextjs.org)
-- [React](https://react.dev)
-- [Tailwind CSS](https://tailwindcss.com)
-- [Web Speech API](https://developer.mozilla.org/en-US/docs/Web/API/Web_Speech_API)
+- [Supabase](https://supabase.com)
+
+## Licenza
+
+Progetto privato - Tutti i diritti riservati.
