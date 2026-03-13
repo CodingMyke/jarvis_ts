@@ -1,7 +1,7 @@
 import type { RefObject } from "react";
 import type { Message } from "@/app/_features/assistant/types/speech.types";
 import type { AssistantSessionState } from "@/app/_features/assistant/lib";
-import type { UIDayEvents } from "@/app/_features/calendar";
+import type { DeleteCalendarEventHandler, UIDayEvents } from "@/app/_features/calendar";
 import { FloatingChat } from "./FloatingChat";
 import { VoiceOrb } from "./VoiceOrb";
 import { AssistantActions } from "./AssistantActions";
@@ -26,6 +26,7 @@ interface AssistantShellProps {
   messages: Message[];
   chatTitle?: string | null;
   onDeleteChat: () => void;
+  onDeleteEvent: DeleteCalendarEventHandler;
 }
 
 export function AssistantShell({
@@ -45,6 +46,7 @@ export function AssistantShell({
   messages,
   chatTitle,
   onDeleteChat,
+  onDeleteEvent,
 }: AssistantShellProps) {
   return (
     <div className="fixed inset-0 overflow-hidden bg-background p-6">
@@ -54,7 +56,7 @@ export function AssistantShell({
         </div>
       )}
 
-      <AssistantPanels events={events} />
+      <AssistantPanels events={events} onDeleteEvent={onDeleteEvent} />
       <AssistantClock
         day={day}
         date={date}

@@ -6,6 +6,7 @@ import {
   type DayEventsData,
 } from "@/app/_features/calendar/ui/DayEvents";
 import type { UIDayEvents } from "@/app/_features/calendar/lib/actions";
+import type { DeleteCalendarEventHandler } from "@/app/_features/calendar/lib/ui-events";
 
 // Stima l'altezza extra necessaria quando un evento si espande
 const EXPANSION_HEIGHT_ESTIMATE = 80; // px - margine minimo per l'espansione
@@ -103,6 +104,7 @@ function useEventsScroll(expandedEventId: string | null) {
 interface UpcomingEventsProps {
   /** Eventi raggruppati per giorno (da SSR) */
   initialEvents?: UIDayEvents[];
+  onDeleteEvent?: DeleteCalendarEventHandler;
 }
 
 /**
@@ -115,20 +117,46 @@ function toDayEventsData(uiDays: UIDayEvents[]): DayEventsData[] {
   }));
 }
 
-export function UpcomingEvents({ initialEvents = [] }: UpcomingEventsProps) {
-  // Usa useMemo per convertire gli eventi
-  // La dipendenza è initialEvents, quindi si aggiorna quando cambia l'array
-  const days = useMemo(() => {
-    console.log("initialEvents changed", initialEvents);
-    return toDayEventsData(initialEvents)}, [initialEvents]);
-  
+export function UpcomingEvents({
+  initialEvents = [],
+  onDeleteEvent,
+}: UpcomingEventsProps) {
+  const days = useMemo(() => toDayEventsData(initialEvents), [initialEvents]);
   const [expandedEventId, setExpandedEventId] = useState<string | null>(null);
+  const visibleExpandedEventId = useMemo(() => {
+    if (!expandedEventId) {
+      return null;
+    }
+
+    const hasExpandedEvent = initialEvents.some((day) =>
+      day.events.some((event) => event.id === expandedEventId)
+    );
+
+    return hasExpandedEvent ? expandedEventId : null;
+  }, [expandedEventId, initialEvents]);
   const { containerRef, contentRef, scrollOffset } =
-    useEventsScroll(expandedEventId);
+    useEventsScroll(visibleExpandedEventId);
 
   const handleToggleEvent = useCallback((eventId: string) => {
     setExpandedEventId((current) => (current === eventId ? null : eventId));
   }, []);
+
+  const handleDeleteEvent = useCallback<DeleteCalendarEventHandler>(async (eventId) => {
+    if (!onDeleteEvent) {
+      return {
+        success: false,
+        errorMessage: "Eliminazione evento non disponibile.",
+      };
+    }
+
+    const result = await onDeleteEvent(eventId);
+
+    if (result.success) {
+      setExpandedEventId((current) => (current === eventId ? null : current));
+    }
+
+    return result;
+  }, [onDeleteEvent]);
 
   if (days.length === 0) return null;
 
@@ -154,8 +182,9 @@ export function UpcomingEvents({ initialEvents = [] }: UpcomingEventsProps) {
             {index > 0 && <div className="mb-4 border-t border-white/10" />}
             <DayEvents
               data={dayData}
-              expandedEventId={expandedEventId}
+              expandedEventId={visibleExpandedEventId}
               onToggleEvent={handleToggleEvent}
+              onDeleteEvent={onDeleteEvent ? handleDeleteEvent : undefined}
             />
           </div>
         ))}

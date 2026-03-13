@@ -48,26 +48,31 @@ function calculateTotal(items: Item[], discount: number = 0.0): number {
 
 ## React Components
 - Use functional components with hooks
-- Separate logic with custom hooks
-- Follow composition over props drilling
 - Use Atomic Design principles (atoms/molecules/organisms/templates/pages)
+- Separate logic with custom hooks and store them in a separate file but in the same folder (es: button/index.tsx, button/useButton.tsx)
+- Follow composition over props drilling
+- Do not drill props for more than 3 times
 - Minimize `useState` and `useEffect` - prefer derived state and custom hooks
+- Keep component small and focused
+- Do not create multiple components in the same file, always create it inside its own file, with some exeption for small component used only in just one component
+- Avoid nesting jsx more than 5 times
+- Keep pages clear.
 
 Example:
 ```typescript
-// Custom hook in same file
+// Custom hook in a separated file
 function useResourceForm(initialData?: Resource) {
   const form = useForm<ResourceFormData>({
     resolver: zodResolver(resourceSchema),
     defaultValues: initialData,
   });
   
-  return { form, isValid: form.formState.isValid };
+  return { form };
 }
 
 // Component with clean JSX
 export function ResourceForm({ onSubmit }: ResourceFormProps) {
-  const { form, isValid } = useResourceForm();
+  const { form } = useResourceForm();
   
   return (
     <Form {...form}>

@@ -182,7 +182,7 @@ export const taskCreateBodySchema = z.union([
 
 ## Preferences
 
-- Provide concise, focused responses in Italian when user writes in Italian
+- Provide concise, focused responses in Italian when user writes in Italian. Sacrifice the grammar for brevity also for documentation files
 - Show code examples when helpful
 - Explain the "why" behind changes
 - Prefer editing existing files over creating new ones

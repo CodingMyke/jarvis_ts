@@ -1,5 +1,6 @@
 import { memo, useMemo } from "react";
 import { EventItem, type CalendarEvent } from "@/app/_features/calendar/ui/EventItem";
+import type { DeleteCalendarEventHandler } from "@/app/_features/calendar/lib/ui-events";
 
 export interface DayEventsData {
   date: Date;
@@ -10,6 +11,7 @@ interface DayEventsProps {
   data: DayEventsData;
   expandedEventId: string | null;
   onToggleEvent: (eventId: string) => void;
+  onDeleteEvent?: DeleteCalendarEventHandler;
 }
 
 function formatDayLabel(date: Date): string {
@@ -30,7 +32,12 @@ function formatDayLabel(date: Date): string {
   return `${weekday.charAt(0).toUpperCase() + weekday.slice(1)} ${day} ${month}`;
 }
 
-function DayEventsComponent({ data, expandedEventId, onToggleEvent }: DayEventsProps) {
+function DayEventsComponent({
+  data,
+  expandedEventId,
+  onToggleEvent,
+  onDeleteEvent,
+}: DayEventsProps) {
   const { date, events } = data;
 
   const dayLabel = useMemo(() => formatDayLabel(date), [date]);
@@ -49,6 +56,7 @@ function DayEventsComponent({ data, expandedEventId, onToggleEvent }: DayEventsP
             event={event}
             isExpanded={expandedEventId === event.id}
             onToggle={onToggleEvent}
+            onDeleteEvent={onDeleteEvent}
           />
         ))}
       </div>

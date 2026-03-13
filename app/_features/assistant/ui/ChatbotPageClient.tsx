@@ -4,7 +4,13 @@ import { useCallback, useState, useRef } from "react";
 import { useVoiceChat } from "@/app/_features/assistant/hooks/useVoiceChat";
 import { JARVIS_CONFIG } from "@/app/_features/assistant/lib/jarvis.config";
 import { CREATE_TODO_TOOL_NAME } from "@/app/_features/assistant/tools/definitions/create-todo.tool";
-import type { UIDayEvents, UICalendarEvent } from "@/app/_features/calendar";
+import {
+  removeCalendarEventFromDays,
+  type DeleteCalendarEventHandler,
+  type DeleteCalendarEventUiResult,
+  type UIDayEvents,
+  type UICalendarEvent,
+} from "@/app/_features/calendar";
 import { CREATE_CALENDAR_EVENT_TOOL_NAME } from "@/app/_features/assistant/tools/definitions/create-calendar-event.tool";
 import { DELETE_TODO_TOOL_NAME } from "@/app/_features/assistant/tools/definitions/delete-todo.tool";
 import { UPDATE_CALENDAR_EVENT_TOOL_NAME } from "@/app/_features/assistant/tools/definitions/update-calendar-event.tool";
@@ -122,6 +128,52 @@ async function fetchCalendarEventsFromAPI(options?: {
   }
 }
 
+async function deleteCalendarEventFromAPI(
+  eventId: string
+): Promise<DeleteCalendarEventUiResult> {
+  const trimmedEventId = eventId.trim();
+
+  if (trimmedEventId.length === 0) {
+    return {
+      success: false,
+      errorMessage: "ID evento non valido.",
+    };
+  }
+
+  try {
+    const response = await fetch(
+      `/api/calendar/events?eventId=${encodeURIComponent(trimmedEventId)}`,
+      {
+        method: "DELETE",
+      }
+    );
+    const data = (await response.json().catch(() => null)) as
+      | { success?: boolean; errorMessage?: string; message?: string; error?: string }
+      | null;
+
+    if (!response.ok || !data?.success) {
+      return {
+        success: false,
+        errorMessage:
+          data?.errorMessage
+          ?? data?.message
+          ?? data?.error
+          ?? `Errore HTTP ${response.status}`,
+      };
+    }
+
+    return { success: true };
+  } catch (error) {
+    return {
+      success: false,
+      errorMessage:
+        error instanceof Error
+          ? error.message
+          : "Errore sconosciuto durante l'eliminazione dell'evento.",
+    };
+  }
+}
+
 export function ChatbotPageClient({ initialEvents }: ChatbotPageClientProps) {
   const [events, setEvents] = useState<UIDayEvents[]>(initialEvents);
   const isRefreshingRef = useRef(false);
@@ -148,6 +200,22 @@ export function ChatbotPageClient({ initialEvents }: ChatbotPageClientProps) {
       isRefreshingRef.current = false;
     }
   }, []);
+
+  const handleDeleteEvent = useCallback<DeleteCalendarEventHandler>(async (eventId) => {
+    const result = await deleteCalendarEventFromAPI(eventId);
+
+    if (!result.success) {
+      return result;
+    }
+
+    setEvents((current) => removeCalendarEventFromDays(current, eventId));
+
+    setTimeout(() => {
+      void refreshEvents();
+    }, 500);
+
+    return { success: true };
+  }, [refreshEvents]);
 
   // Callback per quando viene eseguito un tool che impatta calendar/tasks.
   const handleToolExecuted = useCallback((toolName: string, result: unknown) => {
@@ -227,6 +295,7 @@ export function ChatbotPageClient({ initialEvents }: ChatbotPageClientProps) {
       messages={messages}
       chatTitle={chatTitle}
       onDeleteChat={deleteChat}
+      onDeleteEvent={handleDeleteEvent}
     />
   );
 }

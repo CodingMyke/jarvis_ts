@@ -1,6 +1,17 @@
 "use client";
 
-import { memo, useRef, useEffect, useCallback, useMemo } from "react";
+import {
+  memo,
+  useRef,
+  useEffect,
+  useCallback,
+  useMemo,
+  useState,
+  type MouseEvent as ReactMouseEvent,
+} from "react";
+import { createPortal } from "react-dom";
+import { TrashIcon } from "@/app/_shared";
+import type { DeleteCalendarEventHandler } from "@/app/_features/calendar/lib/ui-events";
 
 export interface CalendarEvent {
   id: string;
@@ -17,12 +28,14 @@ interface EventItemProps {
   event: CalendarEvent;
   isExpanded: boolean;
   onToggle: (id: string) => void;
+  onDeleteEvent?: DeleteCalendarEventHandler;
 }
 
 function useEventItem(
   event: CalendarEvent,
   isExpanded: boolean,
-  onToggle: (id: string) => void
+  onToggle: (id: string) => void,
+  isDeleteDialogVisible: boolean,
 ) {
   const containerRef = useRef<HTMLDivElement>(null);
   const pressedRef = useRef(false);
@@ -49,7 +62,7 @@ function useEventItem(
   }, [event.id, onToggle]);
 
   useEffect(() => {
-    if (!isExpanded) return;
+    if (!isExpanded || isDeleteDialogVisible) return;
 
     const handleClickOutside = (e: MouseEvent) => {
       const target = e.target as Element;
@@ -72,7 +85,7 @@ function useEventItem(
       clearTimeout(timeoutId);
       document.removeEventListener("mousedown", handleClickOutside);
     };
-  }, [isExpanded, event.id, onToggle]);
+  }, [isExpanded, isDeleteDialogVisible, event.id, onToggle]);
 
   return {
     containerRef,
@@ -83,15 +96,92 @@ function useEventItem(
   };
 }
 
-function EventItemComponent({ event, isExpanded, onToggle }: EventItemProps) {
+function EventItemComponent({
+  event,
+  isExpanded,
+  onToggle,
+  onDeleteEvent,
+}: EventItemProps) {
   const accentColor = useMemo(() => event.color || "var(--accent)", [event.color]);
+  const [dialogState, setDialogState] = useState<
+    "closed" | "opening" | "open" | "closing"
+  >("closed");
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [portalTarget, setPortalTarget] = useState<HTMLElement | null>(null);
+  const isDialogVisible = dialogState !== "closed";
+  const isDialogAnimatedIn = dialogState === "open";
   const { containerRef, handleMouseDown, handleMouseUp, handleMouseLeave, handleClick } =
-    useEventItem(event, isExpanded, onToggle);
+    useEventItem(event, isExpanded, onToggle, isDialogVisible);
 
-  const hasDetails = useMemo(
-    () => event.location || (event.attendees && event.attendees.length > 0),
-    [event.location, event.attendees]
+  const showFooter = Boolean(onDeleteEvent);
+
+  const closeDeleteDialog = useCallback(() => {
+    if (isDeleting) {
+      return;
+    }
+
+    setDialogState("closing");
+    setTimeout(() => {
+      setDialogState("closed");
+      setDeleteError(null);
+    }, 300);
+  }, [isDeleting]);
+
+  const openDeleteDialog = useCallback(() => {
+    setDeleteError(null);
+    setDialogState("opening");
+    requestAnimationFrame(() => setDialogState("open"));
+  }, []);
+
+  const handleDeleteButtonClick = useCallback(
+    (e: ReactMouseEvent<HTMLButtonElement>) => {
+      e.stopPropagation();
+      openDeleteDialog();
+    },
+    [openDeleteDialog]
   );
+
+  const handleDeleteButtonMouseDown = useCallback(
+    (e: ReactMouseEvent<HTMLButtonElement>) => {
+      e.stopPropagation();
+    },
+    []
+  );
+
+  const confirmDelete = useCallback(async () => {
+    if (!onDeleteEvent || isDeleting) {
+      return;
+    }
+
+    setIsDeleting(true);
+    setDeleteError(null);
+
+    try {
+      const result = await onDeleteEvent(event.id);
+
+      if (result.success) {
+        setDialogState("closed");
+        return;
+      }
+
+      setDeleteError(result.errorMessage || "Errore durante l'eliminazione dell'evento.");
+    } finally {
+      setIsDeleting(false);
+    }
+  }, [event.id, isDeleting, onDeleteEvent]);
+
+  useEffect(() => {
+    setPortalTarget(document.body);
+  }, []);
+
+  useEffect(() => {
+    if (!isExpanded && isDialogVisible) {
+      setDialogState("closed");
+      setDeleteError(null);
+      setIsDeleting(false);
+    }
+  }, [isDialogVisible, isExpanded]);
 
   return (
     <div
@@ -215,16 +305,89 @@ function EventItemComponent({ event, isExpanded, onToggle }: EventItemProps) {
               </div>
             )}
 
-            {hasDetails && (
-              <div className="mt-3 pt-2 border-t border-white/10">
-                <span className="text-[10px] text-muted/50 font-mono">
-                  ID: {event.id}
-                </span>
+            {showFooter && (
+              <div className="mt-3 flex items-center justify-end gap-3 border-t border-white/10 pt-2">
+                {onDeleteEvent && (
+                  <button
+                    type="button"
+                    onClick={handleDeleteButtonClick}
+                    onMouseDown={handleDeleteButtonMouseDown}
+                    className="flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs text-muted transition-colors hover:bg-white/10 hover:text-red-400"
+                    aria-label={`Elimina evento ${event.title}`}
+                  >
+                    <TrashIcon className="h-3.5 w-3.5" />
+                    <span>Elimina</span>
+                  </button>
+                )}
               </div>
             )}
           </div>
         </div>
       </div>
+
+      {isDialogVisible && portalTarget
+        ? createPortal(
+            <div
+              className={`fixed inset-0 z-[100] flex items-center justify-center transition-[background-color,backdrop-filter] duration-(--transition-fast) ${
+                isDialogAnimatedIn
+                  ? "bg-black/60 backdrop-blur-sm"
+                  : "bg-black/0 backdrop-blur-0"
+              }`}
+              style={{ willChange: isDialogAnimatedIn ? "backdrop-filter" : "auto" }}
+              onMouseDown={(e) => e.stopPropagation()}
+              onClick={(e) => {
+                e.stopPropagation();
+                closeDeleteDialog();
+              }}
+            >
+              <div
+                className={`mx-4 w-full max-w-sm rounded-2xl border border-white/20 bg-black/80 p-6 shadow-2xl backdrop-blur-xl transition-[transform,opacity] duration-(--transition-fast) ${
+                  isDialogAnimatedIn
+                    ? "scale-100 opacity-100"
+                    : "scale-95 opacity-0"
+                }`}
+                style={{ willChange: isDialogAnimatedIn ? "transform, opacity" : "auto" }}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <h3 className="mb-2 text-lg font-semibold text-foreground">
+                  Elimina evento
+                </h3>
+                <p className="mb-2 text-sm text-muted">
+                  Stai per eliminare <span className="text-foreground">{event.title}</span>.
+                </p>
+                <p className="mb-6 text-sm text-muted">
+                  L&apos;evento verrà rimosso dal calendario e non potrà essere recuperato.
+                </p>
+
+                {deleteError && (
+                  <p className="mb-4 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-300">
+                    {deleteError}
+                  </p>
+                )}
+
+                <div className="flex justify-end gap-3">
+                  <button
+                    type="button"
+                    onClick={closeDeleteDialog}
+                    disabled={isDeleting}
+                    className="rounded-lg px-4 py-2 text-sm text-muted transition-colors hover:bg-white/10 hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    Annulla
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => void confirmDelete()}
+                    disabled={isDeleting}
+                    className="rounded-lg bg-red-500/20 px-4 py-2 text-sm text-red-400 transition-colors hover:bg-red-500/30 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {isDeleting ? "Eliminazione..." : "Elimina evento"}
+                  </button>
+                </div>
+              </div>
+            </div>,
+            portalTarget,
+          )
+        : null}
     </div>
   );
 }
@@ -240,6 +403,7 @@ export const EventItem = memo(EventItemComponent, (prev, next) => {
     prev.event.color === next.event.color &&
     prev.event.attendees?.length === next.event.attendees?.length &&
     prev.isExpanded === next.isExpanded &&
-    prev.onToggle === next.onToggle
+    prev.onToggle === next.onToggle &&
+    prev.onDeleteEvent === next.onDeleteEvent
   );
 });
