@@ -1,9 +1,8 @@
-import { Header, TodoProvider } from "@/app/components/organisms";
-import { AuthButton } from "@/app/components/molecules";
-import { ChatbotPageClient } from "@/app/components/organisms/ChatbotPageClient";
-import { fetchCalendarEvents } from "@/app/lib/calendar/actions";
-import { fetchTasks } from "@/app/lib/tasks";
-import { JARVIS_CONFIG } from "@/app/lib/voice-chat/jarvis.config";
+import { ChatbotPageClient, JARVIS_CONFIG } from "@/app/_features/assistant";
+import { AuthButton } from "@/app/_features/auth";
+import { fetchCalendarEvents } from "@/app/_features/calendar";
+import { fetchTasks, TodoProvider } from "@/app/_features/tasks";
+import { Header } from "@/app/_shared";
 
 /**
  * Pagina assistente (protetta). Solo utenti loggati possono accedere.

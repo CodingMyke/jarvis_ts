@@ -1,16 +1,20 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
-import { createClient } from "@/app/lib/supabase/server";
-import type { Database } from "@/app/lib/supabase/database.types";
+import { createClient } from "@/app/_server";
+import type { Database } from "@/app/_server";
 import {
   createEpisodicMemory,
   getEpisodicMemories,
   getEpisodicMemoryById,
   updateEpisodicMemory,
   deleteEpisodicMemory,
-} from "./functions";
-import type { CreateEpisodicMemoryRequest, EpisodicMemoryResponse, UpdateEpisodicMemoryRequest } from "./model";
+} from "@/app/_features/memory";
+import type {
+  CreateEpisodicMemoryRequest,
+  EpisodicMemoryResponse,
+  UpdateEpisodicMemoryRequest,
+} from "@/app/_features/memory";
 
 const UNAUTHORIZED = { success: false as const, error: "UNAUTHORIZED", message: "Utente non autenticato" };
 

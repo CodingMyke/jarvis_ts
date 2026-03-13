@@ -1,8 +1,9 @@
-import { LoginPageClient } from "@/app/components/organisms";
-import { JARVIS_CONFIG } from "@/app/lib/voice-chat/jarvis.config";
+import { Suspense } from "react";
+import { LoginPageClient } from "@/app/_features/auth";
+import { JARVIS_CONFIG } from "@/app/_features/assistant";
 
 /**
- * Pagina di login (prima schermata). Se l'utente è già loggato il middleware lo reindirizza a /assistant.
+ * Pagina di login (prima schermata). Se l'utente è già loggato il proxy lo reindirizza a /assistant.
  */
 export default function LoginPage() {
   return (
@@ -15,7 +16,9 @@ export default function LoginPage() {
           Accedi con il tuo account Google per utilizzare l&apos;assistente.
         </p>
       </div>
-      <LoginPageClient />
+      <Suspense fallback={null}>
+        <LoginPageClient />
+      </Suspense>
     </main>
   );
 }

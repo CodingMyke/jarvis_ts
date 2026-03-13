@@ -15,7 +15,7 @@ Assistente vocale AI in tempo reale basato su **Google Gemini Live API**, con wa
   - **Controllo sessione**: fine conversazione, cancellazione chat, disattivazione assistente
 - **Persistenza conversazione**: salvataggio in localStorage, riassunto oltre soglia, caricamento history
 - **Autenticazione**: Google OAuth tramite Supabase; API memorie/calendario/tasks protette da sessione
-- **UI**: componenti atomic design, chat con markdown, orb vocale, dark mode, pagine assistant/settings/setup
+- **UI**: entrypoint App Router sottili, feature boundaries interni, chat con markdown, orb vocale, pagine assistant/settings/setup
 
 ## Stack tecnologico
 
@@ -53,7 +53,7 @@ Assistente vocale AI in tempo reale basato su **Google Gemini Live API**, con wa
    NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
    NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
    ```
-   Per Calendar e Tasks vedi `app/lib/calendar/GOOGLE_CALENDAR_SETUP.md` e `app/lib/tasks/GOOGLE_TASKS_SETUP.md`.
+   Per Calendar e Tasks vedi `app/_features/calendar/server/GOOGLE_CALENDAR_SETUP.md` e `app/_features/tasks/server/GOOGLE_TASKS_SETUP.md`.
 
 4. Avvia il server di sviluppo:
    ```bash
@@ -72,37 +72,29 @@ Assistente vocale AI in tempo reale basato su **Google Gemini Live API**, con wa
 
 ## Struttura del progetto
 
-```
+```text
 jarvis_ts/
 ├── app/
-│   ├── api/                    # Route API
-│   │   ├── auth/                # Google OAuth callback
-│   │   ├── calendar/            # Eventi Google Calendar
-│   │   ├── memory/              # episodic/ e semantic/ (CRUD + search)
-│   │   └── tasks/               # Google Tasks
-│   ├── components/              # Atomic design
-│   │   ├── atoms/               # Button, VoiceOrb, Icons, EventItem
-│   │   ├── molecules/           # ChatBubble, MicrophoneButton, AuthButton
-│   │   └── organisms/           # ChatbotPageClient, MessageList, FloatingChat, ecc.
-│   ├── hooks/
-│   │   ├── useVoiceChat.ts      # Voice chat (Gemini Live + wake word + storage)
-│   │   └── useAuth.ts
-│   ├── lib/
-│   │   ├── voice-chat/          # Client, provider Gemini, audio, tools, storage
-│   │   ├── supabase/            # Auth e client DB
-│   │   ├── calendar/            # Google Calendar provider
-│   │   ├── tasks/               # Google Tasks provider
-│   │   ├── embeddings/          # Gemini embeddings (ricerca memorie)
-│   │   ├── timer/               # Timer manager
-│   │   └── speech/              # Tipi messaggi
-│   ├── assistant/               # Pagina assistente
-│   ├── settings/                # Impostazioni
-│   └── setup/                   # Setup Calendar/Tasks
+│   ├── api/                     # Route handlers sottili
+│   ├── _features/               # Codice organizzato per dominio
+│   │   ├── assistant/           # hook/UI/schema tool/config
+│   │   ├── auth/                # auth hook e UI
+│   │   ├── calendar/            # actions, UI e validator/handler route
+│   │   ├── chats/               # validator/handler route chat
+│   │   ├── tasks/               # actions, sync locale e validator/handler route
+│   │   └── timer/               # provider timer
+│   ├── _shared/                 # primitive UI condivise
+│   ├── _server/                 # helper server/http/auth
+│   ├── assistant/               # pagina assistente
+│   ├── settings/                # pagina impostazioni
+│   └── setup/                   # setup Calendar/Tasks
 ├── public/
 │   └── audio-capture-processor.worklet.js
 ├── Description.md               # Specifiche tecniche per LLM
 └── README.md
 ```
+
+Le directory legacy `app/components`, `app/hooks` e `app/lib` sono state rimosse. Gli unici entrypoint applicativi sono `app/_features`, `app/_shared` e `app/_server`.
 
 ## Script
 
@@ -111,8 +103,18 @@ npm run dev        # Sviluppo
 npm run build      # Build produzione
 npm run start      # Avvio produzione
 npm run lint       # Linter
+npm run typecheck  # TypeScript strict check
+npm run test       # Test unitari Vitest
+npm run test:watch # Vitest in watch mode
 npm run gen-supabase-types   # Rigenera tipi Supabase
 ```
+
+## Workflow architetturale
+
+- Le pagine, i layout e le route importano tramite entrypoint in `app/_features`, `app/_shared` e `app/_server`.
+- Le route API validano gli input con Zod e delegano la logica a handler dedicati.
+- Il contratto dei tool assistant usa uno schema JSON ricorsivo tipizzato che supporta array, enum e oggetti annidati.
+- La sincronizzazione client dei task usa invalidazione locale via `TodoProvider`/`useTodos`, senza bus globale.
 
 ## Permessi e sicurezza
 
@@ -124,7 +126,7 @@ npm run gen-supabase-types   # Rigenera tipi Supabase
 
 - **Microfono non funziona**: verifica permessi del browser e che l’input sia il dispositivo corretto.
 - **Nessuna risposta vocale**: controlla volume e che la chiave Gemini sia valida; verifica in console eventuali errori WebSocket.
-- **Memorie/Calendario/Tasks non funzionano**: verifica di essere autenticato e che Supabase/Google siano configurati (vedi documentazione in `app/lib/`).
+- **Memorie/Calendario/Tasks non funzionano**: verifica di essere autenticato e che Supabase/Google siano configurati (vedi documentazione in `app/_features/*/server` e `app/_server/supabase`).
 
 ## Riferimenti
 

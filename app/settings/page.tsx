@@ -1,6 +1,5 @@
-import { Header } from "@/app/components/organisms";
-import { AuthButton } from "@/app/components/molecules";
-import { SettingsPageClient } from "@/app/components/organisms/SettingsPageClient";
+import { AuthButton, SettingsPageClient } from "@/app/_features/auth";
+import { Header } from "@/app/_shared";
 
 /**
  * Pagina impostazioni (protetta). Mostra info account e logout.

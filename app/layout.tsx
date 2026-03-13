@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import { TimerProvider } from "@/app/components/organisms";
-import { JARVIS_CONFIG } from "@/app/lib/voice-chat/jarvis.config";
+import { JARVIS_CONFIG } from "@/app/_features/assistant";
+import { TimerProvider } from "@/app/_features/timer";
 
 export const metadata: Metadata = {
   title: `${JARVIS_CONFIG.assistantName} AI Chatbot`,
