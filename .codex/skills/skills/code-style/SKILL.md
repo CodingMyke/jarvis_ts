@@ -49,38 +49,36 @@ function calculateTotal(items: Item[], discount: number = 0.0): number {
 ## React Components
 - Use functional components with hooks
 - Use Atomic Design principles (atoms/molecules/organisms/templates/pages)
-- Separate logic with custom hooks and store them in a separate file but in the same folder (es: button/index.tsx, button/useButton.tsx)
-- Follow composition over props drilling
-- Do not drill props for more than 3 times
-- Minimize `useState` and `useEffect` - prefer derived state and custom hooks
+- Keep all React components under `app/design`; keep `app/_features` for hooks, stores, domain logic, adapters, types, and helpers
+- Organize `app/design` primarily by Atomic Design level, then by domain when useful (for example `app/design/atoms/shared`, `app/design/organisms/calendar`)
+- Keep App Router files (`page.tsx`, `layout.tsx`, `route.ts`) thin and outside `app/design` only when required by Next.js routing conventions
+- Separate logic with custom hooks and keep them in separate files, colocated with the component subtree or feature logic when appropriate
+- Model domains with equivalent UX and lifecycle in a symmetrical way
 - Keep component small and focused
-- Do not create multiple components in the same file, always create it inside its own file, with some exeption for small component used only in just one component
-- Avoid nesting jsx more than 5 times
+- Do not create multiple important components in the same file; each exported component should live in its own file
+- Do not define non-trivial custom hooks in the same file as an exported component
 - Keep pages and components clear.
 
-Example:
-```typescript
-// Custom hook in a separated file
-function useResourceForm(initialData?: Resource) {
-  const form = useForm<ResourceFormData>({
-    resolver: zodResolver(resourceSchema),
-    defaultValues: initialData,
-  });
-  
-  return { form };
-}
+## React Architecture
+- `app/design` is the source of truth for React UI composition
+- `app/_features/*` owns business logic, domain state, side effects, API interaction, normalization, and reusable hooks
+- Prefer container/template components that compose smaller atoms, molecules, and organisms instead of large monoliths
+- Avoid feature UI files that mix:
+  - domain mapping
+  - network calls
+  - state orchestration
+  - large JSX trees
+- Split large UI files by responsibility first, not just by line count
+- A component tree should expose the minimum public props needed by its parent; internal concerns should stay internal to the subtree
 
-// Component with clean JSX
-export function ResourceForm({ onSubmit }: ResourceFormProps) {
-  const { form } = useResourceForm();
-  
-  return (
-    <Form {...form}>
-      {/* JSX */}
-    </Form>
-  );
-}
-```
+## File and Folder Conventions
+- Prefer one exported component per file
+- Prefer one custom hook per file
+- Use `PascalCase.tsx` for React components
+- Use `camelCase.ts` for hooks, stores, utilities, schemas, and adapters
+- Keep barrel exports lean and intentional; do not hide poor structure behind broad re-exports
+- Co-locate small subtree-only components and hooks near the owning organism/template
+- Shared visual primitives belong in `app/design/atoms/shared` or `app/design/molecules/shared`, not inside feature logic folders
 
 ## Imports
 - Use path aliases (`@/` for src/)
