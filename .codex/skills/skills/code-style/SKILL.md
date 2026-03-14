@@ -56,7 +56,7 @@ function calculateTotal(items: Item[], discount: number = 0.0): number {
 - Keep component small and focused
 - Do not create multiple components in the same file, always create it inside its own file, with some exeption for small component used only in just one component
 - Avoid nesting jsx more than 5 times
-- Keep pages clear.
+- Keep pages and components clear.
 
 Example:
 ```typescript
