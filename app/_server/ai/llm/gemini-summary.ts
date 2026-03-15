@@ -106,6 +106,6 @@ export async function generateChatTitle(
     },
   });
 
-  const title = response.text?.trim() ?? "Chat";
+  const title = response.text?.trim() || "Chat";
   return title.slice(0, 120);
 }

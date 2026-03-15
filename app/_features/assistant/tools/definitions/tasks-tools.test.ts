@@ -101,4 +101,75 @@ describe("task tools", () => {
       count: 3,
     });
   });
+
+  it("validates parameters and supports deleting one or many todos", async () => {
+    await expect(deleteTodoTool.execute({}, {} as never)).resolves.toEqual({
+      result: {
+        success: false,
+        error: "MISSING_PARAMETER",
+        errorMessage: "È necessario fornire 'id', 'ids' o 'deleteAll: true'",
+      },
+    });
+
+    await expect(
+      deleteTodoTool.execute({ id: "todo-1", deleteAll: true }, {} as never),
+    ).resolves.toEqual({
+      result: {
+        success: false,
+        error: "INVALID_PARAMETERS",
+        errorMessage: "Non è possibile usare 'id', 'ids' e 'deleteAll' insieme",
+      },
+    });
+
+    vi.mocked(deleteTodos)
+      .mockResolvedValueOnce({
+        success: true,
+        deletedTodo: { id: "todo-1" },
+      })
+      .mockResolvedValueOnce({
+        success: true,
+        deletedTodos: [{ id: "todo-1" }, { id: "todo-2" }],
+        count: 2,
+        requestedCount: 2,
+      });
+
+    await expect(
+      deleteTodoTool.execute({ id: "todo-1" }, {} as never),
+    ).resolves.toEqual({
+      result: {
+        success: true,
+        deletedTodo: { id: "todo-1" },
+      },
+    });
+    expect(deleteTodos).toHaveBeenNthCalledWith(1, { id: "todo-1" });
+
+    await expect(
+      deleteTodoTool.execute({ ids: ["todo-1", "todo-2"] }, {} as never),
+    ).resolves.toEqual({
+      result: {
+        success: true,
+        deletedTodos: [{ id: "todo-1" }, { id: "todo-2" }],
+        count: 2,
+        requestedCount: 2,
+      },
+    });
+    expect(deleteTodos).toHaveBeenNthCalledWith(2, { ids: ["todo-1", "todo-2"] });
+  });
+
+  it("maps delete execution failures", async () => {
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    vi.mocked(deleteTodos).mockRejectedValueOnce(new Error("delete exploded"));
+
+    await expect(
+      deleteTodoTool.execute({ id: "todo-1" }, {} as never),
+    ).resolves.toEqual({
+      result: {
+        success: false,
+        error: "EXECUTION_ERROR",
+        errorMessage: "delete exploded",
+      },
+    });
+
+    errorSpy.mockRestore();
+  });
 });

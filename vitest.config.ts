@@ -12,9 +12,9 @@ export default defineConfig({
     globals: true,
     include: ["app/**/*.test.{ts,tsx}"],
     reporters: ["default"],
+    setupFiles: ["./vitest.setup.ts"],
     coverage: {
       provider: "v8",
-      all: true,
       clean: true,
       reportsDirectory: "./coverage",
       reporter: ["text", "text-summary", "html", "json-summary", "lcov"],
@@ -25,6 +25,7 @@ export default defineConfig({
         "app/**/index.ts",
         "app/**/page.tsx",
         "app/**/layout.tsx",
+        "app/**/*.d.ts",
         "app/_server/supabase/database.types.ts",
       ],
     },
