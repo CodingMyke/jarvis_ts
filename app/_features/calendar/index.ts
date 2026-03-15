@@ -11,7 +11,7 @@ export type {
   DeleteCalendarEventUiResult,
 } from "./lib/ui-events";
 export { removeCalendarEventFromDays } from "./lib/ui-events";
-export { UpcomingEvents } from "./ui/UpcomingEvents";
+export { initializeCalendarStore, useCalendarStore } from "./state/calendar.store";
 export {
   handleCreateCalendarEvent,
   handleDeleteCalendarEvent,

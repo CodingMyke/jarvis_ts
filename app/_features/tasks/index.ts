@@ -1,7 +1,6 @@
 export { fetchTasks } from "./lib/actions";
-export { TodoProvider, useTodos } from "./ui/TodoContext";
-export { TodoList } from "./ui/TodoList";
 export type { Todo } from "./types";
+export { initializeTasksStore, useTasksStore } from "./state/tasks.store";
 export {
   handleCreateTask,
   handleDeleteTask,

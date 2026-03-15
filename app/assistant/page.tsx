@@ -1,8 +1,6 @@
-import { ChatbotPageClient, JARVIS_CONFIG } from "@/app/_features/assistant";
-import { AuthButton } from "@/app/_features/auth";
+import { AssistantWorkspaceTemplate } from "@/app/design";
 import { fetchCalendarEvents } from "@/app/_features/calendar";
-import { fetchTasks, TodoProvider } from "@/app/_features/tasks";
-import { Header } from "@/app/_shared";
+import { fetchTasks } from "@/app/_features/tasks";
 
 /**
  * Pagina assistente (protetta). Solo utenti loggati possono accedere.
@@ -17,13 +15,9 @@ export default async function AssistantPage() {
   ]);
 
   return (
-    <>
-      <Header title={JARVIS_CONFIG.assistantName}>
-        <AuthButton />
-      </Header>
-      <TodoProvider initialTodos={initialTodos}>
-        <ChatbotPageClient initialEvents={initialEvents} />
-      </TodoProvider>
-    </>
+    <AssistantWorkspaceTemplate
+      initialEvents={initialEvents}
+      initialTodos={initialTodos}
+    />
   );
 }

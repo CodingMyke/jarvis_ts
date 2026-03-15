@@ -17,14 +17,8 @@ export function removeCalendarEventFromDays(
   days: UIDayEvents[],
   eventId: string,
 ): UIDayEvents[] {
-  let hasRemovedEvent = false;
-
-  const nextDays = days.flatMap((day) => {
+  return days.flatMap((day) => {
     const nextEvents = day.events.filter((event) => event.id !== eventId);
-
-    if (nextEvents.length !== day.events.length) {
-      hasRemovedEvent = true;
-    }
 
     if (nextEvents.length === 0) {
       return [];
@@ -32,10 +26,4 @@ export function removeCalendarEventFromDays(
 
     return [{ ...day, events: [...nextEvents] }];
   });
-
-  if (!hasRemovedEvent) {
-    return nextDays;
-  }
-
-  return nextDays;
 }
