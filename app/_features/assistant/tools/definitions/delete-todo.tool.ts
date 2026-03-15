@@ -1,3 +1,4 @@
+import { deleteTodos } from "@/app/_features/tasks/lib/tasks-client";
 import type { SystemToolDefinition } from "../types";
 
 export const DELETE_TODO_TOOL_NAME = "deleteTodo";
@@ -75,123 +76,21 @@ export const deleteTodoTool: SystemToolDefinition = {
         };
       }
 
-      // Caso: elimina tutti i todo
       if (deleteAll === true) {
-        const response = await fetch("/api/tasks", {
-          method: "DELETE",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ deleteAll: true }),
-        });
-        const data = await response.json();
-        if (!response.ok || !data.success) {
-          return {
-            result: {
-              success: false,
-              error: data.error || "DELETE_FAILED",
-              errorMessage: data.errorMessage || data.message || "Impossibile eliminare i todo",
-            },
-          };
-        }
         return {
-          result: {
-            success: true,
-            deletedAll: true,
-            count: data.count ?? 0,
-          },
+          result: await deleteTodos({ deleteAll: true }),
         };
       }
 
-      // Caso: elimina singolo todo
       if (id) {
-        if (typeof id !== "string") {
-          return {
-            result: {
-              success: false,
-              error: "INVALID_ID",
-              errorMessage: "L'ID del todo deve essere una stringa",
-            },
-          };
-        }
-
-        const response = await fetch("/api/tasks", {
-          method: "DELETE",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ id }),
-        });
-        const data = await response.json();
-
-        if (!response.ok || !data.success) {
-          return {
-            result: {
-              success: false,
-              error: data.error || "DELETE_FAILED",
-              errorMessage:
-                data.errorMessage || data.message || "Impossibile eliminare il todo",
-            },
-          };
-        }
         return {
-          result: {
-            success: true,
-            deletedTodo: { id, text: "" },
-          },
+          result: await deleteTodos({ id }),
         };
       }
 
-      // Caso: elimina più todo
       if (ids) {
-        if (!Array.isArray(ids) || ids.length === 0) {
-          return {
-            result: {
-              success: false,
-              error: "INVALID_IDS",
-              errorMessage: "L'array 'ids' deve contenere almeno un elemento",
-            },
-          };
-        }
-
-        const invalidIds = ids.filter((i) => typeof i !== "string" || i.trim().length === 0);
-        if (invalidIds.length > 0) {
-          return {
-            result: {
-              success: false,
-              error: "INVALID_IDS",
-              errorMessage: "Tutti gli ID devono essere stringhe non vuote",
-            },
-          };
-        }
-
-        const response = await fetch("/api/tasks", {
-          method: "DELETE",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ ids }),
-        });
-        const data = await response.json();
-
-        if (!response.ok || !data.success) {
-          return {
-            result: {
-              success: false,
-              error: data.error || "DELETE_FAILED",
-              errorMessage: data.errorMessage || data.message || "Errore durante l'eliminazione",
-            },
-          };
-        }
-
-        const deletedTodos = data.deletedTodos ?? data.todos ?? [];
-        const count = data.count ?? deletedTodos.length;
         return {
-          result: {
-            success: true,
-            deletedTodos: Array.isArray(deletedTodos)
-              ? deletedTodos.map((t: { id: string; text?: string }) => ({
-                  id: t.id,
-                  text: t.text ?? "",
-                }))
-              : [],
-            count,
-            requestedCount: ids.length,
-          },
+          result: await deleteTodos({ ids }),
         };
       }
 

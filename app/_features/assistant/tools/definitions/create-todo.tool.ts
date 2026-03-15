@@ -1,3 +1,4 @@
+import { createTodos } from "@/app/_features/tasks/lib/tasks-client";
 import type { SystemToolDefinition } from "../types";
 
 export const CREATE_TODO_TOOL_NAME = "createTodo";
@@ -66,120 +67,12 @@ export const createTodoTool: SystemToolDefinition = {
         };
       }
 
-      if (text) {
-        if (typeof text !== "string" || text.trim().length === 0) {
-          return {
-            result: {
-              success: false,
-              error: "INVALID_TEXT",
-              errorMessage: "Il testo del todo non può essere vuoto",
-            },
-          };
-        }
-        if (text.trim().length > 500) {
-          return {
-            result: {
-              success: false,
-              error: "TEXT_TOO_LONG",
-              errorMessage: "Il testo del todo non può superare i 500 caratteri",
-            },
-          };
-        }
-
-        const response = await fetch("/api/tasks", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ text: text.trim() }),
-        });
-        const data = await response.json();
-
-        if (!response.ok || !data.success) {
-          return {
-            result: {
-              success: false,
-              error: data.error || "CREATION_FAILED",
-              errorMessage: data.errorMessage || data.message || "Errore durante la creazione",
-            },
-          };
-        }
-
-        const todo = data.todo ?? {};
-        return {
-          result: {
-            success: true,
-            todo: {
-              id: todo.id,
-              text: todo.text,
-              completed: todo.completed ?? false,
-            },
-          },
-        };
-      }
-
-      if (texts) {
-        if (!Array.isArray(texts) || texts.length === 0) {
-          return {
-            result: {
-              success: false,
-              error: "INVALID_TEXTS",
-              errorMessage: "L'array 'texts' deve contenere almeno un elemento",
-            },
-          };
-        }
-
-        const invalidTexts = texts.filter(
-          (t) => typeof t !== "string" || t.trim().length === 0 || t.trim().length > 500
-        );
-        if (invalidTexts.length > 0) {
-          return {
-            result: {
-              success: false,
-              error: "INVALID_TEXTS",
-              errorMessage:
-                "Alcuni testi sono vuoti o troppo lunghi (max 500 caratteri). Tutti i testi devono essere validi.",
-            },
-          };
-        }
-
-        const response = await fetch("/api/tasks", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ texts: texts.map((t) => String(t).trim()) }),
-        });
-        const data = await response.json();
-
-        if (!response.ok || !data.success) {
-          return {
-            result: {
-              success: false,
-              error: data.error || "CREATION_FAILED",
-              errorMessage: data.errorMessage || data.message || "Errore durante la creazione",
-            },
-          };
-        }
-
-        const todos = (data.todos || []).map(
-          (t: { id: string; text: string; completed: boolean }) => ({
-            id: t.id,
-            text: t.text,
-            completed: t.completed ?? false,
-          })
-        );
-        return {
-          result: {
-            success: true,
-            todos,
-            count: todos.length,
-          },
-        };
-      }
+      const result = text
+        ? await createTodos({ text })
+        : await createTodos({ texts: texts as string[] });
 
       return {
-        result: {
-          success: false,
-          error: "UNEXPECTED_ERROR",
-          errorMessage: "Errore imprevisto nell'esecuzione",
-        },
+        result,
       };
     } catch (error) {
       console.error("[createTodoTool] Errore:", error);

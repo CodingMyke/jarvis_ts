@@ -1,9 +1,9 @@
 "use client";
 
 import { create } from "zustand";
-import { fetchCalendarEventsFromApi } from "@/app/_features/calendar/lib/calendar-client";
+import { getCalendarEvents } from "@/app/_features/calendar/lib/calendar-client";
 import { removeCalendarEventFromDays } from "@/app/_features/calendar/lib/ui-events";
-import type { UIDayEvents } from "@/app/_features/calendar/lib/actions";
+import type { UIDayEvents } from "@/app/_features/calendar/lib/calendar-ui.types";
 
 export type CalendarStoreStatus = "idle" | "loading" | "ready" | "error";
 
@@ -50,30 +50,20 @@ export const useCalendarStore = create<CalendarStoreState>((set, get) => ({
       error: null,
     }));
 
-    try {
-      const now = new Date();
-      const sevenDaysLater = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
-      const days = await fetchCalendarEventsFromApi({
-        from: now,
-        to: sevenDaysLater,
-      });
+    const result = await getCalendarEvents({ daysAhead: 7 });
 
-      set(setReadyState(days));
-      return days;
-    } catch (error) {
-      const message =
-        error instanceof Error
-          ? error.message
-          : "Errore sconosciuto durante il refresh del calendario.";
-
-      set((state) => ({
-        ...state,
-        status: "error",
-        error: message,
-        initialized: true,
-      }));
-      return get().days;
+    if (result.success) {
+      set(setReadyState(result.days));
+      return result.days;
     }
+
+    set((state) => ({
+      ...state,
+      status: "error",
+      error: result.errorMessage,
+      initialized: true,
+    }));
+    return get().days;
   },
   removeEvent: (eventId) => {
     set((state) => ({

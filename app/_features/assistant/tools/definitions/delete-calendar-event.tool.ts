@@ -1,3 +1,4 @@
+import { deleteCalendarEvent } from "@/app/_features/calendar/lib/calendar-client";
 import type { SystemToolDefinition } from "../types";
 
 export const DELETE_CALENDAR_EVENT_TOOL_NAME = "deleteCalendarEvent";
@@ -39,12 +40,9 @@ export const deleteCalendarEventTool: SystemToolDefinition = {
 
   execute: async (args) => {
     try {
-      console.log("[deleteCalendarEventTool] Executing with args:", args);
       const eventId = args.eventId as string | undefined;
 
-      // Validazione eventId
       if (!eventId || typeof eventId !== "string" || eventId.trim().length === 0) {
-        console.error("[deleteCalendarEventTool] Missing or invalid eventId");
         return {
           result: {
             success: false,
@@ -53,48 +51,15 @@ export const deleteCalendarEventTool: SystemToolDefinition = {
           },
         };
       }
+      const result = await deleteCalendarEvent({ eventId: eventId.trim() });
 
-      const url = `/api/calendar/events?eventId=${encodeURIComponent(eventId.trim())}`;
-      console.log("[deleteCalendarEventTool] Calling DELETE:", url);
-      
-      // Chiama l'API route lato server che ha accesso alle variabili d'ambiente
-      const response = await fetch(url, {
-        method: "DELETE",
-      });
-      
-      console.log("[deleteCalendarEventTool] Response status:", response.status);
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        return {
-          result: {
-            success: false,
-            error: errorData.error || "DELETE_FAILED",
-            errorMessage: errorData.errorMessage || `Errore HTTP: ${response.status}`,
-          },
-        };
-      }
-
-      const data = await response.json();
-      console.log("[deleteCalendarEventTool] Response data:", data);
-
-      if (!data.success) {
-        console.error("[deleteCalendarEventTool] Delete failed:", data.error, data.errorMessage);
-        return {
-          result: {
-            success: false,
-            error: data.error || "DELETE_FAILED",
-            errorMessage: data.errorMessage || "Errore durante l'eliminazione dell'evento",
-          },
-        };
-      }
-
-      console.log("[deleteCalendarEventTool] Event deleted successfully");
       return {
-        result: {
-          success: true,
-          message: "Evento eliminato con successo dal calendario",
-        },
+        result: result.success
+          ? {
+              success: true,
+              message: result.message ?? "Evento eliminato con successo dal calendario",
+            }
+          : result,
       };
     } catch (error) {
       console.error("[deleteCalendarEventTool] Errore:", error);

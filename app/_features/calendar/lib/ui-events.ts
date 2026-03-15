@@ -1,4 +1,4 @@
-import type { UIDayEvents } from "./actions";
+import type { UIDayEvents } from "./calendar-ui.types";
 
 export interface DeleteCalendarEventUiResult {
   success: boolean;

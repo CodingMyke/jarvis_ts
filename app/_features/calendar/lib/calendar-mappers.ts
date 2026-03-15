@@ -1,5 +1,8 @@
 import type { CalendarEvent } from "@/app/_features/calendar/types";
-import type { UICalendarEvent, UIDayEvents } from "@/app/_features/calendar/lib/actions";
+import type {
+  UICalendarEvent,
+  UIDayEvents,
+} from "@/app/_features/calendar/lib/calendar-ui.types";
 
 export interface CalendarApiEvent {
   id: string;
@@ -10,6 +13,7 @@ export interface CalendarApiEvent {
   description?: string;
   location?: string;
   attendees?: string[];
+  isAllDay?: boolean;
 }
 
 type CalendarLikeEvent = CalendarEvent | CalendarApiEvent;

@@ -1,7 +1,7 @@
 // used the fkg testing skill zioo
 import { describe, expect, it } from "vitest";
 import { removeCalendarEventFromDays } from "./ui-events";
-import type { UIDayEvents } from "./actions";
+import type { UIDayEvents } from "./calendar-ui.types";
 
 function createDaysFixture(): UIDayEvents[] {
   return [

@@ -3,11 +3,10 @@
 import { create } from "zustand";
 import type { Todo } from "@/app/_features/tasks/types";
 import {
-  clearCompletedTasksFromApi,
-  createTaskFromApi,
-  deleteTaskFromApi,
-  fetchTasksFromApi,
-  updateTaskFromApi,
+  createTodos,
+  deleteTodos,
+  getTodos,
+  updateTodos,
 } from "@/app/_features/tasks/lib/tasks-client";
 
 export type TasksStoreStatus = "idle" | "loading" | "ready" | "error";
@@ -49,89 +48,84 @@ export const useTasksStore = create<TasksStoreState>((set, get) => ({
       error: null,
     }));
 
-    try {
-      const todos = await fetchTasksFromApi();
-      set(setReadyState(todos));
-      return todos;
-    } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "Errore sconosciuto durante il refresh dei task.";
-      set((state) => ({
-        ...state,
-        status: "error",
-        error: message,
-        initialized: true,
-      }));
-      return get().todos;
+    const result = await getTodos();
+
+    if (result.success) {
+      set(setReadyState(result.todos));
+      return result.todos;
     }
+
+    set((state) => ({
+      ...state,
+      status: "error",
+      error: result.errorMessage,
+      initialized: true,
+    }));
+    return get().todos;
   },
   create: async (text) => {
-    try {
-      await createTaskFromApi(text);
-      await get().refresh();
-      return true;
-    } catch (error) {
+    const result = await createTodos({ text });
+
+    if (!result.success) {
       set((state) => ({
         ...state,
         status: "error",
-        error:
-          error instanceof Error
-            ? error.message
-            : "Errore sconosciuto durante la creazione del task.",
+        error: result.errorMessage,
       }));
       return false;
     }
+
+    await get().refresh();
+    return true;
   },
   update: async (id, updates) => {
-    try {
-      await updateTaskFromApi(id, updates);
-      await get().refresh();
-      return true;
-    } catch (error) {
+    const result = await updateTodos({
+      id,
+      text: updates.text,
+      completed: updates.completed,
+    });
+
+    if (!result.success) {
       set((state) => ({
         ...state,
         status: "error",
-        error:
-          error instanceof Error
-            ? error.message
-            : "Errore sconosciuto durante l'aggiornamento del task.",
+        error: result.errorMessage,
       }));
       return false;
     }
+
+    await get().refresh();
+    return true;
   },
   remove: async (id) => {
-    try {
-      await deleteTaskFromApi(id);
-      await get().refresh();
-      return true;
-    } catch (error) {
+    const result = await deleteTodos({ id });
+
+    if (!result.success) {
       set((state) => ({
         ...state,
         status: "error",
-        error:
-          error instanceof Error
-            ? error.message
-            : "Errore sconosciuto durante l'eliminazione del task.",
+        error: result.errorMessage,
       }));
       return false;
     }
+
+    await get().refresh();
+    return true;
   },
   clearCompleted: async () => {
-    try {
-      await clearCompletedTasksFromApi();
-      await get().refresh();
-      return true;
-    } catch (error) {
+    const result = await deleteTodos({ deleteCompleted: true });
+
+    if (!result.success) {
       set((state) => ({
         ...state,
         status: "error",
-        error:
-          error instanceof Error
-            ? error.message
-            : "Errore sconosciuto durante la pulizia dei task completati.",
+        error: result.errorMessage,
       }));
       return false;
     }
+
+    await get().refresh();
+    return true;
   },
 }));
 

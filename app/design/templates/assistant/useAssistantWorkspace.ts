@@ -9,7 +9,7 @@ import {
 } from "@/app/_features/assistant/lib/tool-effects";
 import { useVoiceChat } from "@/app/_features/assistant/hooks/useVoiceChat";
 import type { DeleteCalendarEventHandler, UIDayEvents } from "@/app/_features/calendar";
-import { deleteCalendarEventFromApi } from "@/app/_features/calendar/lib/calendar-client";
+import { deleteCalendarEvent } from "@/app/_features/calendar/lib/calendar-client";
 import { useCalendarStore } from "@/app/_features/calendar/state/calendar.store";
 import { useTasksStore } from "@/app/_features/tasks/state/tasks.store";
 import type { Todo } from "@/app/_features/tasks/types";
@@ -90,10 +90,13 @@ export function useAssistantWorkspace({
 
   const onDeleteEvent = useCallback<DeleteCalendarEventHandler>(
     async (eventId) => {
-      const result = await deleteCalendarEventFromApi(eventId);
+      const result = await deleteCalendarEvent({ eventId });
 
       if (!result.success) {
-        return result;
+        return {
+          success: false,
+          errorMessage: result.errorMessage,
+        };
       }
 
       applyCalendarMutationResult({ removedEventId: eventId });

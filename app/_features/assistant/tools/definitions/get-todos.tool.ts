@@ -1,3 +1,4 @@
+import { getTodos } from "@/app/_features/tasks/lib/tasks-client";
 import type { SystemToolDefinition } from "../types";
 
 export const GET_TODOS_TOOL_NAME = "getTodos";
@@ -22,49 +23,10 @@ export const getTodosTool: SystemToolDefinition = {
 
   execute: async () => {
     try {
-      const response = await fetch("/api/tasks");
-      const data = await response.json();
-
-      if (!response.ok) {
-        return {
-          result: {
-            success: false,
-            error: data.error || "EXECUTION_ERROR",
-            errorMessage: data.message || data.errorMessage || "Errore nel leggere i todo.",
-          },
-        };
-      }
-
-      if (!data.success) {
-        return {
-          result: {
-            success: false,
-            error: data.error || "UNKNOWN_ERROR",
-            errorMessage:
-              data.message ||
-              data.errorMessage ||
-              "I todo non sono configurati. Configura Google Tasks (stesso token del calendario).",
-          },
-        };
-      }
-
-      const todos = (data.todos || []).map(
-        (t: { id: string; text: string; completed: boolean; createdAt?: number }) => ({
-          id: t.id,
-          text: t.text,
-          completed: t.completed,
-          createdAt: t.createdAt ?? 0,
-        })
-      );
+      const result = await getTodos();
 
       return {
-        result: {
-          success: true,
-          todos,
-          count: todos.length,
-          completedCount: data.completedCount ?? todos.filter((x: { completed: boolean }) => x.completed).length,
-          pendingCount: data.pendingCount ?? todos.filter((x: { completed: boolean }) => !x.completed).length,
-        },
+        result,
       };
     } catch (error) {
       console.error("[getTodosTool] Errore:", error);

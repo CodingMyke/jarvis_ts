@@ -9,30 +9,7 @@ import type {
   GetEventsOptions,
 } from "@/app/_features/calendar/types";
 import { groupCalendarEventsByDay } from "@/app/_features/calendar/lib/calendar-mappers";
-
-/**
- * Evento formattato per la UI.
- * Serializzabile per il passaggio server -> client.
- */
-export interface UICalendarEvent {
-  id: string;
-  title: string;
-  time: string;
-  endTime?: string;
-  color?: string;
-  description?: string;
-  location?: string;
-  attendees?: string[];
-}
-
-/**
- * Giorno con i suoi eventi, formattato per la UI.
- */
-export interface UIDayEvents {
-  /** Data in formato ISO (solo giorno) */
-  dateISO: string;
-  events: UICalendarEvent[];
-}
+import type { UIDayEvents } from "@/app/_features/calendar/lib/calendar-ui.types";
 
 /**
  * Server action per ottenere gli eventi del calendario.

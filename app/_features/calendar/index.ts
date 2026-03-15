@@ -5,7 +5,7 @@ export {
 export type {
   UICalendarEvent,
   UIDayEvents,
-} from "./lib/actions";
+} from "./lib/calendar-ui.types";
 export type {
   DeleteCalendarEventHandler,
   DeleteCalendarEventUiResult,

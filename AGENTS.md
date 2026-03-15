@@ -58,6 +58,7 @@ Always:
 - Break large tasks into smaller, focused steps
 - Consider Server vs Client Component implications
 - Preserve the existing thin-route and feature-entrypoint architecture
+- All the plans must be stored and founded in `.codex/plans/`
 
 ### Verification
 - Always verify work with tests when available

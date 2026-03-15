@@ -1,18 +1,7 @@
+import { getCalendarEvents } from "@/app/_features/calendar/lib/calendar-client";
 import type { SystemToolDefinition } from "../types";
 
 export const GET_CALENDAR_EVENTS_TOOL_NAME = "getCalendarEvents";
-
-interface CalendarEventApiResponse {
-  id: string;
-  title: string;
-  startTime: string;
-  endTime?: string;
-  description?: string;
-  location?: string;
-  attendees?: string[];
-  color?: string;
-  isAllDay?: boolean;
-}
 
 /**
  * Tool per leggere gli eventi del calendario.
@@ -65,58 +54,19 @@ export const getCalendarEventsTool: SystemToolDefinition = {
 
   execute: async (args) => {
     const daysAhead = (args.daysAhead as number) || 7;
-    console.log("[getCalendarEventsTool] Executing with daysAhead:", daysAhead);
 
     try {
-      // Chiama l'API route lato server che ha accesso alle variabili d'ambiente
-      const response = await fetch(`/api/calendar/events?daysAhead=${daysAhead}`);
-      console.log("[getCalendarEventsTool] Response status:", response.status);
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const data = await response.json();
-      console.log("[getCalendarEventsTool] Response data success:", data.success, "events count:", data.events?.length || 0);
-
-      if (!data.success) {
-        console.error("[getCalendarEventsTool] Failed to get events:", data.error, data.message);
-        return {
-          result: {
-            success: false,
-            error: data.error || "UNKNOWN_ERROR",
-            errorMessage: data.message || "Errore nel leggere il calendario.",
-          },
-        };
-      }
-
-      // L'API restituisce già le date in formato locale (CET)
-      // Non serve fare conversioni, passiamo direttamente i dati all'assistente
-      const serializedEvents = ((data.events || []) as CalendarEventApiResponse[]).map((event) => ({
-        id: event.id,
-        title: event.title,
-        startTime: event.startTime, // Già in formato locale (es. "2026-01-27T17:30:00+01:00")
-        endTime: event.endTime, // Già in formato locale
-        description: event.description,
-        location: event.location,
-        attendees: event.attendees,
-        color: event.color,
-        isAllDay: event.isAllDay,
-      }));
-
-      console.log("[getCalendarEventsTool] Returning", serializedEvents.length, "events with IDs:", serializedEvents.map((e: { id: string }) => e.id));
+      const result = await getCalendarEvents({ daysAhead });
 
       return {
-        result: {
-          success: true,
-          events: serializedEvents,
-          eventCount: serializedEvents.length,
-          period: data.period || {
-            from: new Date().toISOString(),
-            to: new Date(Date.now() + daysAhead * 24 * 60 * 60 * 1000).toISOString(),
-            daysAhead,
-          },
-        },
+        result: result.success
+          ? {
+              success: true,
+              events: result.events,
+              eventCount: result.eventCount,
+              period: result.period,
+            }
+          : result,
       };
     } catch (error) {
       console.error("[getCalendarEventsTool] Errore:", error);
