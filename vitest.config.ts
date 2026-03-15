@@ -10,6 +10,23 @@ export default defineConfig({
   test: {
     environment: "node",
     globals: true,
-    include: ["app/**/*.test.ts"],
+    include: ["app/**/*.test.{ts,tsx}"],
+    reporters: ["default"],
+    coverage: {
+      provider: "v8",
+      all: true,
+      clean: true,
+      reportsDirectory: "./coverage",
+      reporter: ["text", "text-summary", "html", "json-summary", "lcov"],
+      include: ["app/**/*.ts", "app/**/*.tsx"],
+      exclude: [
+        "app/**/*.test.ts",
+        "app/**/*.test.tsx",
+        "app/**/index.ts",
+        "app/**/page.tsx",
+        "app/**/layout.tsx",
+        "app/_server/supabase/database.types.ts",
+      ],
+    },
   },
 });
