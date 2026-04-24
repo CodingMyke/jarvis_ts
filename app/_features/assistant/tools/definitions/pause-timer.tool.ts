@@ -16,7 +16,7 @@ export const pauseTimerTool: SystemToolDefinition = {
     "Esempi: 'metti in pausa il timer', 'sospendi il timer', 'ferma temporaneamente il countdown', 'pausa timer'. " +
     "Il timer può essere ripreso successivamente e continuerà dal punto in cui è stato messo in pausa.",
 
-  execute: async (_args) => {
+  execute: async () => {
     try {
       const activeTimer = timerManager.getActiveTimer();
 

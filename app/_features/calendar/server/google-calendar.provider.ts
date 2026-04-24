@@ -9,7 +9,6 @@ import type {
   UpdateEventOptions,
   UpdateEventResult,
 } from "../types/types";
-import { createMockEvents } from "./calendar.service";
 
 /**
  * Configurazione per il provider Google Calendar.

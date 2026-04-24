@@ -16,7 +16,7 @@ export const resumeTimerTool: SystemToolDefinition = {
     "Esempi: 'riprendi il timer', 'continua il timer', 'fai ripartire il countdown', 'resume timer'. " +
     "Il timer continuerà dal punto in cui è stato messo in pausa.",
 
-  execute: async (_args) => {
+  execute: async () => {
     try {
       const activeTimer = timerManager.getActiveTimer();
 

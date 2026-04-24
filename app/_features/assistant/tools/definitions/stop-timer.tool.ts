@@ -15,7 +15,7 @@ export const stopTimerTool: SystemToolDefinition = {
     "Usa questo tool quando l'utente chiede di fermare, cancellare o interrompere il timer. " +
     "Esempi: 'ferma il timer', 'cancella il timer', 'interrompi il countdown', 'stop timer', 'spegni il suono'.",
 
-  execute: async (_args) => {
+  execute: async () => {
     try {
       const activeTimer = timerManager.getActiveTimer();
 

@@ -1,4 +1,4 @@
-import type { SessionConfig, FunctionCall } from '../../../types/messages.types';
+import type { SessionConfig } from '../../../types/messages.types';
 import type { FunctionResponse } from '../../../types/tools.types';
 import type { ConversationTurn } from '../../storage/types';
 import { VoiceChatError } from '../../../types/client.types';
@@ -17,7 +17,6 @@ import {
   buildHistoryMessage,
   parseServerMessage,
 } from './gemini-messages';
-import { GEMINI_MODEL } from '../../config';
 
 const GEMINI_WS_URL = 'wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContent';
 

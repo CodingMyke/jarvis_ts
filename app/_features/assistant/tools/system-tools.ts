@@ -100,5 +100,9 @@ export const SYSTEM_TOOLS: SystemToolDefinition[] = [
  * Dichiarazioni dei tools (senza execute) per la configurazione Gemini.
  */
 export const SYSTEM_TOOL_DECLARATIONS: ToolDeclaration[] = SYSTEM_TOOLS.map(
-  ({ execute, ...other }) => other,
+  (tool) => ({
+    name: tool.name,
+    description: tool.description,
+    parameters: tool.parameters,
+  }),
 );

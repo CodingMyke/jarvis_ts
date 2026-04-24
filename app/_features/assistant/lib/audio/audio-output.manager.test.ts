@@ -131,7 +131,8 @@ describe("AudioOutputManager", () => {
 
     vi.stubGlobal("window", {});
     class FailingAudioContextMock {
-      constructor(_options: unknown) {
+      constructor(options: unknown) {
+        void options;
         return {
           currentTime: 0,
           destination: {},

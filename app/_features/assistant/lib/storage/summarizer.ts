@@ -6,9 +6,11 @@ import type { ConversationTurn } from './types';
  * TODO: Implementare correttamente la summarization - attualmente disabilitata
  */
 export async function summarizeConversation(
-  _turns: ConversationTurn[],
-  _apiKey?: string
+  turns: ConversationTurn[],
+  apiKey?: string
 ): Promise<string> {
+  void turns;
+  void apiKey;
   // TODO: Fix summarization - currently failing, needs investigation
   return '';
 }
