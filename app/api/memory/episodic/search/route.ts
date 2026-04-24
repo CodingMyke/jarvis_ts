@@ -1,9 +1,9 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
-import { createClient } from "@/app/lib/supabase/server";
-import type { Database } from "@/app/lib/supabase/database.types";
-import { searchEpisodicMemoriesByContent } from "../functions";
+import { createClient } from "@/app/_server";
+import type { Database } from "@/app/_server";
+import { searchEpisodicMemoriesByContent } from "@/app/_features/memory";
 
 const UNAUTHORIZED = { success: false as const, error: "UNAUTHORIZED", message: "Utente non autenticato" };
 

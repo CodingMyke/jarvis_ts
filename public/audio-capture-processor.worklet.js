@@ -4,7 +4,9 @@
  * Sostituisce il deprecato ScriptProcessorNode.
  */
 class AudioCaptureProcessor extends AudioWorkletProcessor {
-  process(inputs, _outputs, _parameters) {
+  process(inputs, outputs, parameters) {
+    void outputs;
+    void parameters;
     const input = inputs[0];
     if (input?.length > 0) {
       const channelData = input[0];

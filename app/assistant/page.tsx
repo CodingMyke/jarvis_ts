@@ -1,9 +1,6 @@
-import { Header, TodoProvider } from "@/app/components/organisms";
-import { AuthButton } from "@/app/components/molecules";
-import { ChatbotPageClient } from "@/app/components/organisms/ChatbotPageClient";
-import { fetchCalendarEvents } from "@/app/lib/calendar/actions";
-import { fetchTasks } from "@/app/lib/tasks";
-import { JARVIS_CONFIG } from "@/app/lib/voice-chat/jarvis.config";
+import { AssistantWorkspaceTemplate } from "@/app/design";
+import { fetchCalendarEvents } from "@/app/_features/calendar";
+import { fetchTasks } from "@/app/_features/tasks";
 
 /**
  * Pagina assistente (protetta). Solo utenti loggati possono accedere.
@@ -18,13 +15,9 @@ export default async function AssistantPage() {
   ]);
 
   return (
-    <>
-      <Header title={JARVIS_CONFIG.assistantName}>
-        <AuthButton />
-      </Header>
-      <TodoProvider initialTodos={initialTodos}>
-        <ChatbotPageClient initialEvents={initialEvents} />
-      </TodoProvider>
-    </>
+    <AssistantWorkspaceTemplate
+      initialEvents={initialEvents}
+      initialTodos={initialTodos}
+    />
   );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { Suspense, useMemo } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 
@@ -8,7 +8,7 @@ import Link from "next/link";
  * Pagina di setup per Google Calendar OAuth.
  * Mostra le istruzioni e gestisce il flusso di autenticazione.
  */
-export default function CalendarSetupPage() {
+function CalendarSetupContent() {
   const searchParams = useSearchParams();
   
   const status = useMemo(() => {
@@ -139,5 +139,13 @@ export default function CalendarSetupPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function CalendarSetupPage() {
+  return (
+    <Suspense fallback={null}>
+      <CalendarSetupContent />
+    </Suspense>
   );
 }

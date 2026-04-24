@@ -1,8 +1,13 @@
+import path from "node:path";
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   // Ottimizzazioni per performance e bundle size
   compress: true,
+
+  turbopack: {
+    root: path.resolve(__dirname),
+  },
   
   // Ottimizza le immagini (avatar Google da user_metadata)
   images: {

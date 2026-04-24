@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import { TimerProvider } from "@/app/components/organisms";
-import { JARVIS_CONFIG } from "@/app/lib/voice-chat/jarvis.config";
+import { JARVIS_CONFIG } from "@/app/_features/assistant";
 
 export const metadata: Metadata = {
   title: `${JARVIS_CONFIG.assistantName} AI Chatbot`,
@@ -15,9 +14,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="it" suppressHydrationWarning>
-      <body className="antialiased" suppressHydrationWarning>
-        <TimerProvider>{children}</TimerProvider>
-      </body>
+      <body className="antialiased" suppressHydrationWarning>{children}</body>
     </html>
   );
 }
