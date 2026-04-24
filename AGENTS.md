@@ -98,6 +98,13 @@ The app supports wake word activation, live voice chat, tool calling
 - Use JSDoc comments for public APIs and non-obvious modules.
 - Max line length: target 100; never exceed 120 characters.
 
+### UI Components and Reuse
+
+- Prefer reusing existing project components before creating new ones, even if they are not based on shadcn.
+- If no suitable internal component exists, check whether the full component or parts of it are available in shadcn/ui.
+- When shadcn/ui provides the needed building block, install it if missing and use it instead of creating a component from scratch.
+- Create custom components from zero only when neither existing internal components nor shadcn/ui blocks can satisfy the requirement.
+- Always maximize reuse of existing components, functions, and methods to keep the codebase DRY.
 
 ### Naming Conventions
 
