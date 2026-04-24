@@ -1,192 +1,132 @@
 # Agent Instructions - Jarvis AI
 
-This file provides instructions for AI agents working on the Jarvis AI project. It follows Boris Cherny's recommendations for AI-assisted coding workflows.
+This file defines stable working rules for every task in this project.
+
+## Purpose
+
+Keep implementation quality high while protecting scope, architecture boundaries, and delivery speed.
 
 ## Project Context
 
-Jarvis AI is a Next.js application for a real-time voice assistant powered by Google Gemini Live API. The app supports wake word activation, live voice chat, tool calling for calendar/tasks/timer/memory workflows, chat persistence, and Google/Supabase-based authentication and storage.
+Jarvis AI is a Next.js app for a real-time voice assistant powered by Google Gemini Live API.
+The app supports wake word activation, live voice chat, tool calling
+(calendar/tasks/timer/memory), chat persistence, and Google/Supabase auth + storage.
+
+## Working Rules
+
+- Keep every change small, focused, and strictly in scope; do not perform unrelated refactors.
+- Keep changes aligned with `README.md` and `Description.md`.
+- When a change affects behavior, data structures, or important flows, update relevant docs.
+- For checklist plans, mark each implemented step as completed (`- [x]`) right after implementation.
+- Respect existing boundaries: domain logic in `app/_features`, shared primitives in `app/_shared`,
+  server-only code in `app/_server`, and thin App Router/API entrypoints.
+
+## Product Priorities
+
+## Tooling Rules
+
+- Use the Supabase MCP tool for Supabase work (schema, SQL, migrations, logs, project ops).
+- Prefer tracked migrations for structural database changes over manual unversioned updates.
+
+## GitHub Rules
+
+- Default GitHub repository: `CodingMyke/jarvis_ts`.
+- Do not use git worktrees for implementation tasks.
+- Use only branches for implementation work.
+- For GitHub issue work, use GitHub MCP tools first.
+- Read issues by searching open issues with keyword + scope, then open the exact issue number.
+- For every issue, create and use a dedicated branch before starting implementation.
+- Branch names for issue work must clearly match the issue title purpose.
+- At the end of implementation, push the branch and open a Pull Request automatically.
+- Do not merge Pull Requests unless the user explicitly asks for merge.
+- Merge is user-owned by default (manual merge or explicit user instruction to the AI).
+- Keep implementation plans/checklists until the PR is merged; remove/archive them only after merge is confirmed.
+- When creating an issue, write a short title, clear problem, expected behavior, and simple acceptance points.
+- Close an issue only after user confirmation or merged fix. Add a short closing note with linked PR/commit.
+
+## Language Rules
+
+- All code, comments, commit messages, and documentation must be written in English.
+- When speaking with the user, always communicate in Italian.
+- Keep user replies and documentation very short.
+- Prefer brevity over perfect grammar.
+
+## Source Of Truth
+
+- `AGENTS.md`: execution rules, workflow rules, coding standards, and delivery process.
+- `README.md`: product overview, setup steps, architecture map, and operational usage.
+- `Description.md`: deep technical specification for chat memory and conversation compaction.
+- Conflict resolution:
+  - Follow direct user instructions first.
+  - For workflow/process conflicts, `AGENTS.md` wins.
+  - For chat memory/compaction behavior conflicts, `Description.md` wins.
+  - For general product context/setup conflicts outside compaction scope, `README.md` wins.
+- Update policy:
+  - Update `Description.md` when memory/compaction behavior changes.
+  - Update `README.md` when setup, usage, or architecture map changes.
+  - Update `AGENTS.md` only when execution rules/process standards change.
+
+## Technical Architecture Specs
+
+- Prefer a single source of truth for shared state, business rules, and config
+  when scope is truly shared.
+- Design deep modules with clear cohesion and strict boundaries.
+- Optimize for clarity, maintainability, and efficiency over clever abstractions.
+- Define explicit module ownership and responsibilities.
+  Each module must have one clear purpose.
+- Expose minimal public APIs.
+  Keep implementation details private.
+- Keep dependency direction one-way between modules.
+  Do not introduce circular dependencies.
+- Reduce duplicated logic and data only when this improves clarity and maintainability.
+- Share contracts (types/schemas) only for related entities and related features.
+- For unrelated features, keep autonomy first.
+  Do not force shared contracts across unrelated domains, even when shapes match.
+  In those cases, duplication is preferred.
+- Use one consistent error-handling strategy across modules.
+  Errors must be predictable and traceable.
 
 ## Coding Standards
 
 ### TypeScript/React Development
-- Use TypeScript 5 with strict mode
-- Lint with ESLint (`npm run lint`)
-- Type check with TypeScript (`npm run typecheck`)
-- Test with Vitest (`npm run test`)
-- Prefer explicit type annotations for exported functions and public interfaces
-- Use JSDoc comments for public APIs and non-obvious modules
-- Max line length 100-120 characters
 
-### React Best Practices
-- Use functional components with hooks
-- Minimize `useState` and `useEffect` usage
-- Separate logic with custom hooks or dedicated managers when it keeps UI components cleaner
-- Favor composition over props drilling
-- Use Server Components by default, Client Components when needed
-- Keep App Router entrypoints thin and import only from `@/app/_features/*`, `@/app/_shared`, or `@/app/_server`
-- Respect feature boundaries: application logic in `app/_features`, shared primitives in `app/_shared`, server-only code in `app/_server`
+- Use TypeScript 5 with strict mode.
+- Lint with ESLint (`npm run lint`).
+- Type check with TypeScript (`npm run typecheck`).
+- Test with Vitest (`npm run test`).
+- Prefer explicit type annotations for exported functions and public interfaces.
+- Use JSDoc comments for public APIs and non-obvious modules.
+- Max line length: target 100; never exceed 120 characters.
+
 
 ### Naming Conventions
-- Functions/variables: camelCase
-- Components: PascalCase
-- Types/Interfaces: PascalCase
-- Constants: UPPER_SNAKE_CASE
-- Files: `PascalCase.tsx` for React components, kebab-case or domain-suffixed `.ts` files for services, schemas, providers, and route helpers
 
-## Git Workflow
+- Functions/variables: camelCase.
+- Components: PascalCase.
+- Types/Interfaces: PascalCase.
+- Constants: UPPER_SNAKE_CASE.
+- Files: `PascalCase.tsx` for React components, kebab-case or domain-suffixed `.ts` for services,
+  schemas, providers, and route helpers.
 
-Use Conventional Commits:
-- `feat:` new feature
-- `fix:` bug fix
-- `docs:` documentation changes
-- `refactor:` code refactoring
-- `test:` adding or updating tests
-- `chore:` maintenance tasks
-- `style:` formatting, no code change
+## Verification
 
-Always:
-1. Create feature branches from main
-2. Run linter and type check before committing
-3. Build check for critical changes (`npm run build`)
-4. Write clear, concise commit messages
+- Always verify work with tests when available.
+- Run lint after changes (`npm run lint`).
+- Run typecheck after significant changes (`npm run typecheck`).
+- Run Vitest when touching validators, state machines, tools, or server logic (`npm run test`).
+- Test UI/audio/auth flows in browser when applicable.
 
-## Workflow Guidelines
+## Error Handling
 
-### Planning
-- Start complex tasks in Plan mode
-- Get the plan right before implementing
-- Break large tasks into smaller, focused steps
-- Consider Server vs Client Component implications
-- Preserve the existing thin-route and feature-entrypoint architecture
-- All the plans must be stored and founded in `.codex/plans/`
+- Handle errors with a consistent strategy across modules (stable error code + clear message + context).
+- Use try-catch at boundaries (route handlers, server actions, provider calls, DB/network I/O), not everywhere.
+- Reuse shared HTTP helpers such as `jsonOk()` and `jsonError()` where already used.
+- Centralize logging behavior and keep logs structured enough to trace feature, operation, and root cause.
+- Do not silently ignore exceptions unless the feature has explicit fallback behavior.
 
-### Verification
-- Always verify work with tests when available
-- Run linter after making changes (`npm run lint`)
-- Type check after significant changes (`npm run typecheck`)
-- Run Vitest when touching validators, state machines, tools, or server logic (`npm run test`)
-- Test UI/audio/auth flows in browser when applicable
+## Data Validation
 
-### Error Handling
-- Use try-catch with proper error types
-- Provide clear error messages to users
-- Reuse shared HTTP helpers such as `jsonOk()` and `jsonError()` where the route already follows that pattern
-- Don't silently ignore exceptions unless the feature has an explicit fallback
-- Log errors with enough context to debug provider/runtime failures
-
-### Data Validation
-- Always validate input with Zod schemas
-- Validate both query params and request bodies at the route boundary when needed
-- Keep schemas close to the related feature (`*-route.schemas.ts`)
-- Sanitize and trim user/external input before persistence or provider calls
-
-## Key Files
-
-| File | Purpose |
-|------|---------|
-| `MEMORY.md` | Project memory and lessons learned |
-| `AGENTS.md` | This file - agent instructions for this project |
-| `README.md` | Project overview, setup, usage, and architecture notes |
-| `Description.md` | Detailed notes about chat memory and conversation compaction |
-| `.codex/skills/` | Local Codex skills available in this repository |
-| `app/_server/supabase/database.types.ts` | Auto-generated Supabase types |
-| `package.json` | Dependencies and project scripts |
-
-## Project Structure
-
-| Directory | Purpose |
-|-----------|---------|
-| `app/api/` | Thin Route Handlers delegating to feature modules |
-| `app/_features/` | Domain code for assistant, chats, auth, calendar, memory, tasks, and timer |
-| `app/_shared/` | Shared UI primitives and shared types |
-| `app/_server/` | Server-only helpers for auth, HTTP responses, AI, and Supabase |
-| `app/assistant/`, `app/settings/`, `app/setup/` | App Router pages and setup flows |
-| `public/` | Static assets, including the audio worklet used by voice capture |
-
-## Tools and Commands
-
-| Task | Command |
-|------|---------|
-| Dev server | `npm run dev` |
-| Build | `npm run build` |
-| Start production | `npm run start` |
-| Lint code | `npm run lint` |
-| Type check | `npm run typecheck` |
-| Test | `npm run test` |
-| Test watch mode | `npm run test:watch` |
-| Generate DB types | `npm run gen-supabase-types` |
-
-## Tech Stack
-
-### Frontend
-- Next.js 16 with App Router
-- React 19.2 with TypeScript 5
-- Tailwind CSS 4
-- react-markdown + remark-gfm for rich assistant messages
-
-### Backend
-- Next.js Route Handlers
-- Supabase (Auth + Postgres)
-- Zod for request validation
-- Vitest for unit tests
-
-### Voice & Integrations
-- Google Gemini Live API via `@google/genai`
-- Gemini text generation and embeddings
-- Google Calendar integration
-- Google Tasks integration
-- Browser audio APIs for microphone capture, playback, and wake word flow
-
-## Important Patterns
-
-### API Response
-Most API responses follow a `success` boolean plus domain payload on success, and `error`/`message` fields on failure:
-```typescript
-return jsonOk({
-  success: true,
-  todos,
-  count: todos.length,
-});
-
-return jsonError(400, {
-  error: "INVALID_PAYLOAD",
-  message: "Payload non valido",
-});
-```
-
-### Component Structure
-Keep App Router entrypoints thin and delegate feature logic to `app/_features`:
-```typescript
-import { ChatbotPageClient } from "@/app/_features/assistant";
-
-export default function AssistantPage(): JSX.Element {
-  return <ChatbotPageClient />;
-}
-```
-
-### Validation
-Use Zod schemas close to the route/feature boundary:
-```typescript
-import { z } from "zod";
-
-export const taskCreateBodySchema = z.union([
-  z.object({
-    text: z.string().trim().min(1).max(500),
-    texts: z.undefined().optional(),
-  }),
-  z.object({
-    text: z.undefined().optional(),
-    texts: z.array(z.string().trim().min(1).max(500)).min(1),
-  }),
-]);
-```
-
-## Preferences
-
-- Provide concise, focused responses in Italian when user writes in Italian. Sacrifice the grammar for brevity also for documentation files
-- Show code examples when helpful
-- Explain the "why" behind changes
-- Prefer editing existing files over creating new ones
-- Only create documentation when explicitly requested
-- Reuse existing functionality to avoid duplication
-- Follow project boundaries and existing entrypoints instead of introducing parallel architectures
+- Always validate input with Zod schemas.
+- Validate query params and request bodies at route boundaries when needed.
+- Keep schemas close to the related feature (`*-route.schemas.ts`).
+- Sanitize and trim external/user input before persistence or provider calls.

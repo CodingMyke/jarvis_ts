@@ -1,116 +1,137 @@
 # Chat Memory & Conversation Compaction
 
-## Overview per LLM
+## LLM-Oriented Overview
 
-Specifica per **memoria chat** e **compattazione conversazione**: persistenza su Supabase (tabella `chats`), compattazione sliding-window con summary LLM, ricerca semantica per switch in linguaggio naturale, integrazione con voice chat (useVoiceChat / VoiceChatClient). La persistenza della conversazione avviene via API backend; non dipendere dal solo localStorage.
+This document specifies **chat memory** and **conversation compaction**: Supabase persistence (`chats` table), sliding-window compaction with LLM summaries, semantic search for natural-language chat switching, and integration with voice chat (`useVoiceChat` / transport layer).
 
----
-
-## Contesto progetto
-
-- **Stack**: Next.js 16, React 19, TypeScript, Supabase (auth + `episodic_memory`, `semantic_memory`, `chats`), Gemini Live API per voice chat.
-- **Voice chat**: già implementata (Gemini Live, wake word, tools calendario/todo/timer/memorie, clearChat, endConversation, disableAssistant). Il client usa `ConversationTurn[]` per history; i turni hanno forma `{ role: 'user' | 'model', parts: [{ text: string }], thinking?: string }`.
-- **Regola vincolante** (`.cursor/rules/embedding-text.mdc`): qualsiasi cosa con embedding DEVE avere una rappresentazione testuale in chiaro (debug, qualità, spiegabilità).
+Conversation durability must rely on backend APIs, not on localStorage alone.
 
 ---
 
-## Database: tabella `chats`
+## Project Context
 
-Tabella già presente su Supabase:
-
-| Colonna             | Tipo        | Note                                                      |
-| ------------------- | ----------- | --------------------------------------------------------- |
-| `id`                | uuid        | PK                                                        |
-| `user_id`           | uuid        | Proprietario                                              |
-| `title`             | text        | Generato da LLM da summary_text                           |
-| `full_history`      | jsonb       | Array di turni completi (per UI)                         |
-| `assistant_history` | jsonb       | Array di turni per il modello (compattato)               |
-| `summary_text`      | text        | Rappresentazione in chiaro (gemella di summary_embedding) |
-| `summary_embedding` | vector      | pgvector (per similarity search)                          |
-| `last_activity_at`  | timestamptz | Ultima interazione                                        |
-| `created_at`        | timestamptz | Creazione                                                 |
-
-- **Forma turni**: `ConversationTurn` → `{ role: 'user' | 'model', parts: [{ text: string }], thinking?: string }`. Il messaggio di summary è un turno: `{ role: 'model', parts: [{ text: "<summary>" }] }`.
-- **RPC**: `search_chats_semantic(p_query_embedding, p_limit?, p_max_distance?)` — usata per switch in linguaggio naturale.
+- **Stack**: Next.js 16, React 19, TypeScript, Supabase (auth + `chats`, `episodic_memory`, `semantic_memory`), Gemini Live API for voice chat.
+- **Voice chat**: already implemented (Gemini Live, wake word, tools for calendar/tasks/timer/memory/chats, clear chat, end conversation, disable assistant).
+- **Turn shape**: `ConversationTurn[]` where each turn is `{ role: 'user' | 'model', parts: [{ text: string }], thinking?: string }`.
+- **Hard rule**: anything with embeddings must keep a clear-text representation (debuggability, quality, explainability).
 
 ---
 
-## Costanti compattazione
+## Database: `chats` table
 
-- `SUMMARY_WINDOW_SIZE` = 30: assistant_history deve avere sempre al massimo 30 turni; se ce ne sono di più si compatta (riassunto + ultimi 29 messaggi).
+| Column              | Type        | Notes                                                   |
+| ------------------- | ----------- | ------------------------------------------------------- |
+| `id`                | uuid        | PK                                                      |
+| `user_id`           | uuid        | Owner                                                   |
+| `title`             | text        | LLM-generated (from `summary_text`)                    |
+| `full_history`      | jsonb       | Complete turns for UI                                  |
+| `assistant_history` | jsonb       | Compacted turns for model context                      |
+| `summary_text`      | text        | Clear-text twin of summary embedding                   |
+| `summary_embedding` | vector      | pgvector embedding for semantic search                 |
+| `last_activity_at`  | timestamptz | Last interaction timestamp                             |
+| `created_at`        | timestamptz | Creation timestamp                                     |
 
-Comportamento: finché `assistant_history.length <= SUMMARY_WINDOW_SIZE` nessuna compattazione. Quando supera: si riassume la parte vecchia in un unico turno (LLM) e si tengono gli ultimi 29 messaggi; il totale è sempre ≤ 30 (1 riassunto + 29). `summary_text` e `summary_embedding` a livello chat sono generati separatamente (descrizione tema della chat per ricerca/switch).
-
----
-
-## API `/api/chats`
-
-Auth da cookie Supabase (`ensureAuth`), coerente con `app/api/memory/episodic/`.
-
-- **POST /api/chats** – Crea chat (body opzionale: `title`, messaggi iniziali). `full_history` e `assistant_history` uguali; `summary_text`/`summary_embedding` vuoti finché non c’è compattazione.
-- **GET /api/chats** – `?id=uuid` ritorna la chat (UI: `full_history`, modello: `assistant_history`). `?search=query` → embed query → RPC `search_chats_semantic` → ranking (similarità + `last_activity_at`) → 1 o più match (conferma se multipli).
-- **PATCH /api/chats** – Append messaggi a `full_history` e `assistant_history`; aggiorna `last_activity_at`; se `assistant_history.length > SUMMARY_WINDOW_SIZE` esegue compattazione, poi aggiorna `summary_text` e `summary_embedding`.
-- **DELETE /api/chats** – Elimina chat (opzionale).
-
-Logica compattazione e summary/embedding in modulo condiviso (es. `app/api/chats/functions.ts`), riutilizzando `app/lib/embeddings` e servizio LLM per testo summary/titolo (Gemini).
-
----
-
-## Generazione summary e titolo
-
-- **Summary (compattazione)**: dati N `ConversationTurn`, LLM produce un unico testo di riassunto; poi `embed(summaryText)` per `summary_embedding`. Riutilizzare/estendere `app/lib/voice-chat/storage/summarizer.ts` con chiamata reale a Gemini.
-- **Titolo chat**: generato dall’LLM da `summary_text` (o da `assistant_history` se summary_text vuoto). Aggiornato la prima volta quando il topic è chiaro; in seguito solo se il focus cambia (es. dopo compattazione con delta significativo).
+Notes:
+- The compaction summary turn follows the normal turn shape: `{ role: 'model', parts: [{ text: '<summary>' }] }`.
+- Semantic search uses Supabase RPC `search_chats_semantic(p_query_embedding, p_limit?, p_max_distance?)`.
 
 ---
 
-## Integrazione client (voice chat)
+## Compaction Constants
 
-- **useVoiceChat** e **VoiceChatClient**: supporto a `chatId` (da route o contesto). All’avvio: se `chatId` presente, GET `/api/chats?id=chatId` e caricare `assistant_history` per `sendHistory()` e `full_history` per messaggi in UI; se assente, POST nuova chat e usare il suo `id`.
-- **Salvataggio**: invece di (o in aggiunta a) `ConversationStorage` su localStorage, chiamare PATCH `/api/chats` con i nuovi turni (append) in `goToIdle` / `goToWakeWord` e prima di switchare chat. Obiettivo: **non** dipendere più dal solo localStorage per la persistenza.
-- **Tool / UX “switch chat”**: “Passiamo alla chat in cui parlavamo di X” → GET `/api/chats?search=query` → se un match chiaro, switch a quel `chatId` e ricaricare contesto; se multipli, risposta con opzioni e conferma.
+- `SUMMARY_WINDOW_SIZE = 30`.
+- `assistant_history` must stay `<= SUMMARY_WINDOW_SIZE`.
 
----
-
-## Regole assistente e memorie
-
-- **Assistente**: usare **solo** `assistant_history` (mai `full_history`), trattare i summary come verità consolidata, non ricostruire messaggi eliminati, non usare keyword per le chat; usare `summary_text` + `summary_embedding` come fonte per lo switch.
-- **Memorie episodic/semantic**: hanno già `content` (testo) + `embedding`; rispettano la regola “embedding + testo in chiaro”. Nessuna modifica obbligatoria.
+Behavior:
+- No compaction while `assistant_history.length <= SUMMARY_WINDOW_SIZE`.
+- When it exceeds the window, compact older turns into one summary turn and keep the newest 29 turns.
+- Result always stays `<= 30` turns (1 summary + 29 newest turns).
+- Chat-level `summary_text` and `summary_embedding` are generated separately for search/switch use cases.
 
 ---
 
-## Diagramma flusso (sintesi)
+## API: `/api/chats`
 
+Auth is cookie-based Supabase auth (`getAuthContext`), consistent with protected route patterns.
+
+- **POST `/api/chats`**: create a chat (`title` + optional initial turns). `full_history` and `assistant_history` start equal. `summary_text` and `summary_embedding` are initially null.
+- **GET `/api/chats?id=...`**: fetch one chat (UI gets `full_history`; assistant consumes `assistant_history`).
+- **GET `/api/chats?search=...`**: embed query, call semantic RPC, return ranked matches.
+- **PATCH `/api/chats`**: append turns, update `last_activity_at`, compact when needed, regenerate summary/embedding when needed.
+- **DELETE `/api/chats`**: remove one chat.
+
+---
+
+## Summary and Title Generation
+
+- **Compaction summary**: older turns are summarized into one assistant turn to preserve conversational continuity.
+- **Search summary**: separate chat-level summary text for semantic retrieval.
+- **Chat title**: generated from summary text when meaningful context exists.
+- **Embedding**: generated from summary text and stored as `summary_embedding`.
+
+---
+
+## Client Integration (Voice Chat)
+
+- `useVoiceChat` handles chat lifecycle with backend persistence.
+- On startup:
+  - If `chatId` exists: load `assistant_history` for model context + `full_history` for UI.
+  - If no `chatId`: create a new chat via POST.
+- On persistence points: append delta turns through PATCH (not full-history replay).
+- Natural-language chat switch flow:
+  - Query `/api/chats?search=...`.
+  - If one clear match: switch directly.
+  - If multiple plausible matches: ask user confirmation.
+
+---
+
+## Assistant Rules and Memory Behavior
+
+- The model should consume only `assistant_history`, never `full_history`.
+- Summary turns are treated as consolidated truth; removed turns must not be reconstructed.
+- Chat switching should rely on semantic summaries (`summary_text` + embedding), not naive keyword matching.
+- Episodic/semantic memory tables remain independent from chat compaction behavior.
+
+---
+
+## Flow Summary
+
+```text
+User turns -> full_history + assistant_history
+assistant_history > SUMMARY_WINDOW_SIZE -> compact old turns into summary turn
+summary_text -> embedding -> summary_embedding
+search query -> query embedding -> search_chats_semantic RPC
 ```
-[User] → full_history, assistant_history
-assistant_history → SUMMARY_WINDOW_SIZE → LLM summary → summary_text
-summary_text → embed → summary_embedding
-summary_embedding → search_chats_semantic (RPC)
-[Search NL] → embed query → search_chats_semantic
-```
 
 ---
 
-## Struttura file rilevante
+## Relevant File Structure (Current)
 
-```
+```text
 app/
 ├── api/
-│   ├── chats/
-│   │   ├── route.ts       # POST, GET (id/search), PATCH, DELETE
-│   │   ├── functions.ts  # CRUD, append, compattazione, search RPC
-│   │   └── model.ts      # Tipi request/response
-│   └── memory/           # episodic, semantic (pattern auth)
-├── lib/
-│   ├── voice-chat/
-│   │   ├── storage/
-│   │   │   ├── summarizer.ts   # Summary reale (Gemini)
-│   │   │   └── types.ts       # ConversationTurn
-│   │   └── config/            # SUMMARY_WINDOW_SIZE
-│   ├── embeddings/       # embed(), embedBatch()
-│   └── supabase/
-│       └── database.types.ts   # chats, search_chats_semantic
-└── hooks/
-    └── useVoiceChat.ts   # chatId, GET/PATCH, persistenza backend
+│   └── chats/
+│       └── route.ts                         # GET, POST, PATCH, DELETE
+├── _features/
+│   ├── chats/server/
+│   │   ├── chats-route.handlers.ts          # route-level handlers
+│   │   ├── chats-route.schemas.ts           # Zod schemas
+│   │   ├── chats.service.ts                 # CRUD, append, compaction, semantic search
+│   │   └── chats.types.ts                   # request/response models
+│   └── assistant/
+│       ├── hooks/useVoiceChat.ts            # chat boot, persistence, switching
+│       └── lib/config/compaction.config.ts  # SUMMARY_WINDOW_SIZE
+├── _server/
+│   ├── ai/
+│   │   ├── llm/gemini-summary.ts            # summary and title generation
+│   │   └── embeddings/embeddings.service.ts # embedding generation
+│   └── supabase/database.types.ts           # chats table + RPC types
 ```
 
-Ordine implementativo suggerito: regola embedding-text → tipi DB → costanti e forma turni → modulo compattazione e funzioni chat → route API → integrazione useVoiceChat/VoiceChatClient → tool switch chat → verifica (solo assistant_history al modello, embedding + summary_text).
+Suggested implementation order for related changes:
+1. Keep embedding + clear-text pairing invariant.
+2. Update DB types/contracts if schema changes.
+3. Update compaction constants/turn logic.
+4. Update chat service + route handlers.
+5. Update voice chat integration and switch flow.
+6. Verify model uses only `assistant_history`.

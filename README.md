@@ -1,139 +1,144 @@
-# Jarvis AI - Assistente Vocale Interattivo
+# Jarvis AI - Interactive Voice Assistant
 
-Assistente vocale AI in tempo reale basato su **Google Gemini Live API**, con wake word, function calling (calendario, todo, timer, memorie) e autenticazione Google + Supabase.
+A real-time AI voice assistant powered by **Google Gemini Live API**, with wake word activation, function calling (calendar, todo, timer, memories), and Google + Supabase authentication.
 
-## Caratteristiche principali
+## Main Features
 
-- **Voice chat real-time**: streaming bidirezionale con Gemini Live API (WebSocket), bassa latenza e interruzioni naturali (barge-in)
-- **Wake word**: ascolto locale fino al rilevamento della parola chiave (es. "Jarvis"), poi connessione a Gemini
-- **Trascrizioni live**: testo in tempo reale di input e output
-- **Function calling**: strumenti integrati per azioni concrete
-  - **Calendario**: eventi Google Calendar (crea, modifica, elimina, elenco)
-  - **Todo**: Google Tasks (crea, modifica, elimina, elenco)
-  - **Timer**: avvio, pausa, ripresa, stop, stato
-  - **Memorie**: ricordi episodici e semantici (Supabase), creazione/aggiornamento/ricerca/eliminazione
-  - **Controllo sessione**: fine conversazione, cancellazione chat, disattivazione assistente
-- **Persistenza conversazione**: salvataggio in localStorage, riassunto oltre soglia, caricamento history
-- **Autenticazione**: Google OAuth tramite Supabase; API memorie/calendario/tasks protette da sessione
-- **UI**: entrypoint App Router sottili, feature boundaries interni, chat con markdown, orb vocale, pagine assistant/settings/setup
+- **Real-time voice chat**: bidirectional streaming with Gemini Live API (WebSocket), low latency, and natural barge-in interruptions
+- **Wake word**: local listening until a keyword is detected (for example, "Jarvis"), then live Gemini connection starts
+- **Live transcripts**: real-time text for both user input and model output
+- **Function calling**: built-in tools for real actions
+  - **Calendar**: Google Calendar events (create, update, delete, list)
+  - **Todo**: Google Tasks items (create, update, delete, list)
+  - **Timer**: start, pause, resume, stop, status
+  - **Memories**: episodic and semantic memories (Supabase), create/update/search/delete
+  - **Session control**: end conversation, clear chat, disable assistant
+- **Conversation persistence**: Supabase-backed chat storage with compaction and semantic search (local storage is used as a client-side layer)
+- **Authentication**: Google OAuth via Supabase; memory/calendar/tasks routes are session-protected
+- **UI**: thin App Router entrypoints, feature boundaries, markdown chat rendering, voice orb, assistant/settings/setup pages
 
-## Stack tecnologico
+## Tech Stack
 
 - **Framework**: Next.js 16 (App Router)
 - **UI**: React 19, TypeScript 5, Tailwind CSS 4
 - **Voice**: Google Gemini Live API (`@google/genai`)
-- **Auth e DB**: Supabase (auth, tabelle `episodic_memory`, `semantic_memory`)
-- **Integrazioni**: Google Calendar, Google Tasks (OAuth server-side)
-- **Rendering messaggi**: react-markdown, remark-gfm
+- **Auth and DB**: Supabase (auth, `chats`, `episodic_memory`, `semantic_memory`)
+- **Integrations**: Google Calendar, Google Tasks (server-side OAuth)
+- **Message rendering**: react-markdown, remark-gfm
 
-## Prerequisiti
+## Prerequisites
 
 - Node.js 20+
-- Browser moderno con supporto Web Audio API e WebSocket
-- Microfono e permessi browser
-- Account Google (per auth e, opzionalmente, Calendar/Tasks)
-- Chiave API Gemini e progetto Supabase configurati
+- Modern browser with Web Audio API and WebSocket support
+- Microphone and browser permissions
+- Google account (for auth and optionally Calendar/Tasks)
+- Gemini API key and a configured Supabase project
 
-## Installazione
+## Installation
 
-1. Clona il repository e entra nella cartella:
+1. Clone the repository and enter the project folder:
    ```bash
    git clone <repository-url>
    cd jarvis_ts
    ```
 
-2. Installa le dipendenze:
+2. Install dependencies:
    ```bash
    npm install
    ```
 
-3. Configura le variabili d'ambiente (`.env.local`):
-   ```
+3. Configure environment variables in `.env.local`:
+   ```env
    NEXT_PUBLIC_GEMINI_API_KEY=your_gemini_api_key
    NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
    NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
    ```
-   Per Calendar e Tasks vedi `app/_features/calendar/server/GOOGLE_CALENDAR_SETUP.md` e `app/_features/tasks/server/GOOGLE_TASKS_SETUP.md`.
+   For Calendar and Tasks setup, see:
+   - `app/_features/calendar/server/GOOGLE_CALENDAR_SETUP.md`
+   - `app/_features/tasks/server/GOOGLE_TASKS_SETUP.md`
 
-4. Avvia il server di sviluppo:
+4. Start the development server:
    ```bash
    npm run dev
    ```
 
-5. Apri [http://localhost:3000](http://localhost:3000).
+5. Open [http://localhost:3000](http://localhost:3000).
 
-## Utilizzo
+## Usage
 
-1. **Login**: accedi con Google (necessario per memorie, calendario e tasks).
-2. **Avvio**: clicca sull’orb del microfono; l’assistente resta in ascolto locale per la parola chiave.
-3. **Attivazione**: pronuncia "Jarvis" (o il wake word configurato); si stabilisce la connessione a Gemini e puoi parlare e ricevere risposte vocali.
-4. **Comandi**: puoi chiedere di creare/modificare eventi, todo, timer, salvare ricordi, cercare nelle memorie, ecc. L’assistente usa i tool in automatico.
-5. **Fine conversazione**: di’ esplicitamente che hai finito (es. "ciao", "grazie a dopo") per far chiamare il tool di fine conversazione; oppure chiedi di "tapparti le orecchie" per disattivare l’assistente.
+1. **Login**: sign in with Google (required for memories, calendar, and tasks).
+2. **Start**: click the microphone orb; the assistant listens locally for the wake word.
+3. **Activation**: say "Jarvis" (or your configured wake word); the app connects to Gemini and starts live voice chat.
+4. **Commands**: ask to create/edit events, tasks, timers, save memories, or search memories; tools are called automatically.
+5. **End conversation**: explicitly finish (for example, "bye" or "thanks") to trigger end-conversation behavior, or ask to disable the assistant.
 
-## Struttura del progetto
+## Project Structure
 
 ```text
 jarvis_ts/
 ├── app/
-│   ├── api/                     # Route handlers sottili
-│   ├── _features/               # Codice organizzato per dominio
-│   │   ├── assistant/           # hook/UI/schema tool/config
-│   │   ├── auth/                # auth hook e UI
-│   │   ├── calendar/            # actions, UI e validator/handler route
-│   │   ├── chats/               # validator/handler route chat
-│   │   ├── tasks/               # actions, sync locale e validator/handler route
-│   │   └── timer/               # provider timer
-│   ├── _shared/                 # primitive UI condivise
-│   ├── _server/                 # helper server/http/auth
-│   ├── assistant/               # pagina assistente
-│   ├── settings/                # pagina impostazioni
-│   └── setup/                   # setup Calendar/Tasks
+│   ├── api/                     # Thin route handlers
+│   ├── _features/               # Domain-organized feature code
+│   │   ├── assistant/           # Assistant hook/UI/tool schema/config
+│   │   ├── auth/                # Auth hooks and UI
+│   │   ├── calendar/            # Actions, UI, route validators/handlers
+│   │   ├── chats/               # Chat validators/handlers/services
+│   │   ├── memory/              # Episodic/semantic memory logic
+│   │   ├── tasks/               # Actions, local sync, validators/handlers
+│   │   └── timer/               # Timer provider
+│   ├── _shared/                 # Shared UI primitives and types
+│   ├── _server/                 # Server helpers (http/auth/ai/supabase)
+│   ├── assistant/               # Assistant page
+│   ├── settings/                # Settings page
+│   └── setup/                   # Calendar/Tasks setup pages
 ├── public/
 │   └── audio-capture-processor.worklet.js
-├── Description.md               # Specifiche tecniche per LLM
+├── Description.md               # Deep spec for chat memory and compaction
 └── README.md
 ```
 
-Le directory legacy `app/components`, `app/hooks` e `app/lib` sono state rimosse. Gli unici entrypoint applicativi sono `app/_features`, `app/_shared` e `app/_server`.
+Legacy folders `app/components`, `app/hooks`, and `app/lib` were removed.
+Allowed app entrypoint imports are `app/_features`, `app/_shared`, and `app/_server`.
 
-## Script
+## Scripts
 
 ```bash
-npm run dev        # Sviluppo
-npm run build      # Build produzione
-npm run start      # Avvio produzione
-npm run lint       # Linter
-npm run typecheck  # TypeScript strict check
-npm run test       # Test unitari Vitest
-npm run test:watch # Vitest in watch mode
-npm run gen-supabase-types   # Rigenera tipi Supabase
+npm run dev                 # Development
+npm run build               # Production build
+npm run start               # Production runtime
+npm run lint                # ESLint
+npm run typecheck           # TypeScript strict check
+npm run test                # Vitest unit tests
+npm run test:watch          # Vitest watch mode
+npm run test:coverage       # Vitest coverage report
+npm run gen-supabase-types  # Regenerate Supabase TypeScript types
 ```
 
-## Workflow architetturale
+## Architecture Workflow
 
-- Le pagine, i layout e le route importano tramite entrypoint in `app/_features`, `app/_shared` e `app/_server`.
-- Le route API validano gli input con Zod e delegano la logica a handler dedicati.
-- Il contratto dei tool assistant usa uno schema JSON ricorsivo tipizzato che supporta array, enum e oggetti annidati.
-- La sincronizzazione client dei task usa invalidazione locale via `TodoProvider`/`useTodos`, senza bus globale.
+- Pages, layouts, and routes stay thin and import through `app/_features`, `app/_shared`, and `app/_server`.
+- API routes validate inputs with Zod and delegate business logic to feature handlers/services.
+- Assistant tools use a recursive typed JSON-schema-like contract.
+- Task synchronization uses local invalidation through `TodoProvider`/`useTodos` (no global event bus).
 
-## Permessi e sicurezza
+## Permissions and Security
 
-- **Microfono**: richiesto per riconoscimento vocale e wake word.
-- **HTTPS**: consigliato in produzione (obbligatorio per alcune API browser).
-- **API key Gemini**: esposta lato client; in produzione valutare ephemeral tokens.
+- **Microphone**: required for wake word and voice interaction.
+- **HTTPS**: recommended in production (required for some browser APIs).
+- **Gemini API key**: currently used client-side; evaluate ephemeral token strategies in production.
 
-## Risoluzione problemi
+## Troubleshooting
 
-- **Microfono non funziona**: verifica permessi del browser e che l’input sia il dispositivo corretto.
-- **Nessuna risposta vocale**: controlla volume e che la chiave Gemini sia valida; verifica in console eventuali errori WebSocket.
-- **Memorie/Calendario/Tasks non funzionano**: verifica di essere autenticato e che Supabase/Google siano configurati (vedi documentazione in `app/_features/*/server` e `app/_server/supabase`).
+- **Microphone not working**: verify browser permissions and selected input device.
+- **No voice response**: check volume, Gemini API key validity, and browser console WebSocket errors.
+- **Memories/Calendar/Tasks not working**: confirm login status and Supabase/Google setup.
 
-## Riferimenti
+## References
 
 - [Gemini Live API](https://ai.google.dev/gemini-api/docs/live)
 - [Next.js](https://nextjs.org)
 - [Supabase](https://supabase.com)
 
-## Licenza
+## License
 
-Progetto privato - Tutti i diritti riservati.
+Private project - All rights reserved.
