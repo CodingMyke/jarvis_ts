@@ -79,6 +79,19 @@ export const useTasksStore = create<TasksStoreState>((set, get) => ({
     return true;
   },
   update: async (id, updates) => {
+    const previousTodos = get().todos;
+    const optimisticTodos = previousTodos.map((todo) =>
+      todo.id === id ? { ...todo, ...updates } : todo,
+    );
+
+    set((state) => ({
+      ...state,
+      todos: optimisticTodos,
+      status: "ready",
+      error: null,
+      initialized: true,
+    }));
+
     const result = await updateTodos({
       id,
       text: updates.text,
@@ -88,10 +101,25 @@ export const useTasksStore = create<TasksStoreState>((set, get) => ({
     if (!result.success) {
       set((state) => ({
         ...state,
+        todos: previousTodos,
         status: "error",
         error: result.errorMessage,
+        initialized: true,
       }));
       return false;
+    }
+
+    if ("todo" in result) {
+      set((state) => ({
+        ...state,
+        todos: state.todos.map((todo) =>
+          todo.id === result.todo.id ? result.todo : todo,
+        ),
+        status: "ready",
+        error: null,
+        initialized: true,
+      }));
+      return true;
     }
 
     await get().refresh();

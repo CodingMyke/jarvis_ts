@@ -24,12 +24,12 @@ export function DashboardTodoTemplate({
   const hasTodos = todos.length > 0;
 
   return (
-    <section className="w-full space-y-3">
+    <section className="w-full space-y-3 rounded-2xl border border-white/10 bg-white/5 p-4">
       <h2 className="text-lg font-semibold tracking-tight text-foreground">ToDo</h2>
       {hasTodos ? (
         <DashboardTodoPanel />
       ) : (
-        <p className="rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-muted">
+        <p className="text-sm text-muted">
           {hasLoadError ? "Si è verificato un errore" : "Non ci sono elementi"}
         </p>
       )}

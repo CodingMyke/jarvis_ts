@@ -16,7 +16,7 @@ export function DashboardTodoPanel() {
   const completedTodos = todos.filter((todo) => todo.completed);
 
   return (
-    <div className="glass-scroll max-h-[calc(100vh-220px)] overflow-y-auto rounded-2xl border border-white/10 bg-white/5 p-3">
+    <div className="glass-scroll max-h-[calc(100vh-260px)] overflow-y-auto">
       <div className="space-y-1">
         {pendingTodos.map((todo) => (
           <TodoItem
