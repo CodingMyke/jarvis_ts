@@ -36,11 +36,11 @@ export function CalendarDayGroup({
   }
 
   return (
-    <div className="space-y-2">
-      <h3 className="text-sm font-medium uppercase tracking-wide text-muted">
+    <div>
+      <h3 className="text-xs font-medium uppercase tracking-[0.16em] text-muted/80">
         {formatDayLabel(day.dateISO)}
       </h3>
-      <div className="space-y-2">
+      <div className="mt-3 space-y-2">
         {day.events.map((event) => (
           <CalendarEventCard key={event.id} event={event} onDeleteEvent={onDeleteEvent} />
         ))}

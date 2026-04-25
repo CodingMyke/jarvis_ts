@@ -148,11 +148,16 @@ describe("auth design", () => {
     rerender(<SettingsTemplate />);
 
     expect(screen.getByText("Account Google")).toBeInTheDocument();
+    expect(screen.getByText("Integrazioni")).toBeInTheDocument();
     expect(screen.getByText("Jarvis User")).toBeInTheDocument();
     expect(screen.getByTitle("jarvis@example.com")).toBeInTheDocument();
     expect(screen.getByAltText("Avatar")).toHaveAttribute(
       "src",
       "https://example.com/avatar.png",
+    );
+    expect(screen.getByRole("link", { name: "Configura calendario" })).toHaveAttribute(
+      "href",
+      "/setup/calendar",
     );
 
     fireEvent.click(screen.getByRole("button", { name: "Esci" }));

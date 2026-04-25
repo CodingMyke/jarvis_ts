@@ -16,7 +16,7 @@ Authenticated users now land on a shared `/dashboard` shell.
   - **Session control**: end conversation, clear chat, disable assistant
 - **Conversation persistence**: Supabase-backed chat storage with compaction and semantic search (local storage is used as a client-side layer)
 - **Authentication**: Google OAuth via Supabase; memory/calendar/tasks routes are session-protected
-- **UI**: thin App Router entrypoints, feature boundaries, markdown chat rendering, voice orb, shared app shell (`/dashboard` + sibling sections), standalone legacy `/assistant`, standalone `/setup/calendar`
+- **UI**: thin App Router entrypoints, feature boundaries, markdown chat rendering, voice orb, shared app shell (`/dashboard` + sibling sections), dashboard calendar view for next 7 days (with explicit empty/error states), standalone legacy `/assistant`, standalone `/setup/calendar`
 
 ## Tech Stack
 
@@ -68,10 +68,11 @@ Authenticated users now land on a shared `/dashboard` shell.
 ## Usage
 
 1. **Login**: sign in with Google (required for memories, calendar, and tasks); default authenticated landing route is `/dashboard`.
-2. **Start**: click the microphone orb; the assistant listens locally for the wake word.
-3. **Activation**: say "Jarvis" (or your configured wake word); the app connects to Gemini and starts live voice chat.
-4. **Commands**: ask to create/edit events, tasks, timers, save memories, or search memories; tools are called automatically.
-5. **End conversation**: explicitly finish (for example, "bye" or "thanks") to trigger end-conversation behavior, or ask to disable the assistant.
+2. **Dashboard**: `/dashboard` shows calendar events for the next 7 days; when empty it shows `Nessun evento nei prossimi 7 giorni`, and on load error `Si è verificato un errore`.
+3. **Start**: click the microphone orb; the assistant listens locally for the wake word.
+4. **Activation**: say "Jarvis" (or your configured wake word); the app connects to Gemini and starts live voice chat.
+5. **Commands**: ask to create/edit events, tasks, timers, save memories, or search memories; tools are called automatically.
+6. **End conversation**: explicitly finish (for example, "bye" or "thanks") to trigger end-conversation behavior, or ask to disable the assistant.
 
 ## Project Structure
 
@@ -120,7 +121,7 @@ npm run gen-supabase-types  # Regenerate Supabase TypeScript types
 - Pages, layouts, and routes stay thin and import through `app/_features`, `app/_shared`, and `app/_server`.
 - Shared authenticated navigation lives in `app/(app-shell)` and exposes `/dashboard`, `/projects`, `/academy`, `/reflections`, `/learning`, `/progression`, `/news`, and `/settings`.
 - `/assistant` stays available as a legacy standalone protected route and is not exposed in the main shell navigation.
-- `/setup/calendar` stays standalone + protected, currently discoverable from the dashboard page.
+- `/setup/calendar` stays standalone + protected, discoverable from the `/settings` page (`Integrazioni` section).
 - API routes validate inputs with Zod and delegate business logic to feature handlers/services.
 - Assistant tools use a recursive typed JSON-schema-like contract.
 - Task synchronization uses local invalidation through `TodoProvider`/`useTodos` (no global event bus).

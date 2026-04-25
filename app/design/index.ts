@@ -14,6 +14,7 @@ export { AssistantWorkspaceTemplate } from "./templates/assistant/AssistantWorks
 export type { ChatbotPageClientProps } from "./templates/assistant/AssistantWorkspaceTemplate";
 export { AppShellTemplate } from "./templates/app-shell/AppShellTemplate";
 export { LoginTemplate } from "./templates/auth/LoginTemplate";
+export { DashboardCalendarTemplate } from "./templates/dashboard/DashboardCalendarTemplate";
 export { SettingsTemplate } from "./templates/settings/SettingsTemplate";
 export { CalendarPanel } from "./organisms/calendar/CalendarPanel";
 export { TodoPanel } from "./organisms/tasks/TodoPanel";

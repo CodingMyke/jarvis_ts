@@ -11,6 +11,11 @@ import type {
 import { groupCalendarEventsByDay } from "@/app/_features/calendar/lib/calendar-mappers";
 import type { UIDayEvents } from "@/app/_features/calendar/lib/calendar-ui.types";
 
+export interface DashboardCalendarEventsResult {
+  days: UIDayEvents[];
+  hasError: boolean;
+}
+
 /**
  * Server action per ottenere gli eventi del calendario.
  * Chiamata in SSR per popolare la pagina iniziale.
@@ -25,6 +30,29 @@ export async function fetchCalendarEvents(
   } catch (error) {
     console.error("[fetchCalendarEvents] Errore:", error);
     return [];
+  }
+}
+
+/**
+ * Server action per ottenere eventi dashboard con segnale errore esplicito.
+ * Non impatta il contratto usato dalla pagina assistant.
+ */
+export async function fetchDashboardCalendarEvents(
+  options?: GetEventsOptions,
+): Promise<DashboardCalendarEventsResult> {
+  try {
+    const service = getCalendarService();
+    const { events } = await service.getEvents(options);
+    return {
+      days: groupCalendarEventsByDay(events),
+      hasError: false,
+    };
+  } catch (error) {
+    console.error("[fetchDashboardCalendarEvents] Errore:", error);
+    return {
+      days: [],
+      hasError: true,
+    };
   }
 }
 

@@ -1,14 +1,18 @@
-import Link from "next/link";
+import { fetchDashboardCalendarEvents } from "@/app/_features/calendar";
+import { DashboardCalendarTemplate } from "@/app/design";
 
-export default function DashboardPage() {
+export default async function DashboardPage() {
+  const now = new Date();
+  const sevenDaysLater = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+  const { days, hasError } = await fetchDashboardCalendarEvents({
+    from: now,
+    to: sevenDaysLater,
+  });
+
   return (
-    <div className="mx-auto w-full max-w-4xl">
-      <Link
-        href="/setup/calendar"
-        className="inline-flex rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm text-muted transition-colors hover:bg-white/10 hover:text-foreground focus:outline-none focus:ring-2 focus:ring-accent/20"
-      >
-        Vai al setup calendario
-      </Link>
-    </div>
+    <DashboardCalendarTemplate
+      initialEvents={days}
+      initialLoadError={hasError}
+    />
   );
 }

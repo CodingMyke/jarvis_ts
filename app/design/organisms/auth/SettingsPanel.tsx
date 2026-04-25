@@ -65,6 +65,19 @@ export function SettingsPanel() {
         </div>
       </section>
 
+      <section className="rounded-[28px] border border-white/10 bg-white/5 p-6 backdrop-blur-xl">
+        <SettingsSectionHeader
+          title="Integrazioni"
+          description="Collega i servizi esterni usati dall'assistente."
+        />
+        <Link
+          href="/setup/calendar"
+          className="inline-flex rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm text-muted transition-colors hover:bg-white/10 hover:text-foreground focus:outline-none focus:ring-2 focus:ring-accent/20"
+        >
+          Configura calendario
+        </Link>
+      </section>
+
       <div className="flex flex-col gap-3">
         <Button variant="secondary" onClick={() => signOut()} type="button">
           Esci
