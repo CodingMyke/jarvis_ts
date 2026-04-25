@@ -24,7 +24,7 @@ export function DashboardCalendarTemplate({
   const hasEvents = days.some((day) => day.events.length > 0);
 
   return (
-    <section className="w-full max-w-sm space-y-3">
+    <section className="w-full space-y-3">
       <h2 className="text-lg font-semibold tracking-tight text-foreground">Eventi</h2>
       {hasEvents ? (
         <CalendarPanel onDeleteEvent={onDeleteEvent} />

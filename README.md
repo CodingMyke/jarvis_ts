@@ -16,7 +16,7 @@ Authenticated users now land on a shared `/dashboard` shell.
   - **Session control**: end conversation, clear chat, disable assistant
 - **Conversation persistence**: Supabase-backed chat storage with compaction and semantic search (local storage is used as a client-side layer)
 - **Authentication**: Google OAuth via Supabase; memory/calendar/tasks routes are session-protected
-- **UI**: thin App Router entrypoints, feature boundaries, markdown chat rendering, voice orb, shared app shell (`/dashboard` + sibling sections), dashboard calendar view for next 7 days (with explicit empty/error states), standalone legacy `/assistant`, standalone `/setup/calendar`
+- **UI**: thin App Router entrypoints, feature boundaries, markdown chat rendering, voice orb, shared app shell (`/dashboard` + sibling sections), dashboard calendar + ToDo blocks (explicit empty/error states), standalone legacy `/assistant`, standalone `/setup/calendar`
 
 ## Tech Stack
 
@@ -68,7 +68,9 @@ Authenticated users now land on a shared `/dashboard` shell.
 ## Usage
 
 1. **Login**: sign in with Google (required for memories, calendar, and tasks); default authenticated landing route is `/dashboard`.
-2. **Dashboard**: `/dashboard` shows calendar events for the next 7 days; when empty it shows `Nessun evento nei prossimi 7 giorni`, and on load error `Si è verificato un errore`.
+2. **Dashboard**: `/dashboard` shows `Eventi` and `ToDo` side by side when space allows (wrap on smaller widths).
+   Calendar empty/error states: `Nessun evento nei prossimi 7 giorni` / `Si è verificato un errore`.
+   ToDo empty/error states: `Non ci sono elementi` / `Si è verificato un errore`.
 3. **Start**: click the microphone orb; the assistant listens locally for the wake word.
 4. **Activation**: say "Jarvis" (or your configured wake word); the app connects to Gemini and starts live voice chat.
 5. **Commands**: ask to create/edit events, tasks, timers, save memories, or search memories; tools are called automatically.
