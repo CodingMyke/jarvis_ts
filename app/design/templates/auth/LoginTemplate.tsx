@@ -7,6 +7,8 @@ import { LoginPanel } from "@/app/design/organisms/auth/LoginPanel";
 export function LoginTemplate() {
   const searchParams = useSearchParams();
   const error = searchParams.get("error");
+  const next = searchParams.get("next");
+  const redirectToAfterLogin = next && next.startsWith("/") ? next : "/dashboard";
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-center gap-8 px-4">
@@ -18,7 +20,10 @@ export function LoginTemplate() {
           Accedi con il tuo account Google per utilizzare l&apos;assistente.
         </p>
       </div>
-      <LoginPanel error={error ? decodeURIComponent(error) : null} />
+      <LoginPanel
+        error={error ? decodeURIComponent(error) : null}
+        redirectToAfterLogin={redirectToAfterLogin}
+      />
     </main>
   );
 }

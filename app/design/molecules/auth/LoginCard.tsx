@@ -2,9 +2,13 @@ import { AuthButton } from "@/app/design/molecules/auth/AuthButton";
 
 interface LoginCardProps {
   error?: string | null;
+  redirectToAfterLogin?: string;
 }
 
-export function LoginCard({ error }: LoginCardProps) {
+export function LoginCard({
+  error,
+  redirectToAfterLogin = "/dashboard",
+}: LoginCardProps) {
   return (
     <div className="w-full max-w-md rounded-[28px] border border-white/10 bg-white/5 p-6 shadow-[0_24px_80px_rgba(0,0,0,0.25)] backdrop-blur-xl">
       <div className="space-y-3 text-center">
@@ -14,7 +18,7 @@ export function LoginCard({ error }: LoginCardProps) {
         </p>
       </div>
       <div className="mt-6 flex flex-col items-center gap-4">
-        <AuthButton redirectToAfterLogin="/assistant" />
+        <AuthButton redirectToAfterLogin={redirectToAfterLogin} />
         {error ? (
           <p className="max-w-sm text-center text-sm text-red-400" role="alert">
             {error}

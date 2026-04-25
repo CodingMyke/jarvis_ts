@@ -69,12 +69,6 @@ export function SettingsPanel() {
         <Button variant="secondary" onClick={() => signOut()} type="button">
           Esci
         </Button>
-        <Link
-          href="/assistant"
-          className="flex w-full items-center justify-center rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-muted transition-colors hover:bg-white/10 hover:text-foreground focus:outline-none focus:ring-2 focus:ring-accent/20"
-        >
-          Torna all&apos;assistente
-        </Link>
       </div>
     </div>
   );

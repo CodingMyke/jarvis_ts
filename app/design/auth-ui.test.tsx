@@ -1,5 +1,4 @@
 // @vitest-environment jsdom
-// used the fkg testing skill zioo
 
 import { fireEvent, render, screen } from "@testing-library/react";
 import React from "react";
@@ -63,7 +62,7 @@ describe("auth design", () => {
       signOut,
     });
 
-    const { rerender } = render(<AuthButton redirectToAfterLogin="/assistant" />);
+    const { rerender } = render(<AuthButton redirectToAfterLogin="/dashboard" />);
     expect(screen.getByText("...")).toBeInTheDocument();
 
     authUiMocks.useAuth.mockReturnValueOnce({
@@ -75,7 +74,7 @@ describe("auth design", () => {
       signOut,
     });
 
-    rerender(<AuthButton redirectToAfterLogin="/assistant" />);
+    rerender(<AuthButton redirectToAfterLogin="/dashboard" />);
     fireEvent.click(screen.getByRole("button", { name: "Esci" }));
     expect(signOut).toHaveBeenCalledOnce();
 
@@ -86,17 +85,18 @@ describe("auth design", () => {
       signOut,
     });
 
-    rerender(<AuthButton redirectToAfterLogin="/assistant" />);
+    rerender(<AuthButton redirectToAfterLogin="/dashboard" />);
     fireEvent.click(screen.getByRole("button", { name: "Accedi con Google" }));
-    expect(signInWithGoogle).toHaveBeenCalledWith("/assistant");
+    expect(signInWithGoogle).toHaveBeenCalledWith("/dashboard");
   });
 
   it("renders the login template and decodes auth errors from the query string", () => {
-    authUiMocks.searchParams = new URLSearchParams("error=Sessione%20scaduta");
+    authUiMocks.searchParams = new URLSearchParams("error=Sessione%20scaduta&next=%2Fassistant");
+    const signInWithGoogle = vi.fn();
     authUiMocks.useAuth.mockReturnValue({
       isLoading: false,
       user: null,
-      signInWithGoogle: vi.fn(),
+      signInWithGoogle,
       signOut: vi.fn(),
     });
 
@@ -105,7 +105,8 @@ describe("auth design", () => {
     expect(screen.getByText("Jarvis")).toBeInTheDocument();
     expect(screen.getByText("Voice Workspace")).toBeInTheDocument();
     expect(screen.getByText("Sessione scaduta")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Accedi con Google" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Accedi con Google" }));
+    expect(signInWithGoogle).toHaveBeenCalledWith("/assistant");
   });
 
   it("renders settings for loading, missing users and authenticated users", () => {
@@ -156,10 +157,7 @@ describe("auth design", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Esci" }));
     expect(signOut).toHaveBeenCalledOnce();
-    expect(screen.getByRole("link", { name: "Torna all'assistente" })).toHaveAttribute(
-      "href",
-      "/assistant",
-    );
+    expect(screen.queryByRole("link", { name: "Torna all'assistente" })).not.toBeInTheDocument();
   });
 
   it("renders the shared button variants", () => {

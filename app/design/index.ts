@@ -12,6 +12,7 @@ export { AuthButton } from "./molecules/auth/AuthButton";
 export type { AuthButtonProps } from "./molecules/auth/AuthButton";
 export { AssistantWorkspaceTemplate } from "./templates/assistant/AssistantWorkspaceTemplate";
 export type { ChatbotPageClientProps } from "./templates/assistant/AssistantWorkspaceTemplate";
+export { AppShellTemplate } from "./templates/app-shell/AppShellTemplate";
 export { LoginTemplate } from "./templates/auth/LoginTemplate";
 export { SettingsTemplate } from "./templates/settings/SettingsTemplate";
 export { CalendarPanel } from "./organisms/calendar/CalendarPanel";

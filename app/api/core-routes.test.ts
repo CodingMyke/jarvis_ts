@@ -1,4 +1,3 @@
-// used the fkg testing skill zioo
 import { NextRequest } from "next/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -36,11 +35,26 @@ const chatsMocks = vi.hoisted(() => ({
   handleDeleteChat: vi.fn(),
 }));
 
+const proxyMocks = vi.hoisted(() => ({
+  createServerClient: vi.fn(),
+  getSupabaseConfig: vi.fn(() => ({
+    url: "https://supabase.example",
+    anonKey: "anon-key",
+  })),
+  user: null as { id: string } | null,
+}));
+
 vi.mock("next/headers", () => nextHeadersMocks);
 vi.mock("@/app/_server", () => serverMocks);
 vi.mock("@/app/_features/tasks", () => tasksMocks);
 vi.mock("@/app/_features/calendar", () => calendarMocks);
 vi.mock("@/app/_features/chats", () => chatsMocks);
+vi.mock("@supabase/ssr", () => ({
+  createServerClient: proxyMocks.createServerClient,
+}));
+vi.mock("@/app/_server/supabase/supabase.client", () => ({
+  getSupabaseConfig: proxyMocks.getSupabaseConfig,
+}));
 
 import * as authCallbackRoute from "./auth/callback/google/route";
 import * as authGoogleRoute from "./auth/google/route";
@@ -48,6 +62,7 @@ import * as calendarRoute from "./calendar/events/route";
 import * as chatsRoute from "./chats/route";
 import * as supabaseAuthCallbackRoute from "../auth/callback/route";
 import * as tasksRoute from "./tasks/route";
+import * as proxyRoute from "@/proxy";
 
 function createJsonResponse(body: Record<string, unknown>, status: number = 200): Response {
   return Response.json(body, { status });
@@ -76,6 +91,18 @@ beforeEach(() => {
     getAll: vi.fn(() => []),
     set: vi.fn(),
   });
+  proxyMocks.user = null;
+  proxyMocks.getSupabaseConfig.mockReturnValue({
+    url: "https://supabase.example",
+    anonKey: "anon-key",
+  });
+  proxyMocks.createServerClient.mockImplementation(() => ({
+    auth: {
+      getUser: vi.fn().mockResolvedValue({
+        data: { user: proxyMocks.user },
+      }),
+    },
+  }));
 });
 
 describe("tasks route", () => {
@@ -562,7 +589,12 @@ describe("Supabase auth callback route", () => {
       error: null,
     });
     serverMocks.createClient.mockReturnValueOnce(successfulSupabase);
-    const successResponse = await supabaseAuthCallbackRoute.GET(
+    serverMocks.createClient.mockReturnValueOnce(successfulSupabase);
+    const defaultSuccessResponse = await supabaseAuthCallbackRoute.GET(
+      new Request("https://jarvis.example/auth/callback?code=xyz"),
+    );
+
+    const assistantSuccessResponse = await supabaseAuthCallbackRoute.GET(
       new Request("https://jarvis.example/auth/callback?code=xyz&next=assistant"),
     );
 
@@ -572,7 +604,52 @@ describe("Supabase auth callback route", () => {
     expect(exchangeFailureResponse.headers.get("location")).toBe(
       "https://jarvis.example/?error=bad%20code",
     );
-    expect(successResponse.headers.get("location")).toBe("https://jarvis.example/assistant");
+    expect(defaultSuccessResponse.headers.get("location")).toBe("https://jarvis.example/dashboard");
+    expect(assistantSuccessResponse.headers.get("location")).toBe("https://jarvis.example/assistant");
     expect(serverMocks.createClient).toHaveBeenCalledWith(cookieStore);
+  });
+});
+
+describe("proxy route", () => {
+  it("redirects authenticated root requests to /dashboard", async () => {
+    proxyMocks.user = { id: "user-1" };
+
+    const response = await proxyRoute.proxy(
+      new NextRequest("https://jarvis.example/"),
+    );
+
+    expect(response.status).toBe(307);
+    expect(response.headers.get("location")).toBe("https://jarvis.example/dashboard");
+  });
+
+  it("redirects unauthenticated protected requests preserving the next path", async () => {
+    const response = await proxyRoute.proxy(
+      new NextRequest("https://jarvis.example/dashboard?tab=main"),
+    );
+
+    expect(response.status).toBe(307);
+    expect(response.headers.get("location")).toBe(
+      "https://jarvis.example/?next=%2Fdashboard%3Ftab%3Dmain",
+    );
+  });
+
+  it("keeps /assistant deep-link redirects after login", async () => {
+    const response = await proxyRoute.proxy(
+      new NextRequest("https://jarvis.example/assistant"),
+    );
+
+    expect(response.status).toBe(307);
+    expect(response.headers.get("location")).toBe("https://jarvis.example/?next=%2Fassistant");
+  });
+
+  it("keeps /setup/calendar protected", async () => {
+    const response = await proxyRoute.proxy(
+      new NextRequest("https://jarvis.example/setup/calendar"),
+    );
+
+    expect(response.status).toBe(307);
+    expect(response.headers.get("location")).toBe(
+      "https://jarvis.example/?next=%2Fsetup%2Fcalendar",
+    );
   });
 });

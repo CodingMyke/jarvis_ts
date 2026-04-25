@@ -1,6 +1,7 @@
 # Jarvis AI - Interactive Voice Assistant
 
 A real-time AI voice assistant powered by **Google Gemini Live API**, with wake word activation, function calling (calendar, todo, timer, memories), and Google + Supabase authentication.
+Authenticated users now land on a shared `/dashboard` shell.
 
 ## Main Features
 
@@ -15,7 +16,7 @@ A real-time AI voice assistant powered by **Google Gemini Live API**, with wake 
   - **Session control**: end conversation, clear chat, disable assistant
 - **Conversation persistence**: Supabase-backed chat storage with compaction and semantic search (local storage is used as a client-side layer)
 - **Authentication**: Google OAuth via Supabase; memory/calendar/tasks routes are session-protected
-- **UI**: thin App Router entrypoints, feature boundaries, markdown chat rendering, voice orb, assistant/settings/setup pages
+- **UI**: thin App Router entrypoints, feature boundaries, markdown chat rendering, voice orb, shared app shell (`/dashboard` + sibling sections), standalone legacy `/assistant`, standalone `/setup/calendar`
 
 ## Tech Stack
 
@@ -66,7 +67,7 @@ A real-time AI voice assistant powered by **Google Gemini Live API**, with wake 
 
 ## Usage
 
-1. **Login**: sign in with Google (required for memories, calendar, and tasks).
+1. **Login**: sign in with Google (required for memories, calendar, and tasks); default authenticated landing route is `/dashboard`.
 2. **Start**: click the microphone orb; the assistant listens locally for the wake word.
 3. **Activation**: say "Jarvis" (or your configured wake word); the app connects to Gemini and starts live voice chat.
 4. **Commands**: ask to create/edit events, tasks, timers, save memories, or search memories; tools are called automatically.
@@ -88,8 +89,8 @@ jarvis_ts/
 │   │   └── timer/               # Timer provider
 │   ├── _shared/                 # Shared UI primitives and types
 │   ├── _server/                 # Server helpers (http/auth/ai/supabase)
+│   ├── (app-shell)/             # Shared authenticated shell routes
 │   ├── assistant/               # Assistant page
-│   ├── settings/                # Settings page
 │   └── setup/                   # Calendar/Tasks setup pages
 ├── public/
 │   └── audio-capture-processor.worklet.js
@@ -117,6 +118,9 @@ npm run gen-supabase-types  # Regenerate Supabase TypeScript types
 ## Architecture Workflow
 
 - Pages, layouts, and routes stay thin and import through `app/_features`, `app/_shared`, and `app/_server`.
+- Shared authenticated navigation lives in `app/(app-shell)` and exposes `/dashboard`, `/projects`, `/academy`, `/reflections`, `/learning`, `/progression`, `/news`, and `/settings`.
+- `/assistant` stays available as a legacy standalone protected route and is not exposed in the main shell navigation.
+- `/setup/calendar` stays standalone + protected, currently discoverable from the dashboard page.
 - API routes validate inputs with Zod and delegate business logic to feature handlers/services.
 - Assistant tools use a recursive typed JSON-schema-like contract.
 - Task synchronization uses local invalidation through `TodoProvider`/`useTodos` (no global event bus).
