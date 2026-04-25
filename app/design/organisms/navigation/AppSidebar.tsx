@@ -5,6 +5,7 @@ import {
   type AppShellNavigationItem,
   getAppShellNavigationItemFromPath,
 } from "@/app/_features/navigation/app-shell-navigation";
+import { useAppShellAssistant } from "@/app/design/templates/app-shell/useAppShellAssistant";
 
 type SidebarVariant = "desktop" | "mobile";
 
@@ -94,10 +95,16 @@ export function AppSidebar({
 }: AppSidebarProps) {
   const activeItem = getAppShellNavigationItemFromPath(currentPathname);
   const isDesktop = variant === "desktop";
+  const { listeningMode, logoBorderClassName, onLogoToggle } = useAppShellAssistant();
 
   const sidebarClassName = isDesktop
     ? "hidden h-dvh w-56 flex-col border-r border-white/10 bg-background/95 md:flex"
     : "flex h-full w-72 flex-col border-r border-white/10 bg-background";
+
+  const logoAriaLabel =
+    listeningMode === "idle"
+      ? "Enable voice assistant"
+      : "Disable voice assistant";
 
   return (
     <aside
@@ -106,14 +113,20 @@ export function AppSidebar({
       aria-label="Navigazione principale"
     >
       <div className="border-b border-white/10 p-4">
-        <Link
-          href="/dashboard"
-          className="block rounded-xl border border-white/10 bg-white/5 px-3 py-3 transition-colors hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-accent/20"
-          onClick={onNavigate}
+        <button
+          type="button"
+          data-testid="app-sidebar-logo-toggle"
+          className={[
+            "block w-full rounded-xl border bg-white/5 px-3 py-3 text-left transition-colors",
+            "hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-accent/20",
+            logoBorderClassName,
+          ].join(" ")}
+          onClick={onLogoToggle}
+          aria-label={logoAriaLabel}
         >
           <p className="text-lg font-semibold text-foreground">Jarvis</p>
           <p className="text-xs uppercase tracking-[0.2em] text-muted">Personal OS</p>
-        </Link>
+        </button>
       </div>
 
       <nav className="min-h-0 flex-1 overflow-y-auto p-4">
