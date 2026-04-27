@@ -91,19 +91,19 @@ Modify:
 
 **Files:** none
 
-- [ ] **Step 1: Check current git status**
+- [x] **Step 1: Check current git status**
 
 Run: `git status --short`
 
 Expected: note existing user changes and do not revert unrelated work.
 
-- [ ] **Step 2: Create a dedicated branch**
+- [x] **Step 2: Create a dedicated branch**
 
 Run: `git checkout -b codex/progression-system`
 
 Expected: branch switches to `codex/progression-system`.
 
-- [ ] **Step 3: Commit only this task if there are plan-only changes**
+- [x] **Step 3: Commit only this task if there are plan-only changes**
 
 Run: `git add docs/superpowers/plans/2026-04-27-progression-system.md`
 
@@ -120,7 +120,7 @@ Expected: commit succeeds if this plan is not already committed.
 - Create: `supabase/migrations/20260427000000_create_progression_system.sql`
 - Modify: `app/_server/supabase/database.types.ts`
 
-- [ ] **Step 1: Write a failing database expectation**
+- [x] **Step 1: Write a failing database expectation**
 
 Add a short manual checklist at the top of the migration task while implementing:
 
@@ -133,7 +133,7 @@ Add a short manual checklist at the top of the migration task while implementing
 -- select to_regclass('public.progression_xp_history') is not null;
 ```
 
-- [ ] **Step 2: Create tables**
+- [x] **Step 2: Create tables**
 
 Migration responsibilities:
 
@@ -150,7 +150,7 @@ Migration responsibilities:
 Use `gen_random_uuid()`, `auth.users(id)` foreign keys, indexes for user/status/deadline,
 and row-level security policies scoped to `auth.uid()`.
 
-- [ ] **Step 3: Add atomic RPCs**
+- [x] **Step 3: Add atomic RPCs**
 
 Create SQL functions with `security invoker` unless testing proves `security definer` is
 required:
@@ -168,19 +168,22 @@ required:
 Each RPC must use `auth.uid()`, lock the profile row before changing XP, clamp XP at `0`,
 recompute level, and skip XP history when the actual XP delta is `0`.
 
-- [ ] **Step 4: Run migration locally**
+- [x] **Step 4: Run migration locally**
 
 Run: `supabase db reset`
 
 Expected: migration applies cleanly.
 
-- [ ] **Step 5: Regenerate Supabase types**
+- [x] **Step 5: Regenerate Supabase types**
 
 Run: `npm run gen-supabase-types`
 
 Expected: `app/_server/supabase/database.types.ts` includes all progression tables and RPCs.
 
-- [ ] **Step 6: Commit**
+Note: remote generation required `SUPABASE_ACCESS_TOKEN`, so types were generated locally after
+`supabase db reset` and merged into the existing generated remote type file.
+
+- [x] **Step 6: Commit**
 
 Run: `git add supabase/migrations app/_server/supabase/database.types.ts`
 
@@ -780,4 +783,3 @@ PR body:
 ```
 
 Expected: draft PR opens successfully. Do not merge.
-
