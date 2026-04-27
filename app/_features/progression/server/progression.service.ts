@@ -10,7 +10,6 @@ import type {
   ProgressionActionRow,
   ProgressionCheckinRow,
   ProgressionGoalRow,
-  ProgressionGoalStatus,
   ProgressionProfileRow,
   ProgressionXpHistoryRow,
 } from "./progression.types";

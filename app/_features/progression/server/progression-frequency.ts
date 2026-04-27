@@ -39,7 +39,10 @@ function parseIsoWeekdayList(value: Json): number[] {
   }
 
   return [...new Set(value)]
-    .filter((day): day is number => Number.isInteger(day) && day >= 1 && day <= 7)
+    .filter((day): day is number => typeof day === "number"
+      && Number.isInteger(day)
+      && day >= 1
+      && day <= 7)
     .sort((a, b) => a - b);
 }
 

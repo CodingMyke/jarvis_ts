@@ -589,7 +589,7 @@ Expected: commit succeeds.
 - Create: `app/design/molecules/progression/ProgressionLevelPanel.tsx`
 - Create: `app/design/progression-ui.test.tsx`
 
-- [ ] **Step 1: Write UI tests**
+- [x] **Step 1: Write UI tests**
 
 Cover:
 
@@ -606,22 +606,22 @@ Run: `npm run test -- app/design/progression-ui.test.tsx`
 
 Expected: FAIL before implementation.
 
-- [ ] **Step 2: Implement template and workspace hook**
+- [x] **Step 2: Implement template and workspace hook**
 
 `ProgressionTemplate` should own layout and wire store state/actions. Keep business rules in
 the feature store/service, not in JSX.
 
-- [ ] **Step 3: Implement level and today panels**
+- [x] **Step 3: Implement level and today panels**
 
 Use compact work-focused panels consistent with dashboard styling. Avoid marketing copy and
 keep controls direct.
 
-- [ ] **Step 4: Implement goal list and form dialog**
+- [x] **Step 4: Implement goal list and form dialog**
 
 Support create, edit, duplicate prefill, start now, deadline, completion XP, computed penalty,
 and recurring actions.
 
-- [ ] **Step 5: Implement deadline review dialog**
+- [x] **Step 5: Implement deadline review dialog**
 
 When expired unresolved goals exist, show one at a time with:
 
@@ -629,11 +629,11 @@ When expired unresolved goals exist, show one at a time with:
 - Confirm failure.
 - Postpone when `deadlineChangeCount = 0`.
 
-- [ ] **Step 6: Implement XP history sidebar**
+- [x] **Step 6: Implement XP history sidebar**
 
 Open from an icon/button and read from `progression_xp_history` API only.
 
-- [ ] **Step 7: Run UI tests**
+- [x] **Step 7: Run UI tests**
 
 Run: `npm run test -- app/design/progression-ui.test.tsx`
 
@@ -656,7 +656,7 @@ Expected: commit succeeds.
 - Modify: `README.md`
 - Modify: `docs/progression-system-spec.md` only if assumptions need to become durable spec
 
-- [ ] **Step 1: Update README**
+- [x] **Step 1: Update README**
 
 Mention progression in:
 
@@ -666,7 +666,7 @@ Mention progression in:
 - Project structure.
 - Architecture workflow.
 
-- [ ] **Step 2: Update spec only for accepted clarifications**
+- [x] **Step 2: Update spec only for accepted clarifications**
 
 If implementation uses the assumptions above, add a short "Implementation Clarifications"
 section to `docs/progression-system-spec.md`.
@@ -685,37 +685,37 @@ Expected: commit succeeds.
 
 **Files:** all changed files
 
-- [ ] **Step 1: Run focused progression tests**
+- [x] **Step 1: Run focused progression tests**
 
 Run: `npm run test -- app/_features/progression app/design/progression-ui.test.tsx`
 
 Expected: PASS.
 
-- [ ] **Step 2: Run route and shell tests**
+- [x] **Step 2: Run route and shell tests**
 
 Run: `npm run test -- app/api/core-routes.test.ts app/design/app-shell-ui.test.tsx`
 
 Expected: PASS.
 
-- [ ] **Step 3: Run full unit test suite**
+- [x] **Step 3: Run full unit test suite**
 
 Run: `npm run test`
 
 Expected: PASS.
 
-- [ ] **Step 4: Run lint**
+- [x] **Step 4: Run lint**
 
 Run: `npm run lint`
 
 Expected: PASS.
 
-- [ ] **Step 5: Run typecheck**
+- [x] **Step 5: Run typecheck**
 
 Run: `npm run typecheck`
 
 Expected: PASS.
 
-- [ ] **Step 6: Run production build**
+- [x] **Step 6: Run production build**
 
 Run: `npm run build`
 

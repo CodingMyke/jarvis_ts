@@ -35,6 +35,20 @@ It excludes:
 - Editing historical check-ins.
 - Per-goal check-in history UI, which can be added later.
 
+## Implementation Clarifications
+
+The current implementation adopts these clarifications for v1:
+
+- `/progression` is enabled in the shared app-shell navigation.
+- Recurring action configs are stored as:
+  - `daily`: `{}`
+  - `specific_weekdays`: `{ "weekdays": [1, 3, 5] }`
+  - `weekly_count`: `{ "targetCount": 3 }`
+- Lifecycle timestamps use `timestamptz`; deadlines and check-in local dates use `date`.
+- Level progress and streak-adjacent summaries are derived in service/UI responses rather than persisted as dedicated counters.
+- The authenticated app shell ensures the profile using the browser timezone on mount; a dedicated timezone settings editor is outside v1.
+- XP mutations and same-day check-in/undo mutations are executed through PostgreSQL RPCs for atomic behavior.
+
 ## Core Concepts
 
 ### Progression Profile

@@ -17,7 +17,7 @@ export interface ProgressionLevelProgress {
   xpRemainingForNextLevel: number;
 }
 
-export interface DailyFrequencyConfig {}
+export type DailyFrequencyConfig = Record<string, never>;
 
 export interface SpecificWeekdaysFrequencyConfig {
   weekdays: number[];

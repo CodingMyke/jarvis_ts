@@ -544,7 +544,6 @@ describe("progression routes", () => {
       "http://localhost/api/progression/check-ins?id=checkin-1",
       { method: "DELETE" },
     );
-    const deadlineRequest = new NextRequest("http://localhost/api/progression/deadlines");
     const resolveDeadlineRequest = new NextRequest("http://localhost/api/progression/deadlines", {
       method: "PATCH",
       body: JSON.stringify({ goalId: "goal-1", action: "complete" }),
@@ -559,7 +558,7 @@ describe("progression routes", () => {
     await progressionGoalsRoute.DELETE(deleteGoalRequest);
     await progressionCheckinsRoute.POST(createCheckinRequest);
     await progressionCheckinsRoute.DELETE(undoCheckinRequest);
-    await progressionDeadlinesRoute.GET(deadlineRequest);
+    await progressionDeadlinesRoute.GET();
     await progressionDeadlinesRoute.PATCH(resolveDeadlineRequest);
     await progressionXpHistoryRoute.GET(historyRequest);
 

@@ -1,6 +1,6 @@
 # Jarvis AI - Interactive Voice Assistant
 
-A real-time AI voice assistant powered by **Google Gemini Live API**, with wake word activation, function calling (calendar, todo, timer, memories), and Google + Supabase authentication.
+A real-time AI voice assistant powered by **Google Gemini Live API**, with wake word activation, function calling (calendar, todo, timer, memories, progression), and Google + Supabase authentication.
 Authenticated users now land on a shared `/dashboard` shell.
 
 ## Main Features
@@ -15,15 +15,16 @@ Authenticated users now land on a shared `/dashboard` shell.
   - **Memories**: episodic and semantic memories (Supabase), create/update/search/delete
   - **Session control**: end conversation, clear chat, disable assistant
 - **Conversation persistence**: Supabase-backed chat storage with compaction and semantic search (local storage is used as a client-side layer)
+- **Progression system**: Supabase-backed goals, recurring actions, daily check-ins, XP history, leveling, and deadline review in `/progression`
 - **Authentication**: Google OAuth via Supabase; memory/calendar/tasks routes are session-protected
-- **UI**: thin App Router entrypoints, feature boundaries, markdown chat rendering, voice orb, shared app shell (`/dashboard` + sibling sections), dashboard calendar + ToDo blocks (explicit empty/error states), standalone legacy `/assistant`, standalone `/setup/calendar`
+- **UI**: thin App Router entrypoints, feature boundaries, markdown chat rendering, voice orb, shared app shell (`/dashboard` + sibling sections), dashboard calendar + ToDo blocks (explicit empty/error states), progression workspace + deadline warning, standalone legacy `/assistant`, standalone `/setup/calendar`
 
 ## Tech Stack
 
 - **Framework**: Next.js 16 (App Router)
 - **UI**: React 19, TypeScript 5, Tailwind CSS 4
 - **Voice**: Google Gemini Live API (`@google/genai`)
-- **Auth and DB**: Supabase (auth, `chats`, `episodic_memory`, `semantic_memory`)
+- **Auth and DB**: Supabase (auth, `chats`, `episodic_memory`, `semantic_memory`, progression tables + RPCs)
 - **Integrations**: Google Calendar, Google Tasks (server-side OAuth)
 - **Message rendering**: react-markdown, remark-gfm
 
@@ -84,12 +85,13 @@ If `--linked` works, the project is ready for migrations, schema changes, and da
 2. **Dashboard**: `/dashboard` shows `Eventi` and `ToDo` side by side when space allows (wrap on smaller widths).
    Calendar empty/error states: `Nessun evento nei prossimi 7 giorni` / `Si è verificato un errore`.
    ToDo empty/error states: `Non ci sono elementi` / `Si è verificato un errore`.
-3. **Start**: click the `Jarvis / Personal OS` logo box in the app-shell sidebar.
-4. **Activation**: the assistant enters wake-word mode (yellow border).
+3. **Progression**: `/progression` shows XP level progress, due actions, weekly targets, goal filters, a lazy XP history sidebar, and a blocking deadline review only when expired goals exist.
+4. **Start**: click the `Jarvis / Personal OS` logo box in the app-shell sidebar.
+5. **Activation**: the assistant enters wake-word mode (yellow border).
    Say "Jarvis" (or your configured wake word) to connect (cyan border).
-5. **Commands**: ask to create/edit events, tasks, timers, save memories, or search memories.
+6. **Commands**: ask to create/edit events, tasks, timers, save memories, or search memories.
    Tools are called automatically, and the assistant session persists while navigating app-shell routes.
-6. **Stop**: click the same logo box to force `idle`, or end by voice
+7. **Stop**: click the same logo box to force `idle`, or end by voice
    (for example, "bye" or "thanks") to trigger end-conversation behavior.
 
 ## Project Structure
@@ -104,6 +106,7 @@ jarvis_ts/
 │   │   ├── calendar/            # Actions, UI, route validators/handlers
 │   │   ├── chats/               # Chat validators/handlers/services
 │   │   ├── memory/              # Episodic/semantic memory logic
+│   │   ├── progression/         # Goals, check-ins, XP, deadlines
 │   │   ├── tasks/               # Actions, local sync, validators/handlers
 │   │   └── timer/               # Timer provider
 │   ├── _shared/                 # Shared UI primitives and types
@@ -138,6 +141,7 @@ npm run gen-supabase-types  # Regenerate Supabase TypeScript types
 
 - Pages, layouts, and routes stay thin and import through `app/_features`, `app/_shared`, and `app/_server`.
 - Shared authenticated navigation lives in `app/(app-shell)` and exposes `/dashboard`, `/projects`, `/academy`, `/reflections`, `/learning`, `/progression`, `/news`, and `/settings`.
+- The progression flow is owned by `app/_features/progression`, with Supabase RPC-backed XP/check-in mutations and a client workspace in `app/design/templates/progression`.
 - `/assistant` stays available as a legacy standalone protected route and is not exposed in the main shell navigation.
 - `/setup/calendar` stays standalone + protected, discoverable from the `/settings` page (`Integrazioni` section).
 - API routes validate inputs with Zod and delegate business logic to feature handlers/services.

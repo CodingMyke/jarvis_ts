@@ -161,10 +161,7 @@ async function handleProgressionGoalOperation(auth: AuthContext, body: unknown) 
     });
   }
 
-  return jsonOk({
-    success: true,
-    ...result,
-  });
+  return jsonOk(result);
 }
 
 export async function handleUpdateProgressionGoal(auth: AuthContext, body: unknown) {
