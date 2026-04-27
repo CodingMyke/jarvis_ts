@@ -369,7 +369,7 @@ Expected: commit succeeds.
 - Modify: `app/_features/progression/server/progression-route.handlers.ts`
 - Modify: `app/api/core-routes.test.ts`
 
-- [ ] **Step 1: Write handler tests**
+- [x] **Step 1: Write handler tests**
 
 Cover auth failure, invalid payload/query, service failures, and success responses for each
 route.
@@ -378,12 +378,12 @@ Run: `npm run test -- app/_features/progression/server/progression-route.handler
 
 Expected: FAIL before implementation.
 
-- [ ] **Step 2: Implement route handlers**
+- [x] **Step 2: Implement route handlers**
 
 Use existing `jsonOk()`, `jsonError()`, `getZodErrorMessage()`, and `AuthContext`.
 Keep API files thin and delegate to handlers.
 
-- [ ] **Step 3: Write route wiring tests**
+- [x] **Step 3: Write route wiring tests**
 
 Extend `app/api/core-routes.test.ts` to ensure the new route files call auth and handlers.
 
@@ -391,7 +391,7 @@ Run: `npm run test -- app/api/core-routes.test.ts`
 
 Expected: FAIL before route files are wired.
 
-- [ ] **Step 4: Implement API route files**
+- [x] **Step 4: Implement API route files**
 
 Routes:
 
@@ -407,7 +407,7 @@ Routes:
 - `PATCH /api/progression/deadlines`: complete/fail/postpone expired goal
 - `GET /api/progression/xp-history`: paginated history
 
-- [ ] **Step 5: Run tests**
+- [x] **Step 5: Run tests**
 
 Run: `npm run test -- app/_features/progression/server/progression-route.handlers.test.ts`
 
@@ -415,7 +415,7 @@ Run: `npm run test -- app/api/core-routes.test.ts`
 
 Expected: PASS.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 Run: `git add app/api/progression app/_features/progression/server app/api/core-routes.test.ts`
 
