@@ -110,6 +110,29 @@ async function getGoalById(
   return { success: true, goal: data as ProgressionGoalRow };
 }
 
+async function getActionById(
+  supabase: ProgressionSupabase,
+  userId: string,
+  actionId: string,
+): Promise<ProgressionResult<{ action: ProgressionActionRow }>> {
+  const { data, error } = await supabase
+    .from("progression_actions")
+    .select("*")
+    .eq("user_id", userId)
+    .eq("id", actionId)
+    .maybeSingle();
+
+  if (error) {
+    return { success: false, error: getErrorMessage(error, "Action load failed.") };
+  }
+
+  if (!data) {
+    return { success: false, error: "Action not found." };
+  }
+
+  return { success: true, action: data as ProgressionActionRow };
+}
+
 function toActionInsert(
   userId: string,
   goalId: string,
@@ -125,6 +148,33 @@ function toActionInsert(
     xp_per_checkin: input.xpPerCheckin,
     active: input.active ?? true,
     deactivated_at: input.active === false ? getNowIso() : null,
+  };
+}
+
+function toActionUpdate(
+  input: NonNullable<ProgressionGoalCreateBody["actions"]>[number],
+  existingAction: ProgressionActionRow | null = null,
+  hasCheckins = false,
+) {
+  const active = input.active ?? existingAction?.active ?? true;
+  const frequencyType = hasCheckins && existingAction
+    ? existingAction.frequency_type
+    : input.frequencyType;
+  const frequencyConfig = hasCheckins && existingAction
+    ? existingAction.frequency_config
+    : input.frequencyConfig;
+  const xpPerCheckin = hasCheckins && existingAction
+    ? existingAction.xp_per_checkin
+    : input.xpPerCheckin;
+
+  return {
+    title: input.title,
+    description: getActionDescription(input.description),
+    frequency_type: frequencyType,
+    frequency_config: frequencyConfig as Json,
+    xp_per_checkin: xpPerCheckin,
+    active,
+    deactivated_at: active ? null : getNowIso(),
   };
 }
 
@@ -352,6 +402,144 @@ export async function updateProgressionGoal(
     return { success: false, error: getErrorMessage(error, "Goal update failed.") };
   }
 
+  if (input.actions === undefined) {
+    return { success: true, goal: data as ProgressionGoalRow };
+  }
+
+  const { data: currentActionsData, error: currentActionsError } = await supabase
+    .from("progression_actions")
+    .select("*")
+    .eq("user_id", userId)
+    .eq("goal_id", input.id)
+    .order("created_at", { ascending: true });
+
+  if (currentActionsError) {
+    return { success: false, error: getErrorMessage(currentActionsError, "Action load failed.") };
+  }
+
+  const currentActions = (currentActionsData ?? []) as ProgressionActionRow[];
+  const currentActionsById = new Map(currentActions.map((action) => [action.id, action]));
+  const { data: checkinsData, error: checkinsError } = await supabase
+    .from("progression_checkins")
+    .select("action_id")
+    .eq("user_id", userId)
+    .in(
+      "action_id",
+      currentActions.length > 0 ? currentActions.map((action) => action.id) : [
+        "00000000-0000-0000-0000-000000000000",
+      ],
+    );
+
+  if (checkinsError) {
+    return {
+      success: false,
+      error: getErrorMessage(checkinsError, "Check-in load failed."),
+    };
+  }
+
+  const actionsWithCheckins = new Set(
+    (checkinsData ?? []).map((entry) => (
+      typeof entry === "object" && entry !== null && "action_id" in entry
+        ? String((entry as { action_id?: unknown }).action_id ?? "")
+        : ""
+    )).filter((actionId) => actionId.length > 0),
+  );
+  const submittedActionIds = new Set<string>();
+
+  for (const actionInput of input.actions) {
+    const existingAction = actionInput.id ? currentActionsById.get(actionInput.id) : null;
+
+    if (existingAction) {
+      submittedActionIds.add(existingAction.id);
+      const hasCheckins = actionsWithCheckins.has(existingAction.id);
+
+      const { data: updatedAction, error: updateError } = await supabase
+        .from("progression_actions")
+        .update(toActionUpdate(actionInput, existingAction, hasCheckins))
+        .eq("user_id", userId)
+        .eq("goal_id", input.id)
+        .eq("id", existingAction.id)
+        .select("*")
+        .single();
+
+      if (updateError || !updatedAction) {
+        return {
+          success: false,
+          error: getErrorMessage(updateError, "Action update failed."),
+        };
+      }
+
+      continue;
+    }
+
+    const insertPayload = actionInput.id
+      ? {
+          id: actionInput.id,
+          ...toActionInsert(userId, input.id, actionInput),
+        }
+      : toActionInsert(userId, input.id, actionInput);
+
+    const { data: createdAction, error: createError } = await supabase
+      .from("progression_actions")
+      .insert(insertPayload)
+      .select("*")
+      .single();
+
+    if (createError || !createdAction) {
+      return {
+        success: false,
+        error: getErrorMessage(createError, "Action creation failed."),
+      };
+    }
+
+    submittedActionIds.add((createdAction as ProgressionActionRow).id);
+  }
+
+  for (const action of currentActions) {
+    if (submittedActionIds.has(action.id)) {
+      continue;
+    }
+
+    if (!actionsWithCheckins.has(action.id)) {
+      const { data: deletedAction, error: deleteError } = await supabase
+        .from("progression_actions")
+        .delete()
+        .eq("user_id", userId)
+        .eq("goal_id", input.id)
+        .eq("id", action.id)
+        .select("*")
+        .single();
+
+      if (deleteError || !deletedAction) {
+        return {
+          success: false,
+          error: getErrorMessage(deleteError, "Action deletion failed."),
+        };
+      }
+
+      continue;
+    }
+
+    const { data: deactivatedAction, error: deactivateError } = await supabase
+      .from("progression_actions")
+      .update({
+        active: false,
+        deactivated_at: getNowIso(),
+      })
+      .eq("user_id", userId)
+      .eq("goal_id", input.id)
+      .eq("id", action.id)
+      .select("*")
+      .single();
+
+    if (deactivateError || !deactivatedAction) {
+      return {
+        success: false,
+        error: getErrorMessage(deactivateError, "Action update failed."),
+      };
+    }
+  }
+
   return { success: true, goal: data as ProgressionGoalRow };
 }
 
@@ -463,12 +651,17 @@ export async function createProgressionCheckin(
     return profileResult;
   }
 
+  const actionResult = await getActionById(supabase, userId, actionId);
+  if (!actionResult.success) {
+    return actionResult;
+  }
+
   const today = getLocalDateForTimezone(new Date(), profileResult.profile.timezone);
   const { data, error } = await supabase.rpc("progression_create_checkin", {
     p_action_id: actionId,
     p_local_date: today,
     p_timezone: profileResult.profile.timezone,
-    p_description: "Action check-in",
+    p_description: `Check-in: ${actionResult.action.title}`,
   });
 
   if (error || !data) {

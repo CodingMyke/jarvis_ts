@@ -182,6 +182,9 @@ No XP history row should be created when the actual XP change is `0`.
 Descriptions are immutable snapshots. If a goal or action is renamed later, old XP
 history rows keep the original event description.
 
+Check-in history rows use the action title at the time of the check-in, with a
+description formatted as `Check-in: <action title>`.
+
 ## Leveling Rules
 
 The minimum level is `1`.
@@ -393,7 +396,7 @@ Base fields:
 - Status/start option for creation
 - Deadline
 - Completion XP
-- Read-only computed failure penalty
+- Read-only computed failure penalty equal to one third of completion XP
 - Optional recurring actions
 
 For open goals, most fields can be edited, subject to the deadline-change and

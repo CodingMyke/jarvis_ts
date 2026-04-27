@@ -1,6 +1,8 @@
 "use client";
 
+import { useEffect, useRef } from "react";
 import { Button } from "@/app/design/atoms/shared/Button";
+import { useAppShellProgression } from "@/app/design/templates/app-shell/useAppShellProgression";
 import { ProgressionLevelPanel } from "@/app/design/molecules/progression/ProgressionLevelPanel";
 import { ProgressionDeadlineReviewDialog } from "@/app/design/organisms/progression/ProgressionDeadlineReviewDialog";
 import { ProgressionGoalFormDialog } from "@/app/design/organisms/progression/ProgressionGoalFormDialog";
@@ -11,6 +13,24 @@ import { useProgressionWorkspace } from "./useProgressionWorkspace";
 
 export function ProgressionTemplate() {
   const workspace = useProgressionWorkspace();
+  const { setOpenProgressionHistory } = useAppShellProgression();
+  const openHistoryRef = useRef(workspace.openHistory);
+
+  useEffect(() => {
+    openHistoryRef.current = workspace.openHistory;
+  }, [workspace.openHistory]);
+
+  useEffect(() => {
+    const openHistory = () => {
+      openHistoryRef.current();
+    };
+
+    setOpenProgressionHistory(() => openHistory);
+
+    return () => {
+      setOpenProgressionHistory(null);
+    };
+  }, [setOpenProgressionHistory]);
 
   if (workspace.deadlineGoal) {
     return (
@@ -58,9 +78,6 @@ export function ProgressionTemplate() {
               che bloccano il flusso.
             </p>
           </div>
-          <Button type="button" variant="secondary" onClick={workspace.openHistory}>
-            Cronologia XP
-          </Button>
         </div>
 
         <div className="grid gap-6 xl:grid-cols-[minmax(0,0.95fr)_minmax(0,1.25fr)]">
@@ -80,6 +97,7 @@ export function ProgressionTemplate() {
             onCreateGoal={workspace.openCreateGoal}
             onEditGoal={workspace.openEditGoal}
             onDuplicateGoal={workspace.openDuplicateGoal}
+            onDeleteGoal={workspace.deleteGoal}
             onStartGoal={workspace.startGoal}
             onCompleteGoal={workspace.completeGoal}
             onFailGoal={workspace.failGoal}

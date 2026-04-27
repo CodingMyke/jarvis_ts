@@ -1,21 +1,24 @@
 interface TodoCheckboxProps {
   checked: boolean;
   onClick: () => void;
+  ariaLabel?: string;
 }
 
 export function TodoCheckbox({
   checked,
   onClick,
+  ariaLabel,
 }: TodoCheckboxProps) {
   return (
     <button
+      type="button"
       onClick={onClick}
       className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded border-2 transition-colors ${
         checked
           ? "border-accent bg-accent/20"
           : "border-white/20 bg-transparent hover:border-white/40"
       }`}
-      aria-label={checked ? "Segna come non completato" : "Segna come completato"}
+      aria-label={ariaLabel ?? (checked ? "Segna come non completato" : "Segna come completato")}
     >
       {checked ? (
         <svg

@@ -8,6 +8,8 @@ import {
 
 export interface AppShellProgressionContextValue {
   hasProgressionDeadlineWarning: boolean;
+  openProgressionHistory: (() => void) | null;
+  setOpenProgressionHistory: (openProgressionHistory: (() => void) | null) => void;
 }
 
 export const AppShellProgressionContext =
@@ -19,6 +21,9 @@ function getBrowserTimezone(): string {
 
 export function AppShellProgressionProvider({ children }: { children: ReactNode }) {
   const [hasProgressionDeadlineWarning, setHasProgressionDeadlineWarning] = useState(false);
+  const [openProgressionHistory, setOpenProgressionHistory] = useState<(() => void) | null>(
+    null,
+  );
 
   useEffect(() => {
     let isCancelled = false;
@@ -48,8 +53,12 @@ export function AppShellProgressionProvider({ children }: { children: ReactNode 
   }, []);
 
   const value = useMemo<AppShellProgressionContextValue>(
-    () => ({ hasProgressionDeadlineWarning }),
-    [hasProgressionDeadlineWarning],
+    () => ({
+      hasProgressionDeadlineWarning,
+      openProgressionHistory,
+      setOpenProgressionHistory,
+    }),
+    [hasProgressionDeadlineWarning, openProgressionHistory],
   );
 
   return (

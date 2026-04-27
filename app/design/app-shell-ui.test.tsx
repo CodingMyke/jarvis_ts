@@ -19,6 +19,7 @@ const appShellAssistantMocks = vi.hoisted(() => ({
 
 const appShellProgressionMocks = vi.hoisted(() => ({
   hasProgressionDeadlineWarning: false,
+  openProgressionHistory: vi.fn(),
 }));
 
 vi.mock("next/navigation", () => ({
@@ -60,6 +61,7 @@ describe("app shell design", () => {
     appShellAssistantMocks.logoBorderClassName = "border-white/10";
     appShellAssistantMocks.onLogoToggle.mockReset();
     appShellProgressionMocks.hasProgressionDeadlineWarning = false;
+    appShellProgressionMocks.openProgressionHistory.mockReset();
   });
 
   it("renders the desktop shell with active item and disabled sections", () => {
@@ -171,5 +173,25 @@ describe("app shell design", () => {
     expect(
       within(desktopSidebar).queryByTestId("nav-warning-dashboard"),
     ).not.toBeInTheDocument();
+  });
+
+  it("shows the progression history button in the topbar on the progression route", () => {
+    appShellMocks.pathname = "/progression";
+    appShellProgressionMocks.openProgressionHistory = vi.fn();
+
+    render(
+      <AppShellTemplate>
+        <div>Progression content</div>
+      </AppShellTemplate>,
+    );
+
+    const topbar = screen.getByTestId("app-shell-topbar");
+    const historyButton = within(topbar).getByRole("button", { name: "Cronologia XP" });
+
+    expect(historyButton).toBeInTheDocument();
+
+    fireEvent.click(historyButton);
+
+    expect(appShellProgressionMocks.openProgressionHistory).toHaveBeenCalledOnce();
   });
 });

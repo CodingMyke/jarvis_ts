@@ -26,39 +26,93 @@ export function ProgressionXpHistorySidebar({
     return null;
   }
 
+  function formatTimestamp(value: string): string {
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) {
+      return value;
+    }
+
+    return new Intl.DateTimeFormat("it-IT", {
+      dateStyle: "medium",
+      timeStyle: "short",
+    }).format(date);
+  }
+
   return (
     <aside
       data-testid="progression-xp-history"
-      className="fixed inset-y-0 right-0 z-40 w-full max-w-md border-l border-white/10 bg-[#0f1218] p-5 shadow-[-24px_0_60px_rgba(0,0,0,0.4)]"
+      className="fixed inset-y-0 right-0 z-40 w-full max-w-md border-l border-white/10 bg-[#0f1218] p-4 shadow-[-24px_0_60px_rgba(0,0,0,0.4)]"
     >
-      <div className="flex items-start justify-between gap-4">
-        <div>
+      <div className="flex pb-2 items-center justify-between gap-4 border-b border-white/10">
+        <div className="flex items-center gap-2">
           <h2 className="text-xl font-semibold text-foreground">Cronologia XP</h2>
-          <p className="text-sm text-muted">Eventi immutabili registrati dal sistema.</p>
+          {status === "loading" ? (
+            <span role="status" aria-label="Caricamento cronologia in corso">
+              <svg
+                aria-hidden="true"
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="h-4 w-4 animate-spin text-muted"
+              >
+                <path d="M12 3a9 9 0 1 0 9 9" />
+              </svg>
+            </span>
+          ) : null}
         </div>
-        <Button type="button" variant="secondary" onClick={onClose}>
-          Chiudi
+        <Button
+          type="button"
+          variant="secondary"
+          onClick={onClose}
+          aria-label="Chiudi cronologia XP"
+          className="h-7 w-7 !p-0"
+        >
+          <svg
+            aria-hidden="true"
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="h-5 w-5"
+          >
+            <path d="M6 6l12 12" />
+            <path d="M18 6 6 18" />
+          </svg>
         </Button>
       </div>
 
-      {status === "loading" ? <p className="mt-5 text-sm text-muted">Caricamento cronologia...</p> : null}
       {status === "error" ? <p className="mt-5 text-sm text-muted">Errore nel caricamento della cronologia.</p> : null}
 
-      <div className="mt-5 space-y-3">
+      <div className="mt-4 space-y-2.5">
         {history.map((entry) => (
           <article
             key={entry.id}
-            className="rounded-2xl border border-white/8 bg-black/20 p-4"
+            className="rounded-xl border border-white/8 bg-black/20 px-3 py-2.5"
           >
-            <div className="flex items-center justify-between gap-3">
-              <p className="text-sm font-medium text-foreground">
+            <div className="flex items-start justify-between gap-3">
+              <p className="text-sm font-medium leading-5 text-foreground">
                 {entry.description ?? "Evento XP"}
               </p>
-              <span className="rounded-full bg-cyan-400/10 px-2.5 py-1 text-xs text-cyan-100">
-                +{entry.xpAmount} XP
+              <span
+                className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-medium ${
+                  entry.xpAmount < 0
+                    ? "bg-red-500/15 text-red-100"
+                    : "bg-cyan-400/10 text-cyan-100"
+                }`}
+              >
+                {entry.xpAmount < 0 ? "-" : "+"}{Math.abs(entry.xpAmount)} XP
               </span>
             </div>
-            <p className="mt-2 text-xs text-muted">{entry.createdAt}</p>
+            <p className="mt-1.5 text-xs leading-5 text-muted">
+              {formatTimestamp(entry.createdAt)}
+            </p>
           </article>
         ))}
       </div>

@@ -87,6 +87,7 @@ interface ProgressionWorkspaceResult {
   openCreateGoal: () => void;
   openEditGoal: (goalId: string) => void;
   openDuplicateGoal: (goalId: string) => void;
+  deleteGoal: (goalId: string) => void;
   closeGoalDialog: () => void;
   submitGoalForm: (value: ProgressionGoalDraft) => void;
   setSelectedFilter: (filter: ProgressionGoalFilter) => void;
@@ -220,6 +221,7 @@ function toGoalDraft(goal: GoalRecord, actions: ActionRecord[]): ProgressionGoal
     actions: actions.map((action) => {
       const frequencyConfig = asObject(action.frequencyConfig) ?? {};
       return {
+        id: action.id,
         title: action.title,
         description: action.description ?? "",
         frequencyType: action.frequencyType,
@@ -278,6 +280,7 @@ export function useProgressionWorkspace(): ProgressionWorkspaceResult {
   const createGoal = useProgressionStore((state) => state.createGoal);
   const updateGoal = useProgressionStore((state) => state.updateGoal);
   const runGoalOperation = useProgressionStore((state) => state.runGoalOperation);
+  const deleteGoal = useProgressionStore((state) => state.deleteGoal);
   const checkIn = useProgressionStore((state) => state.checkIn);
   const undoCheckIn = useProgressionStore((state) => state.undoCheckIn);
   const resolveDeadline = useProgressionStore((state) => state.resolveDeadline);
@@ -439,6 +442,9 @@ export function useProgressionWorkspace(): ProgressionWorkspaceResult {
     openCreateGoal: () => openGoalDialog("create"),
     openEditGoal: (goalId) => openGoalDialog("edit", goalId),
     openDuplicateGoal: (goalId) => openGoalDialog("duplicate", goalId),
+    deleteGoal: (goalId) => {
+      void deleteGoal(goalId);
+    },
     closeGoalDialog: () => setIsFormOpen(false),
     submitGoalForm: (value) => {
       const actionsPayload = value.actions
@@ -494,7 +500,7 @@ export function useProgressionWorkspace(): ProgressionWorkspaceResult {
       startTransition(() => {
         setHistoryOpen(true);
       });
-      void loadHistory({ limit: 30, offset: 0 });
+      void loadHistory({ limit: 50, offset: 0 });
     },
     closeHistory: () => setHistoryOpen(false),
     resolveDeadlineComplete: (goalId) => {

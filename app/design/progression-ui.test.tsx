@@ -3,6 +3,8 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import ProgressionPage from "@/app/(app-shell)/progression/page";
+import { ProgressionGoalFormDialog } from "@/app/design/organisms/progression/ProgressionGoalFormDialog";
+import { ProgressionXpHistorySidebar } from "@/app/design/organisms/progression/ProgressionXpHistorySidebar";
 
 interface MockOverview {
   profile: {
@@ -167,6 +169,11 @@ function createOverview(): MockOverview {
 }
 
 const progressionUiMocks = vi.hoisted(() => ({
+  shellProgressionState: {
+    hasProgressionDeadlineWarning: false,
+    openProgressionHistory: null as (() => void) | null,
+    setOpenProgressionHistory: vi.fn(),
+  },
   storeState: {
     overview: createOverview(),
     status: "ready",
@@ -196,6 +203,10 @@ const progressionUiMocks = vi.hoisted(() => ({
   } as MockStoreState,
 }));
 
+vi.mock("@/app/design/templates/app-shell/useAppShellProgression", () => ({
+  useAppShellProgression: () => progressionUiMocks.shellProgressionState,
+}));
+
 vi.mock("@/app/_features/progression/state/progression.store", () => ({
   useProgressionStore: (
     selector: (state: MockStoreState) => unknown,
@@ -204,6 +215,9 @@ vi.mock("@/app/_features/progression/state/progression.store", () => ({
 
 describe("progression page UI", () => {
   beforeEach(() => {
+    progressionUiMocks.shellProgressionState.hasProgressionDeadlineWarning = false;
+    progressionUiMocks.shellProgressionState.openProgressionHistory = null;
+    progressionUiMocks.shellProgressionState.setOpenProgressionHistory.mockReset();
     progressionUiMocks.storeState = {
       overview: createOverview(),
       status: "ready",
@@ -301,25 +315,47 @@ describe("progression page UI", () => {
     expect(inProgressFilter).toHaveAttribute("aria-pressed", "true");
 
     const inProgressCard = screen.getByTestId("progression-goal-goal-in-progress");
-    expect(within(inProgressCard).getByRole("button", { name: "Completa" })).toBeInTheDocument();
+    fireEvent.click(
+      within(inProgressCard).getByRole("button", {
+        name: "Apri azioni obiettivo di Ship progression UI",
+      }),
+    );
     expect(
-      within(inProgressCard).getByRole("button", { name: "Segna fallito" }),
+      within(inProgressCard).getByRole("menuitem", { name: "Completa" }),
     ).toBeInTheDocument();
-    expect(within(inProgressCard).queryByRole("button", { name: "Avvia" })).not.toBeInTheDocument();
+    expect(
+      within(inProgressCard).getByRole("menuitem", { name: "Segna fallito" }),
+    ).toBeInTheDocument();
+    expect(within(inProgressCard).queryByRole("menuitem", { name: "Avvia" })).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Da iniziare" }));
 
     const toStartCard = screen.getByTestId("progression-goal-goal-to-start");
-    expect(within(toStartCard).getByRole("button", { name: "Avvia" })).toBeInTheDocument();
-    expect(within(toStartCard).queryByRole("button", { name: "Completa" })).not.toBeInTheDocument();
+    fireEvent.click(
+      within(toStartCard).getByRole("button", {
+        name: "Apri azioni obiettivo di Review the weekly plan",
+      }),
+    );
+    expect(within(toStartCard).getByRole("menuitem", { name: "Avvia" })).toBeInTheDocument();
+    expect(within(toStartCard).getByRole("menuitem", { name: "Elimina" })).toBeInTheDocument();
+    expect(
+      within(toStartCard).queryByRole("menuitem", { name: "Completa" }),
+    ).not.toBeInTheDocument();
+    fireEvent.click(within(toStartCard).getByRole("menuitem", { name: "Elimina" }));
+    expect(progressionUiMocks.storeState.deleteGoal).toHaveBeenCalledWith("goal-to-start");
 
     fireEvent.click(screen.getByRole("button", { name: "Completati" }));
 
     const completedCard = screen.getByTestId("progression-goal-goal-completed");
-    expect(within(completedCard).getByRole("button", { name: "Duplica" })).toBeInTheDocument();
-    expect(within(completedCard).queryByRole("button", { name: "Avvia" })).not.toBeInTheDocument();
+    fireEvent.click(
+      within(completedCard).getByRole("button", {
+        name: "Apri azioni obiettivo di Archive completed work",
+      }),
+    );
+    expect(within(completedCard).getByRole("menuitem", { name: "Duplica" })).toBeInTheDocument();
+    expect(within(completedCard).queryByRole("menuitem", { name: "Avvia" })).not.toBeInTheDocument();
     expect(
-      within(completedCard).queryByRole("button", { name: "Segna fallito" }),
+      within(completedCard).queryByRole("menuitem", { name: "Segna fallito" }),
     ).not.toBeInTheDocument();
   });
 
@@ -349,16 +385,155 @@ describe("progression page UI", () => {
     expect(screen.queryByTestId("progression-today-panel")).not.toBeInTheDocument();
   });
 
-  it("opens the XP history sidebar on demand", () => {
-    render(<ProgressionPage />);
+  it("keeps recurring action inputs mounted while editing their title", () => {
+    render(
+      <ProgressionGoalFormDialog
+        open
+        mode="edit"
+        initialValue={{
+          id: "goal-1",
+          title: "Ship progression UI",
+          description: "",
+          deadline: "",
+          completionXp: 25,
+          startNow: true,
+          status: "in_progress",
+          actions: [
+            {
+              id: "action-1",
+              title: "Daily polish",
+              description: "",
+              frequencyType: "daily",
+              weekdays: [1, 3, 5],
+              targetCount: 3,
+              xpPerCheckin: 5,
+              active: true,
+            },
+          ],
+        }}
+        onClose={vi.fn()}
+        onSubmit={vi.fn()}
+      />,
+    );
 
-    fireEvent.click(screen.getByRole("button", { name: "Cronologia XP" }));
+    const actionTitleInput = screen.getByPlaceholderText("Titolo azione");
+    actionTitleInput.focus();
 
-    expect(progressionUiMocks.storeState.loadHistory).toHaveBeenCalledWith({
-      limit: 30,
-      offset: 0,
-    });
-    expect(screen.getByTestId("progression-xp-history")).toBeInTheDocument();
-    expect(screen.getByText("Daily polish completed")).toBeInTheDocument();
+    fireEvent.change(actionTitleInput, { target: { value: "Daily polish updated" } });
+
+    expect(actionTitleInput).toHaveValue("Daily polish updated");
+    expect(actionTitleInput.isConnected).toBe(true);
+    expect(document.activeElement).toBe(actionTitleInput);
+  });
+
+  it("shows create-specific actions and deadline XP warning in the goal dialog", () => {
+    const onSubmit = vi.fn();
+
+    render(
+      <ProgressionGoalFormDialog
+        open
+        mode="create"
+        initialValue={{
+          title: "Ship progression UI",
+          description: "",
+          deadline: "2026-05-01",
+          completionXp: 25,
+          startNow: false,
+          actions: [
+            {
+              id: "action-1",
+              title: "Daily polish",
+              description: "",
+              frequencyType: "daily",
+              weekdays: [1, 3, 5],
+              targetCount: 3,
+              xpPerCheckin: 5,
+              active: true,
+            },
+          ],
+        }}
+        onClose={vi.fn()}
+        onSubmit={onSubmit}
+      />,
+    );
+
+    expect(screen.queryByRole("checkbox")).not.toBeInTheDocument();
+    expect(screen.getAllByText("Titolo")).toHaveLength(2);
+    expect(screen.getByText("Ricorrenza")).toBeInTheDocument();
+    expect(screen.getByText("XP")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Aggiungi azione" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Rimuovi azione Daily polish" })).toBeInTheDocument();
+    expect(
+      screen.getByText("Se fallisci questo obiettivo perderai 8 XP."),
+    ).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Crea e inizia" }));
+    expect(onSubmit).toHaveBeenCalledWith(
+      expect.objectContaining({
+        startNow: true,
+      }),
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Crea" }));
+    expect(onSubmit).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        startNow: false,
+      }),
+    );
+  });
+
+  it("renders a compact history sidebar with readable timestamps and XP deltas", () => {
+    const timestamp = "2026-04-29T10:30:00.000Z";
+    const formattedTimestamp = new Intl.DateTimeFormat("it-IT", {
+      dateStyle: "medium",
+      timeStyle: "short",
+    }).format(new Date(timestamp));
+
+    render(
+      <ProgressionXpHistorySidebar
+        open
+        status="ready"
+        onClose={vi.fn()}
+        history={[
+          {
+            id: "xp-positive",
+            description: "Action check-in",
+            xpAmount: 5,
+            createdAt: timestamp,
+          },
+          {
+            id: "xp-negative",
+            description: "Undo check-in",
+            xpAmount: -3,
+            createdAt: timestamp,
+          },
+        ]}
+      />,
+    );
+
+    expect(screen.getByRole("heading", { name: "Cronologia XP" })).toBeInTheDocument();
+    expect(screen.queryByText("Eventi immutabili registrati dal sistema.")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Chiudi cronologia XP" })).toBeInTheDocument();
+
+    const positiveBadge = screen.getByText("+5 XP");
+    const negativeBadge = screen.getByText("-3 XP");
+
+    expect(positiveBadge.closest("span")).toHaveClass("text-cyan-100");
+    expect(negativeBadge.closest("span")).toHaveClass("text-red-100");
+    expect(screen.getAllByText(formattedTimestamp)).toHaveLength(2);
+  });
+
+  it("shows only a loader beside the history title while loading", () => {
+    render(
+      <ProgressionXpHistorySidebar
+        open
+        status="loading"
+        onClose={vi.fn()}
+        history={[]}
+      />,
+    );
+
+    expect(screen.getByRole("status", { name: "Caricamento cronologia in corso" })).toBeInTheDocument();
+    expect(screen.queryByText("Caricamento cronologia...")).not.toBeInTheDocument();
   });
 });

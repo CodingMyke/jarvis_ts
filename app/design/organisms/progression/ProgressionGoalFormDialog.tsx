@@ -1,10 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { Fragment, useState } from "react";
 import { Button } from "@/app/design/atoms/shared/Button";
+import { TrashIcon } from "@/app/design/atoms/shared/icons/TrashIcon";
 import type { ProgressionGoalFilter } from "./ProgressionGoalList";
 
 export interface ProgressionGoalActionDraft {
+  id: string;
   title: string;
   description: string;
   frequencyType: "daily" | "specific_weekdays" | "weekly_count";
@@ -33,15 +35,51 @@ interface ProgressionGoalFormDialogProps {
   onSubmit: (value: ProgressionGoalDraft) => void;
 }
 
-const DEFAULT_ACTION: ProgressionGoalActionDraft = {
-  title: "",
-  description: "",
-  frequencyType: "daily",
-  weekdays: [1, 3, 5],
-  targetCount: 3,
-  xpPerCheckin: 0,
-  active: true,
-};
+function createDraftActionId(): string {
+  if (typeof globalThis.crypto?.randomUUID === "function") {
+    return globalThis.crypto.randomUUID();
+  }
+
+  const randomHex = () => Math.floor(Math.random() * 16).toString(16);
+  const suffix = Array.from({ length: 12 }, randomHex).join("");
+  return `00000000-0000-4000-8000-${suffix}`;
+}
+
+function createActionDraft(): ProgressionGoalActionDraft {
+  return {
+    id: createDraftActionId(),
+    title: "",
+    description: "",
+    frequencyType: "daily",
+    weekdays: [1, 3, 5],
+    targetCount: 3,
+    xpPerCheckin: 0,
+    active: true,
+  };
+}
+
+function PlusIcon() {
+  return (
+    <span aria-hidden="true" className="text-lg leading-none text-foreground">
+      +
+    </span>
+  );
+}
+
+function getFailurePenaltyXp(completionXp: number): number {
+  return Math.max(1, Math.floor(completionXp / 3));
+}
+
+const ACTION_GRID_COLUMNS =
+  "md:grid-cols-[minmax(0,1.55fr)_minmax(0,0.8fr)_minmax(0,0.55fr)_auto]";
+
+const ACTION_FIELD_CLASS_NAME =
+  "min-h-11 rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-sm "
+  + "text-foreground outline-none";
+
+const ACTION_HEADER_CLASS_NAME =
+  "sticky top-0 z-10 col-span-full grid gap-3 bg-[#11131a] px-3 py-2 text-[11px] "
+  + "font-semibold uppercase tracking-[0.22em] text-muted";
 
 const DEFAULT_DRAFT: ProgressionGoalDraft = {
   title: "",
@@ -102,6 +140,14 @@ function ProgressionGoalFormDialogBody({
   onSubmit,
 }: ProgressionGoalFormDialogBodyProps) {
   const [draft, setDraft] = useState<ProgressionGoalDraft>(() => normalizeDraft(initialValue, mode));
+  const isCreateMode = mode !== "edit";
+
+  function submitDraft(startNow: boolean) {
+    onSubmit({
+      ...draft,
+      startNow,
+    });
+  }
 
   return (
     <div
@@ -121,13 +167,6 @@ function ProgressionGoalFormDialogBody({
               Mantieni il focus su un obiettivo chiaro e sulle azioni ricorrenti essenziali.
             </p>
           </div>
-          <button
-            type="button"
-            className="rounded-full border border-white/10 px-3 py-1 text-sm text-muted"
-            onClick={onClose}
-          >
-            Chiudi
-          </button>
         </div>
 
         <div className="mt-5 grid gap-4 md:grid-cols-2">
@@ -149,6 +188,7 @@ function ProgressionGoalFormDialogBody({
               onChange={(event) => {
                 setDraft((current) => ({ ...current, deadline: event.target.value }));
               }}
+              style={{ colorScheme: "dark" }}
               className="w-full rounded-2xl border border-white/10 bg-black/20 px-3 py-2 text-foreground outline-none"
             />
           </label>
@@ -178,120 +218,139 @@ function ProgressionGoalFormDialogBody({
               className="w-full rounded-2xl border border-white/10 bg-black/20 px-3 py-2 text-foreground outline-none"
             />
           </label>
-          <label className="flex items-center gap-3 rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-muted">
-            <input
-              type="checkbox"
-              checked={draft.startNow}
-              onChange={(event) => {
-                setDraft((current) => ({ ...current, startNow: event.target.checked }));
-              }}
-            />
-            <span>Avvia subito</span>
-          </label>
         </div>
+
+        {draft.deadline && draft.completionXp > 0 ? (
+          <p className="mt-4 text-sm font-medium text-red-300">
+            Se fallisci questo obiettivo perderai{" "}
+            {getFailurePenaltyXp(draft.completionXp)} XP.
+          </p>
+        ) : null}
 
         <div className="mt-6 rounded-2xl border border-white/10 bg-black/20 p-4">
           <div className="flex items-center justify-between gap-3">
             <div>
               <p className="text-sm font-medium text-foreground">Azioni ricorrenti</p>
-              <p className="text-xs text-muted">La penalità in caso di fallimento usa gli XP di completamento.</p>
+              <p className="text-xs text-muted">
+                La penalità in caso di fallimento è un terzo degli XP di completamento.
+              </p>
             </div>
             <Button
               type="button"
               variant="secondary"
+              className="h-10 w-10 px-0"
+              aria-label="Aggiungi azione"
               onClick={() => {
                 setDraft((current) => ({
                   ...current,
-                  actions: [...current.actions, DEFAULT_ACTION],
+                  actions: [...current.actions, createActionDraft()],
                 }));
               }}
             >
-              Aggiungi azione
+              <PlusIcon />
             </Button>
           </div>
 
-          <div className="mt-4 space-y-3">
-            {draft.actions.map((action, index) => (
-              <div
-                key={`${action.title}-${index}`}
-                className="grid gap-3 rounded-2xl border border-white/8 bg-black/20 p-3 md:grid-cols-4"
-              >
-                <input
-                  value={action.title}
-                  placeholder="Titolo azione"
-                  onChange={(event) => {
-                    const title = event.target.value;
-                    setDraft((current) => ({
-                      ...current,
-                      actions: current.actions.map((entry, entryIndex) =>
-                        entryIndex === index ? { ...entry, title } : entry,
-                      ),
-                    }));
-                  }}
-                  className="rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-sm text-foreground outline-none"
-                />
-                <select
-                  value={action.frequencyType}
-                  onChange={(event) => {
-                    const frequencyType = event.target.value as ProgressionGoalActionDraft["frequencyType"];
-                    setDraft((current) => ({
-                      ...current,
-                      actions: current.actions.map((entry, entryIndex) =>
-                        entryIndex === index ? { ...entry, frequencyType } : entry,
-                      ),
-                    }));
-                  }}
-                  className="rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-sm text-foreground outline-none"
-                >
-                  <option value="daily">Daily</option>
-                  <option value="specific_weekdays">Specific weekdays</option>
-                  <option value="weekly_count">Weekly count</option>
-                </select>
-                <input
-                  type="number"
-                  min={0}
-                  value={action.xpPerCheckin}
-                  placeholder="XP"
-                  onChange={(event) => {
-                    const xpPerCheckin = Number(event.target.value || 0);
-                    setDraft((current) => ({
-                      ...current,
-                      actions: current.actions.map((entry, entryIndex) =>
-                        entryIndex === index ? { ...entry, xpPerCheckin } : entry,
-                      ),
-                    }));
-                  }}
-                  className="rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-sm text-foreground outline-none"
-                />
-                <Button
-                  type="button"
-                  variant="secondary"
-                  onClick={() => {
-                    setDraft((current) => ({
-                      ...current,
-                      actions: current.actions.filter((_, entryIndex) => entryIndex !== index),
-                    }));
-                  }}
-                >
-                  Rimuovi
-                </Button>
+          <div className="mt-4 max-h-80 overflow-y-auto pr-1">
+            <div className={`grid gap-3 ${ACTION_GRID_COLUMNS}`}>
+              <div className={`${ACTION_HEADER_CLASS_NAME} ${ACTION_GRID_COLUMNS}`}>
+                <span>Titolo</span>
+                <span>Ricorrenza</span>
+                <span>XP</span>
+                <span aria-hidden="true" />
               </div>
-            ))}
+              {draft.actions.map((action) => (
+                <Fragment key={action.id}>
+                  <input
+                    value={action.title}
+                    placeholder="Titolo azione"
+                    onChange={(event) => {
+                      const title = event.target.value;
+                      setDraft((current) => ({
+                        ...current,
+                        actions: current.actions.map((entry) =>
+                          entry.id === action.id ? { ...entry, title } : entry,
+                        ),
+                      }));
+                    }}
+                    className={ACTION_FIELD_CLASS_NAME}
+                  />
+                  <select
+                    value={action.frequencyType}
+                    onChange={(event) => {
+                      const frequencyType = event.target.value as ProgressionGoalActionDraft["frequencyType"];
+                      setDraft((current) => ({
+                        ...current,
+                        actions: current.actions.map((entry) =>
+                          entry.id === action.id ? { ...entry, frequencyType } : entry,
+                        ),
+                      }));
+                    }}
+                    className={ACTION_FIELD_CLASS_NAME}
+                  >
+                    <option value="daily">Giornaliera</option>
+                    <option value="specific_weekdays">Giorni specifici</option>
+                    <option value="weekly_count">Conteggio sett.</option>
+                  </select>
+                  <input
+                    type="number"
+                    min={0}
+                    value={action.xpPerCheckin}
+                    placeholder="XP"
+                    onChange={(event) => {
+                      const xpPerCheckin = Number(event.target.value || 0);
+                      setDraft((current) => ({
+                        ...current,
+                        actions: current.actions.map((entry) =>
+                          entry.id === action.id ? { ...entry, xpPerCheckin } : entry,
+                        ),
+                      }));
+                    }}
+                    className={ACTION_FIELD_CLASS_NAME}
+                  />
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    className="!p-1 text-red-300 hover:bg-red-500/10 hover:text-red-100"
+                    aria-label={`Rimuovi azione ${action.title || "senza titolo"}`}
+                    onClick={() => {
+                      setDraft((current) => ({
+                        ...current,
+                        actions: current.actions.filter((entry) => entry.id !== action.id),
+                      }));
+                    }}
+                  >
+                    <TrashIcon className="h-4 w-4" />
+                  </Button>
+                </Fragment>
+              ))}
+            </div>
           </div>
         </div>
 
-        <div className="mt-6 flex justify-end gap-3">
+        <div className="mt-6 flex flex-wrap justify-end gap-3">
           <Button type="button" variant="secondary" onClick={onClose}>
             Annulla
           </Button>
-          <Button
-            type="button"
-            onClick={() => {
-              onSubmit(draft);
-            }}
-          >
-            Salva
-          </Button>
+          {isCreateMode ? (
+            <>
+              <Button type="button" variant="secondary" onClick={() => submitDraft(true)}>
+                Crea e inizia
+              </Button>
+              <Button type="button" onClick={() => submitDraft(false)}>
+                Crea
+              </Button>
+            </>
+          ) : (
+            <Button
+              type="button"
+              onClick={() => {
+                onSubmit(draft);
+              }}
+            >
+              Salva
+            </Button>
+          )}
         </div>
       </div>
     </div>

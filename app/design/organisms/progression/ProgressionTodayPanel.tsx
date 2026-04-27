@@ -1,6 +1,6 @@
 "use client";
 
-import { Button } from "@/app/design/atoms/shared/Button";
+import { TodoCheckbox } from "@/app/design/atoms/tasks/TodoCheckbox";
 
 export interface ProgressionTodayActionItem {
   id: string;
@@ -31,40 +31,35 @@ function ProgressionActionList({
   }
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-2.5">
       {items.map((item) => (
         <article
           key={item.id}
-          className="rounded-2xl border border-white/8 bg-black/20 p-4"
+          className="rounded-2xl border border-white/8 bg-black/20 px-3 py-2.5"
         >
-          <div className="flex items-center justify-between gap-4">
-            <div>
-              <p className="text-sm font-medium text-foreground">{item.title}</p>
-              <p className="mt-1 text-xs text-muted">{item.goalTitle}</p>
+          <div className="flex items-start gap-3">
+            <TodoCheckbox
+              checked={item.checkinId !== null}
+              ariaLabel={
+                item.checkinId ? `Annulla ${item.title}` : `Completa ${item.title}`
+              }
+              onClick={() =>
+                item.checkinId ? onUndoCheckIn(item.checkinId) : onCheckIn(item.id)
+              }
+            />
+            <div className="min-w-0 flex-1">
+              <p
+                className={`text-sm font-medium leading-5 ${
+                  item.checkinId ? "text-muted line-through" : "text-foreground"
+                }`}
+              >
+                {item.title}
+              </p>
+              <p className="mt-0.5 text-xs text-muted">{item.goalTitle}</p>
             </div>
-            <span className="rounded-full bg-cyan-400/10 px-2.5 py-1 text-xs text-cyan-100">
+            <span className="mt-0.5 shrink-0 rounded-full bg-cyan-400/10 px-2.5 py-1 text-xs text-cyan-100">
               +{item.xpValue} XP
             </span>
-          </div>
-          <div className="mt-4 flex justify-end">
-            {item.checkinId ? (
-              <Button
-                type="button"
-                variant="secondary"
-                aria-label={`Annulla ${item.title}`}
-                onClick={() => onUndoCheckIn(item.checkinId as string)}
-              >
-                Annulla {item.title}
-              </Button>
-            ) : (
-              <Button
-                type="button"
-                aria-label={`Completa ${item.title}`}
-                onClick={() => onCheckIn(item.id)}
-              >
-                Completa {item.title}
-              </Button>
-            )}
           </div>
         </article>
       ))}

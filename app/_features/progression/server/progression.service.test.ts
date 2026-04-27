@@ -223,12 +223,98 @@ describe("progression.service", () => {
     });
   });
 
+  it("synchronizes recurring actions when a goal is updated", async () => {
+    const { updateProgressionGoal } = await import("./progression.service");
+    const keptActionId = actionId;
+    const removedActionId = "123e4567-e89b-42d3-a456-426614174099";
+    const newActionId = "123e4567-e89b-42d3-a456-426614174098";
+    const updatedGoal = { ...openGoal, title: "Learn piano faster" };
+    const keptAction = {
+      ...actionRow,
+      id: keptActionId,
+      title: "Practice arpeggios",
+      frequency_type: "weekly_count" as const,
+      frequency_config: { targetCount: 4 },
+      xp_per_checkin: 7,
+    };
+    const removedAction = {
+      ...actionRow,
+      id: removedActionId,
+      title: "Old habit",
+    };
+
+    const supabase = createSupabase([
+      { data: openGoal, error: null },
+      { data: updatedGoal, error: null },
+      { data: [keptAction, removedAction], error: null },
+      { data: [], error: null },
+      { data: [keptAction], error: null },
+      {
+        data: {
+          ...actionRow,
+          id: newActionId,
+          goal_id: goalId,
+          title: "Theory review",
+          frequency_type: "daily",
+          frequency_config: {},
+          xp_per_checkin: 2,
+        },
+        error: null,
+      },
+      {
+        data: {
+          ...removedAction,
+          deleted_at: "2026-04-29T10:00:00.000Z",
+        },
+        error: null,
+      },
+    ]);
+
+    await expect(
+      updateProgressionGoal(supabase as never, userId, {
+        id: goalId,
+        title: "Learn piano faster",
+        actions: [
+          {
+            id: keptActionId,
+            title: "Practice arpeggios",
+            description: "",
+            frequencyType: "weekly_count",
+            frequencyConfig: { targetCount: 4 },
+            xpPerCheckin: 7,
+            active: true,
+          },
+          {
+            title: "Theory review",
+            description: "",
+            frequencyType: "daily",
+            frequencyConfig: {},
+            xpPerCheckin: 2,
+            active: true,
+          },
+        ],
+      }),
+    ).resolves.toMatchObject({
+      success: true,
+      goal: { title: "Learn piano faster" },
+    });
+
+    expect(supabase.from).toHaveBeenNthCalledWith(1, "progression_goals");
+    expect(supabase.from).toHaveBeenNthCalledWith(2, "progression_goals");
+    expect(supabase.from).toHaveBeenNthCalledWith(3, "progression_actions");
+    expect(supabase.from).toHaveBeenNthCalledWith(4, "progression_checkins");
+    expect(supabase.from).toHaveBeenNthCalledWith(5, "progression_actions");
+    expect(supabase.from).toHaveBeenNthCalledWith(6, "progression_actions");
+    expect(supabase.from).toHaveBeenNthCalledWith(7, "progression_actions");
+  });
+
   it("delegates check-in create and undo to idempotent RPCs", async () => {
     const { createProgressionCheckin, undoProgressionCheckin } = await import(
       "./progression.service"
     );
     const supabase = createSupabase([
       { data: { timezone: "Europe/Rome" }, error: null },
+      { data: { id: actionId, title: "Practice scales" }, error: null },
       { data: { timezone: "Europe/Rome" }, error: null },
     ]);
     supabase.rpc
@@ -241,6 +327,13 @@ describe("progression.service", () => {
       success: true,
       checkin: { id: checkinId },
     });
+    expect(supabase.rpc).toHaveBeenNthCalledWith(
+      1,
+      "progression_create_checkin",
+      expect.objectContaining({
+        p_description: "Check-in: Practice scales",
+      }),
+    );
     await expect(
       undoProgressionCheckin(supabase as never, userId, checkinId),
     ).resolves.toMatchObject({
