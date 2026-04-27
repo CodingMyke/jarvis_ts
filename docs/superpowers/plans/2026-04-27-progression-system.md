@@ -203,7 +203,7 @@ Expected: commit succeeds.
 - Create: `app/_features/progression/server/progression-frequency.ts`
 - Create: matching `*.test.ts` files
 
-- [ ] **Step 1: Write leveling tests**
+- [x] **Step 1: Write leveling tests**
 
 Cover:
 
@@ -216,7 +216,7 @@ Run: `npm run test -- app/_features/progression/server/progression-leveling.test
 
 Expected: FAIL before implementation.
 
-- [ ] **Step 2: Implement leveling helpers**
+- [x] **Step 2: Implement leveling helpers**
 
 Public helpers:
 
@@ -226,7 +226,7 @@ Public helpers:
 
 Use `round(10 * level ** 1.5)` and keep level minimum at `1`.
 
-- [ ] **Step 3: Write date/frequency tests**
+- [x] **Step 3: Write date/frequency tests**
 
 Cover:
 
@@ -242,7 +242,7 @@ Run: `npm run test -- app/_features/progression/server/progression-frequency.tes
 
 Expected: FAIL before implementation.
 
-- [ ] **Step 4: Implement date/frequency helpers**
+- [x] **Step 4: Implement date/frequency helpers**
 
 Keep functions pure and independent from Supabase:
 
@@ -254,7 +254,7 @@ Keep functions pure and independent from Supabase:
 - `isActionDueToday(action, todayContext)`
 - `isWeeklyCountAvailable(action, weekCheckins)`
 
-- [ ] **Step 5: Run tests**
+- [x] **Step 5: Run tests**
 
 Run: `npm run test -- app/_features/progression/server/progression-leveling.test.ts`
 
@@ -264,7 +264,7 @@ Run: `npm run test -- app/_features/progression/server/progression-frequency.tes
 
 Expected: PASS.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 Run: `git add app/_features/progression/server`
 
