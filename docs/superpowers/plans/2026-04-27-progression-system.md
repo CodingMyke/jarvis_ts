@@ -521,7 +521,7 @@ Expected: commit succeeds.
 - Modify: `app/_features/navigation/app-shell-navigation.ts`
 - Modify: `app/design/app-shell-ui.test.tsx`
 
-- [ ] **Step 1: Write provider tests**
+- [x] **Step 1: Write provider tests**
 
 Cover:
 
@@ -534,7 +534,7 @@ Run: `npm run test -- app/design/templates/app-shell/AppShellProgressionProvider
 
 Expected: FAIL before implementation.
 
-- [ ] **Step 2: Implement app-shell progression provider**
+- [x] **Step 2: Implement app-shell progression provider**
 
 Provider should:
 
@@ -543,7 +543,7 @@ Provider should:
 - Call deadline status API.
 - Provide warning state to navigation.
 
-- [ ] **Step 3: Write sidebar/nav tests**
+- [x] **Step 3: Write sidebar/nav tests**
 
 Cover:
 
@@ -555,12 +555,12 @@ Run: `npm run test -- app/design/app-shell-ui.test.tsx`
 
 Expected: FAIL before implementation.
 
-- [ ] **Step 4: Update shell/navigation**
+- [x] **Step 4: Update shell/navigation**
 
 Set progression `enabled: true`. Wrap app shell with `AppShellProgressionProvider`.
 Render a small yellow warning indicator for the progression nav item.
 
-- [ ] **Step 5: Run tests**
+- [x] **Step 5: Run tests**
 
 Run: `npm run test -- app/design/templates/app-shell/AppShellProgressionProvider.test.tsx`
 
@@ -568,7 +568,7 @@ Run: `npm run test -- app/design/app-shell-ui.test.tsx`
 
 Expected: PASS.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 Run: `git add app/design app/_features/navigation`
 
