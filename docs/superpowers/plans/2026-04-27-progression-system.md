@@ -283,7 +283,7 @@ Expected: commit succeeds.
 - Create: tests for schemas and service
 - Create: `app/_features/progression/index.ts`
 
-- [ ] **Step 1: Write schema tests**
+- [x] **Step 1: Write schema tests**
 
 Cover trimming, required goal title, non-negative XP, valid status transitions, frequency
 configs, UUID validation, and deadline review payloads.
@@ -292,7 +292,7 @@ Run: `npm run test -- app/_features/progression/server/progression-route.schemas
 
 Expected: FAIL before implementation.
 
-- [ ] **Step 2: Implement Zod schemas**
+- [x] **Step 2: Implement Zod schemas**
 
 Export schemas for:
 
@@ -304,7 +304,7 @@ Export schemas for:
 - Deadline review action.
 - XP history query.
 
-- [ ] **Step 3: Write service tests**
+- [x] **Step 3: Write service tests**
 
 Mock Supabase builders and RPC calls. Cover:
 
@@ -321,7 +321,7 @@ Run: `npm run test -- app/_features/progression/server/progression.service.test.
 
 Expected: FAIL before implementation.
 
-- [ ] **Step 4: Implement service**
+- [x] **Step 4: Implement service**
 
 Public service API:
 
@@ -340,13 +340,13 @@ Public service API:
 
 Use stable result unions: `{ success: true; ... } | { success: false; error: string }`.
 
-- [ ] **Step 5: Run tests**
+- [x] **Step 5: Run tests**
 
 Run: `npm run test -- app/_features/progression/server`
 
 Expected: PASS.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 Run: `git add app/_features/progression`
 
