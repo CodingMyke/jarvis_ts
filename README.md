@@ -52,11 +52,24 @@ Authenticated users now land on a shared `/dashboard` shell.
    ```env
    NEXT_PUBLIC_GEMINI_API_KEY=your_gemini_api_key
    NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
-   NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+   NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY=your_supabase_publishable_key
    ```
    For Calendar and Tasks setup, see:
    - `app/_features/calendar/server/GOOGLE_CALENDAR_SETUP.md`
    - `app/_features/tasks/server/GOOGLE_TASKS_SETUP.md`
+
+### Supabase CLI Link (Required for Migrations/DDL)
+
+Run once in this repository:
+
+```bash
+supabase init
+supabase login --token <your_supabase_personal_access_token>
+supabase link --project-ref surbhsaedsnkcpswwann
+supabase db query --linked "select now();"
+```
+
+If `--linked` works, the project is ready for migrations, schema changes, and data operations from CLI.
 
 4. Start the development server:
    ```bash
