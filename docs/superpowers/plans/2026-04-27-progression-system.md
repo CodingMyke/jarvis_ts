@@ -434,7 +434,7 @@ Expected: commit succeeds.
 - Create: `app/_features/progression/state/progression.store.test.ts`
 - Modify: `app/_features/progression/index.ts`
 
-- [ ] **Step 1: Write client tests**
+- [x] **Step 1: Write client tests**
 
 Mock `fetch`. Cover success and error normalization for overview, profile ensure, goal
 mutations, check-ins, deadlines, and history.
@@ -443,7 +443,7 @@ Run: `npm run test -- app/_features/progression/lib/progression-client.test.ts`
 
 Expected: FAIL before implementation.
 
-- [ ] **Step 2: Implement client helpers**
+- [x] **Step 2: Implement client helpers**
 
 Export functions:
 
@@ -458,7 +458,7 @@ Export functions:
 - `resolveProgressionDeadline(input)`
 - `getProgressionXpHistory(options)`
 
-- [ ] **Step 3: Write store tests**
+- [x] **Step 3: Write store tests**
 
 Cover loading state, refresh, optimistic check-in toggle with rollback, goal mutations, history
 sidebar loading, and deadline review refresh.
@@ -467,7 +467,7 @@ Run: `npm run test -- app/_features/progression/state/progression.store.test.ts`
 
 Expected: FAIL before implementation.
 
-- [ ] **Step 4: Implement Zustand store**
+- [x] **Step 4: Implement Zustand store**
 
 Store state:
 
@@ -493,13 +493,13 @@ Store actions:
 - `resolveDeadline`
 - `loadHistory`
 
-- [ ] **Step 5: Run tests**
+- [x] **Step 5: Run tests**
 
 Run: `npm run test -- app/_features/progression/lib app/_features/progression/state`
 
 Expected: PASS.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 Run: `git add app/_features/progression`
 

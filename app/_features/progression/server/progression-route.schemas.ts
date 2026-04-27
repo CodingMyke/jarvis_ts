@@ -142,3 +142,8 @@ export type ProgressionCheckinCreateBody = z.infer<typeof progressionCheckinCrea
 export type ProgressionCheckinUndoBody = z.infer<typeof progressionCheckinUndoBodySchema>;
 export type ProgressionDeadlineReviewBody = z.infer<typeof progressionDeadlineReviewBodySchema>;
 export type ProgressionXpHistoryQuery = z.infer<typeof progressionXpHistoryQuerySchema>;
+
+export type ProgressionGoalCreateInput = z.input<typeof progressionGoalCreateBodySchema>;
+export type ProgressionGoalUpdateInput = z.input<typeof progressionGoalUpdateBodySchema>;
+export type ProgressionGoalOperationInput = z.input<typeof progressionGoalOperationBodySchema>;
+export type ProgressionDeadlineReviewInput = z.input<typeof progressionDeadlineReviewBodySchema>;
