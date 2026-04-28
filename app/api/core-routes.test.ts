@@ -524,7 +524,7 @@ describe("progression routes", () => {
       method: "POST",
       body: JSON.stringify({ timezone: "Europe/Rome" }),
     });
-    const goalsRequest = new NextRequest("http://localhost/api/progression/goals?status=all");
+    const goalsRequest = new NextRequest("http://localhost/api/progression/goals?id=goal-1");
     const createGoalRequest = new NextRequest("http://localhost/api/progression/goals", {
       method: "POST",
       body: JSON.stringify({ title: "Learn piano" }),

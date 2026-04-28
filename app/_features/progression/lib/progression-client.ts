@@ -15,13 +15,18 @@ export interface ProgressionOperationError {
 export interface ProgressionOverviewResponse {
   profile?: unknown;
   goals?: unknown[];
-  actions?: unknown[];
-  checkins?: unknown[];
+  todayItems?: unknown[];
+  weeklyItems?: unknown[];
   expiredGoals?: unknown[];
   xpHistory?: unknown[];
   todayLocalDate?: string;
   deadlineWarning?: boolean;
   [key: string]: unknown;
+}
+
+export interface ProgressionGoalDetailsResponse {
+  goal?: unknown;
+  actions?: unknown[];
 }
 
 export type ProgressionClientResult<T extends object> =
@@ -115,6 +120,17 @@ export async function getProgressionOverview(): Promise<
     (data) => data.overview ? { overview: data.overview } : null,
     "GET_PROGRESSION_FAILED",
     "Progression overview response is invalid.",
+  );
+}
+
+export async function getProgressionGoalDetails(
+  id: string,
+): Promise<ProgressionClientResult<ProgressionGoalDetailsResponse>> {
+  return runProgressionRequest(
+    fetch(`/api/progression/goals?id=${encodeURIComponent(id)}`),
+    (data) => (data.goal !== undefined ? { goal: data.goal, actions: data.actions ?? [] } : null),
+    "GOAL_DETAILS_LOAD_FAILED",
+    "Progression goal details response is invalid.",
   );
 }
 

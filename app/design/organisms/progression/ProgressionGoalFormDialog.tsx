@@ -31,7 +31,10 @@ interface ProgressionGoalFormDialogProps {
   open: boolean;
   mode: "create" | "edit" | "duplicate";
   initialValue: ProgressionGoalDraft | null;
+  status?: "idle" | "loading" | "ready" | "error";
+  errorMessage?: string | null;
   onClose: () => void;
+  onRetry?: () => void;
   onSubmit: (value: ProgressionGoalDraft) => void;
 }
 
@@ -106,11 +109,35 @@ export function ProgressionGoalFormDialog({
   open,
   mode,
   initialValue,
+  status = "ready",
+  errorMessage = null,
   onClose,
+  onRetry,
   onSubmit,
 }: ProgressionGoalFormDialogProps) {
   if (!open) {
     return null;
+  }
+
+  if (status === "loading" && !initialValue) {
+    return (
+      <DialogStateView
+        title={mode === "create" ? "Nuovo obiettivo" : mode === "edit" ? "Modifica obiettivo" : "Duplica obiettivo"}
+        message="Caricamento dettagli obiettivo..."
+        onClose={onClose}
+      />
+    );
+  }
+
+  if (status === "error" && !initialValue) {
+    return (
+      <DialogStateView
+        title={mode === "create" ? "Nuovo obiettivo" : mode === "edit" ? "Modifica obiettivo" : "Duplica obiettivo"}
+        message={errorMessage ?? "Impossibile caricare i dettagli dell'obiettivo."}
+        onClose={onClose}
+        onRetry={onRetry}
+      />
+    );
   }
 
   const dialogKey = `${mode}-${initialValue?.id ?? "new"}`;
@@ -123,6 +150,43 @@ export function ProgressionGoalFormDialog({
       onClose={onClose}
       onSubmit={onSubmit}
     />
+  );
+}
+
+function DialogStateView({
+  title,
+  message,
+  onClose,
+  onRetry,
+}: {
+  title: string;
+  message: string;
+  onClose: () => void;
+  onRetry?: () => void;
+}) {
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm"
+      onClick={onClose}
+    >
+      <div
+        className="w-full max-w-xl rounded-[28px] border border-white/15 bg-[#11131a] p-6"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <h3 className="text-xl font-semibold text-foreground">{title}</h3>
+        <p className="mt-3 text-sm text-muted">{message}</p>
+        <div className="mt-6 flex gap-3">
+          {onRetry ? (
+            <Button type="button" onClick={onRetry}>
+              Riprova
+            </Button>
+          ) : null}
+          <Button type="button" variant="secondary" onClick={onClose}>
+            Chiudi
+          </Button>
+        </div>
+      </div>
+    </div>
   );
 }
 

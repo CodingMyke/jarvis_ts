@@ -15,7 +15,7 @@ Authenticated users now land on a shared `/dashboard` shell.
   - **Memories**: episodic and semantic memories (Supabase), create/update/search/delete
   - **Session control**: end conversation, clear chat, disable assistant
 - **Conversation persistence**: Supabase-backed chat storage with compaction and semantic search (local storage is used as a client-side layer)
-- **Progression system**: Supabase-backed goals, recurring actions, daily check-ins, XP history, leveling, and deadline review in `/progression`
+- **Progression system**: Supabase-backed goals, recurring actions, server-rendered daily/weekly visibility, XP history, leveling, and deadline review in `/progression`
 - **Authentication**: Google OAuth via Supabase; memory/calendar/tasks routes are session-protected
 - **UI**: thin App Router entrypoints, feature boundaries, markdown chat rendering, voice orb, shared app shell (`/dashboard` + sibling sections), dashboard calendar + ToDo blocks (explicit empty/error states), progression workspace + deadline warning, standalone legacy `/assistant`, standalone `/setup/calendar`
 
@@ -141,7 +141,7 @@ npm run gen-supabase-types  # Regenerate Supabase TypeScript types
 
 - Pages, layouts, and routes stay thin and import through `app/_features`, `app/_shared`, and `app/_server`.
 - Shared authenticated navigation lives in `app/(app-shell)` and exposes `/dashboard`, `/projects`, `/academy`, `/reflections`, `/learning`, `/progression`, `/news`, and `/settings`.
-- The progression flow is owned by `app/_features/progression`, with Supabase RPC-backed XP/check-in mutations and a client workspace in `app/design/templates/progression`.
+- The progression flow is owned by `app/_features/progression`, with Supabase RPC-backed XP/check-in mutations, server-driven action visibility, on-demand goal details, and a client workspace in `app/design/templates/progression`.
 - `/assistant` stays available as a legacy standalone protected route and is not exposed in the main shell navigation.
 - `/setup/calendar` stays standalone + protected, discoverable from the `/settings` page (`Integrazioni` section).
 - API routes validate inputs with Zod and delegate business logic to feature handlers/services.

@@ -20,7 +20,6 @@ import {
   updateProgressionGoal,
   type ProgressionOverviewResponse,
 } from "../lib/progression-client";
-import { getLevelProgress } from "../server/progression-leveling";
 
 export type ProgressionStoreStatus = "idle" | "loading" | "ready" | "error";
 
@@ -63,226 +62,6 @@ function setOverviewState(
 
 function getErrorMessage(result: { errorMessage?: string; error?: string }): string {
   return result.errorMessage ?? result.error ?? "Progression operation failed.";
-}
-
-function asOverviewObject(
-  overview: ProgressionOverviewResponse | null,
-): Record<string, unknown> | null {
-  return overview && typeof overview === "object" ? overview : null;
-}
-
-function getActionById(
-  overview: ProgressionOverviewResponse | null,
-  actionId: string,
-): Record<string, unknown> | null {
-  const overviewObject = asOverviewObject(overview);
-  if (!overviewObject || !Array.isArray(overviewObject.actions)) {
-    return null;
-  }
-
-  return (
-    overviewObject.actions.find((action) => {
-      return (
-        typeof action === "object"
-        && action !== null
-        && "id" in action
-        && (action as Record<string, unknown>).id === actionId
-      );
-    }) as Record<string, unknown> | undefined
-  ) ?? null;
-}
-
-function getCheckinById(
-  overview: ProgressionOverviewResponse | null,
-  checkinId: string,
-): Record<string, unknown> | null {
-  const overviewObject = asOverviewObject(overview);
-  if (!overviewObject || !Array.isArray(overviewObject.checkins)) {
-    return null;
-  }
-
-  return (
-    overviewObject.checkins.find((checkin) => {
-      return (
-        typeof checkin === "object"
-        && checkin !== null
-        && "id" in checkin
-        && (checkin as Record<string, unknown>).id === checkinId
-      );
-    }) as Record<string, unknown> | undefined
-  ) ?? null;
-}
-
-function getCheckinXp(checkin: Record<string, unknown> | null): number {
-  return checkin ? Number(checkin.xp_awarded ?? 0) || 0 : 0;
-}
-
-function getProfileAndLevelProgress(
-  overview: ProgressionOverviewResponse | null,
-): {
-  profile: Record<string, unknown>;
-  levelProgress: ReturnType<typeof getLevelProgress>;
-} | null {
-  const overviewObject = asOverviewObject(overview);
-  if (!overviewObject || typeof overviewObject.profile !== "object" || overviewObject.profile === null) {
-    return null;
-  }
-
-  const profile = overviewObject.profile as Record<string, unknown>;
-  const totalXp = Number(profile.total_xp ?? 0) || 0;
-
-  return {
-    profile,
-    levelProgress: getLevelProgress(totalXp),
-  };
-}
-
-function adjustOverviewXp(
-  overview: ProgressionOverviewResponse | null,
-  xpDelta: number,
-): ProgressionOverviewResponse | null {
-  if (!overview || xpDelta === 0) {
-    return overview;
-  }
-
-  const current = getProfileAndLevelProgress(overview);
-  if (!current) {
-    return overview;
-  }
-
-  const totalXp = Math.max(current.levelProgress.totalXp + xpDelta, 0);
-  const levelProgress = getLevelProgress(totalXp);
-
-  return {
-    ...overview,
-    profile: {
-      ...current.profile,
-      total_xp: totalXp,
-      level: levelProgress.level,
-    },
-    levelProgress,
-  };
-}
-
-function withOptimisticCheckin(
-  overview: ProgressionOverviewResponse | null,
-  checkin: Record<string, unknown>,
-): ProgressionOverviewResponse | null {
-  if (!overview) {
-    return overview;
-  }
-
-  const checkinXp = getCheckinXp(checkin);
-
-  return adjustOverviewXp(
-    {
-      ...overview,
-      checkins: [...(overview.checkins ?? []), checkin],
-    },
-    checkinXp,
-  );
-}
-
-function withoutCheckin(
-  overview: ProgressionOverviewResponse | null,
-  checkinId: string,
-): ProgressionOverviewResponse | null {
-  if (!overview) {
-    return overview;
-  }
-
-  return {
-    ...overview,
-    checkins: (overview.checkins ?? []).filter((checkin) => {
-      return !(typeof checkin === "object" && checkin !== null && "id" in checkin
-        && checkin.id === checkinId);
-    }),
-  };
-}
-
-function withConfirmedCheckin(
-  overview: ProgressionOverviewResponse | null,
-  optimisticCheckinId: string,
-  checkin: Record<string, unknown>,
-): ProgressionOverviewResponse | null {
-  if (!overview) {
-    return overview;
-  }
-
-  const currentCheckins = Array.isArray(overview.checkins) ? overview.checkins : [];
-  const optimisticCheckin = getCheckinById(overview, optimisticCheckinId);
-  const optimisticXp = getCheckinXp(optimisticCheckin);
-  const confirmedXp = getCheckinXp(checkin);
-  const checkins = currentCheckins.some((value) => {
-    return (
-      typeof value === "object"
-      && value !== null
-      && "id" in value
-      && (value as Record<string, unknown>).id === optimisticCheckinId
-    );
-  })
-    ? currentCheckins.map((value) => {
-        if (
-          typeof value === "object"
-          && value !== null
-          && "id" in value
-          && (value as Record<string, unknown>).id === optimisticCheckinId
-        ) {
-          return checkin;
-        }
-
-        return value;
-      })
-    : [...currentCheckins, checkin];
-
-  return adjustOverviewXp(
-    {
-      ...overview,
-      checkins,
-    },
-    confirmedXp - optimisticXp,
-  );
-}
-
-function withRemovedCheckin(
-  overview: ProgressionOverviewResponse | null,
-  checkinId: string,
-): ProgressionOverviewResponse | null {
-  if (!overview) {
-    return overview;
-  }
-
-  const checkin = getCheckinById(overview, checkinId);
-  const checkinXp = getCheckinXp(checkin);
-
-  return adjustOverviewXp(withoutCheckin(overview, checkinId), -checkinXp);
-}
-
-function buildOptimisticCheckin(
-  overview: ProgressionOverviewResponse | null,
-  actionId: string,
-): Record<string, unknown> | null {
-  const overviewObject = asOverviewObject(overview);
-  const action = getActionById(overview, actionId);
-  const profile = overviewObject && typeof overviewObject.profile === "object"
-    && overviewObject.profile !== null
-    ? overviewObject.profile as Record<string, unknown>
-    : null;
-
-  if (!overviewObject || !action || !profile) {
-    return null;
-  }
-
-  return {
-    id: `optimistic-${actionId}`,
-    action_id: actionId,
-    goal_id: typeof action.goal_id === "string" ? action.goal_id : "",
-    local_date: typeof overviewObject.todayLocalDate === "string" ? overviewObject.todayLocalDate : "",
-    timezone: typeof profile.timezone === "string" ? profile.timezone : "UTC",
-    user_id: typeof profile.user_id === "string" ? profile.user_id : "",
-    xp_awarded: Number(action.xp_per_checkin ?? 0) || 0,
-    created_at: new Date().toISOString(),
-  };
 }
 
 export const useProgressionStore = create<ProgressionStoreState>((set, get) => ({
@@ -359,76 +138,30 @@ export const useProgressionStore = create<ProgressionStoreState>((set, get) => (
     return get().refresh();
   },
   checkIn: async (actionId) => {
-    const previousOverview = get().overview;
-    const optimisticCheckin = buildOptimisticCheckin(previousOverview, actionId);
-
-    if (optimisticCheckin) {
-      set((state) => ({
-        ...state,
-        overview: withOptimisticCheckin(state.overview, optimisticCheckin),
-        status: "ready",
-        error: null,
-      }));
-    } else {
-      set((state) => ({ ...state, status: "ready", error: null }));
-    }
-
     const result = await createProgressionCheckin(actionId);
     if (!result.success) {
       set((state) => ({
         ...state,
-        overview: previousOverview,
         status: "error",
         error: getErrorMessage(result),
       }));
       return false;
     }
 
-    if (optimisticCheckin) {
-      set((state) => ({
-        ...state,
-        overview: withConfirmedCheckin(
-          state.overview,
-          String(optimisticCheckin.id),
-          result.checkin as Record<string, unknown>,
-        ),
-        status: "ready",
-        error: null,
-      }));
-    } else {
-      set((state) => ({ ...state, status: "ready", error: null }));
-    }
-
-    return true;
+    return get().refresh();
   },
   undoCheckIn: async (checkinId) => {
-    const previousOverview = get().overview;
-    const optimisticCheckin = getCheckinById(previousOverview, checkinId);
-
-    if (optimisticCheckin) {
-      set((state) => ({
-        ...state,
-        overview: withRemovedCheckin(state.overview, checkinId),
-        status: "ready",
-        error: null,
-      }));
-    } else {
-      set((state) => ({ ...state, status: "ready", error: null }));
-    }
-
     const result = await undoProgressionCheckin(checkinId);
     if (!result.success) {
       set((state) => ({
         ...state,
-        overview: previousOverview,
         status: "error",
         error: getErrorMessage(result),
       }));
       return false;
     }
 
-    set((state) => ({ ...state, status: "ready", error: null }));
-    return true;
+    return get().refresh();
   },
   resolveDeadline: async (input) => {
     const result = await resolveProgressionDeadline(input);

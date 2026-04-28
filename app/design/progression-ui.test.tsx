@@ -21,14 +21,11 @@ interface MockOverview {
     xpRemainingForNextLevel: number;
   };
   goals: Array<Record<string, unknown>>;
-  actions: Array<Record<string, unknown>>;
-  checkins: Array<Record<string, unknown>>;
+  todayItems: Array<Record<string, unknown>>;
+  weeklyItems: Array<Record<string, unknown>>;
   expiredGoals: Array<Record<string, unknown>>;
   xpHistory: Array<Record<string, unknown>>;
   todayLocalDate: string;
-  isoWeekday: number;
-  weekStart: string;
-  weekEnd: string;
   deadlineWarning: boolean;
 }
 
@@ -97,58 +94,29 @@ function createOverview(): MockOverview {
         deadline_change_count: 1,
       },
     ],
-    actions: [
+    todayItems: [
       {
         id: "action-daily",
-        goal_id: "goal-in-progress",
         title: "Daily polish",
-        description: "Review the active UI card states.",
-        frequency_type: "daily",
-        frequency_config: {},
-        xp_per_checkin: 5,
-        active: true,
+        goalTitle: "Ship progression UI",
+        xpValue: 5,
+        checkinId: null,
       },
       {
         id: "action-done",
-        goal_id: "goal-in-progress",
         title: "Evening review",
-        description: "Undo path coverage.",
-        frequency_type: "daily",
-        frequency_config: {},
-        xp_per_checkin: 3,
-        active: true,
-      },
-      {
-        id: "action-weekly",
-        goal_id: "goal-in-progress",
-        title: "Weekly milestone",
-        description: "Complete the shared weekly target.",
-        frequency_type: "weekly_count",
-        frequency_config: { targetCount: 3 },
-        xp_per_checkin: 12,
-        active: true,
-      },
-      {
-        id: "action-completed-goal",
-        goal_id: "goal-completed",
-        title: "Closed action",
-        description: null,
-        frequency_type: "daily",
-        frequency_config: {},
-        xp_per_checkin: 2,
-        active: true,
+        goalTitle: "Ship progression UI",
+        xpValue: 3,
+        checkinId: "checkin-done",
       },
     ],
-    checkins: [
+    weeklyItems: [
       {
-        id: "checkin-done",
-        action_id: "action-done",
-        local_date: "2026-04-29",
-      },
-      {
-        id: "checkin-weekly-1",
-        action_id: "action-weekly",
-        local_date: "2026-04-27",
+        id: "action-weekly",
+        title: "Weekly milestone",
+        goalTitle: "Ship progression UI",
+        xpValue: 12,
+        checkinId: null,
       },
     ],
     expiredGoals: [],
@@ -161,9 +129,6 @@ function createOverview(): MockOverview {
       },
     ],
     todayLocalDate: "2026-04-29",
-    isoWeekday: 3,
-    weekStart: "2026-04-27",
-    weekEnd: "2026-05-03",
     deadlineWarning: false,
   };
 }
@@ -272,8 +237,8 @@ describe("progression page UI", () => {
     progressionUiMocks.storeState.overview = {
       ...createOverview(),
       goals: [],
-      actions: [],
-      checkins: [],
+      todayItems: [],
+      weeklyItems: [],
     };
 
     render(<ProgressionPage />);

@@ -7,6 +7,7 @@ import {
   createProgressionGoal,
   duplicateProgressionGoal,
   ensureProgressionProfile,
+  getProgressionGoalDetails,
   getProgressionOverview,
   getProgressionXpHistory,
   resolveExpiredProgressionGoal,
@@ -21,6 +22,7 @@ import {
   progressionDeadlineReviewBodySchema,
   progressionGoalCreateBodySchema,
   progressionGoalDeleteBodySchema,
+  progressionGoalDetailsQuerySchema,
   progressionGoalOperationBodySchema,
   progressionGoalUpdateBodySchema,
   progressionOverviewQuerySchema,
@@ -65,6 +67,36 @@ export async function handleGetProgressionOverview(
   });
 }
 
+export async function handleGetProgressionGoalDetails(
+  auth: AuthContext,
+  searchParams: URLSearchParams,
+) {
+  const parsed = progressionGoalDetailsQuerySchema.safeParse({
+    id: searchParams.get("id") ?? undefined,
+  });
+
+  if (!parsed.success) {
+    return jsonError(400, {
+      error: "INVALID_QUERY",
+      message: getZodErrorMessage(parsed.error),
+    });
+  }
+
+  const result = await getProgressionGoalDetails(auth.supabase, auth.userId, parsed.data.id);
+  if (!result.success) {
+    return jsonError(500, {
+      error: "EXECUTION_ERROR",
+      message: result.error,
+    });
+  }
+
+  return jsonOk({
+    success: true,
+    goal: result.details.goal,
+    actions: result.details.actions,
+  });
+}
+
 export async function handleEnsureProgressionProfile(auth: AuthContext, body: unknown) {
   const parsed = progressionProfileBodySchema.safeParse(body);
   if (!parsed.success) {
@@ -92,21 +124,7 @@ export async function handleGetProgressionGoals(
   auth: AuthContext,
   searchParams: URLSearchParams,
 ) {
-  const response = await handleGetProgressionOverview(auth, searchParams);
-  if (response.status !== 200) {
-    return response;
-  }
-
-  const body = await response.json();
-  const goals = Array.isArray(body.overview?.goals) ? body.overview.goals : [];
-  const actions = Array.isArray(body.overview?.actions) ? body.overview.actions : [];
-
-  return jsonOk({
-    success: true,
-    goals,
-    actions,
-    count: goals.length,
-  });
+  return handleGetProgressionGoalDetails(auth, searchParams);
 }
 
 export async function handleCreateProgressionGoal(auth: AuthContext, body: unknown) {

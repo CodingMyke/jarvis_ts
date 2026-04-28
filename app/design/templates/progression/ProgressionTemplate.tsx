@@ -109,7 +109,10 @@ export function ProgressionTemplate() {
         open={workspace.isFormOpen}
         mode={workspace.formMode}
         initialValue={workspace.formInitialValue}
+        status={workspace.formStatus}
+        errorMessage={workspace.formError}
         onClose={workspace.closeGoalDialog}
+        onRetry={workspace.retryGoalFormLoad}
         onSubmit={workspace.submitGoalForm}
       />
 

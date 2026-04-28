@@ -160,8 +160,34 @@ describe("progression.service", () => {
       overview: {
         todayLocalDate: "2026-04-29",
         goals: [{ id: goalId }],
-        actions: [{ id: actionId }],
+        todayItems: [
+          {
+            id: actionId,
+            goalTitle: "Learn piano",
+            xpValue: 5,
+            checkinId,
+          },
+        ],
+        weeklyItems: [],
         deadlineWarning: true,
+      },
+    });
+  });
+
+  it("loads goal details with the goal actions", async () => {
+    const { getProgressionGoalDetails } = await import("./progression.service");
+    const supabase = createSupabase([
+      { data: openGoal, error: null },
+      { data: [actionRow], error: null },
+    ]);
+
+    await expect(
+      getProgressionGoalDetails(supabase as never, userId, goalId),
+    ).resolves.toMatchObject({
+      success: true,
+      details: {
+        goal: { id: goalId },
+        actions: [{ id: actionId }],
       },
     });
   });

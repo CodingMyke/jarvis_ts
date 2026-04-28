@@ -82,6 +82,31 @@ export function getWeekRangeForLocalDate(localDate: string): { start: string; en
   };
 }
 
+export function getMillisecondsUntilNextLocalMidnight(
+  timezone: string,
+  now: Date = new Date(),
+): number {
+  const currentLocalDate = getLocalDateForTimezone(now, timezone);
+  const currentTime = now.getTime();
+  let lowerBound = currentTime;
+  let upperBound = currentTime + 36 * UTC_DAY_MS;
+
+  while (getLocalDateForTimezone(new Date(upperBound), timezone) === currentLocalDate) {
+    upperBound += UTC_DAY_MS;
+  }
+
+  while (upperBound - lowerBound > 1000) {
+    const midpoint = Math.floor((lowerBound + upperBound) / 2);
+    if (getLocalDateForTimezone(new Date(midpoint), timezone) === currentLocalDate) {
+      lowerBound = midpoint;
+    } else {
+      upperBound = midpoint;
+    }
+  }
+
+  return Math.max(upperBound - currentTime, 1000);
+}
+
 export function isDeadlineExpired(
   deadline: string | null,
   todayLocalDate: string,

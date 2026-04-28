@@ -6,12 +6,14 @@ import {
   getLocalDateForTimezone,
   getWeekRangeForLocalDate,
 } from "./progression-dates";
+import { isActionDueToday, isWeeklyCountAvailable } from "./progression-frequency";
 import type {
   ProgressionActionRow,
   ProgressionCheckinRow,
   ProgressionGoalRow,
   ProgressionProfileRow,
   ProgressionXpHistoryRow,
+  ProgressionVisibleActionItem,
 } from "./progression.types";
 import type {
   ProgressionDeadlineReviewBody,
@@ -29,16 +31,18 @@ type ProgressionResult<T extends object = object> =
 export interface ProgressionOverview {
   profile: ProgressionProfileRow;
   goals: ProgressionGoalRow[];
-  actions: ProgressionActionRow[];
-  checkins: ProgressionCheckinRow[];
+  todayItems: ProgressionVisibleActionItem[];
+  weeklyItems: ProgressionVisibleActionItem[];
   expiredGoals: ProgressionGoalRow[];
   xpHistory: ProgressionXpHistoryRow[];
   todayLocalDate: string;
-  isoWeekday: number;
-  weekStart: string;
-  weekEnd: string;
   deadlineWarning: boolean;
   levelProgress: ReturnType<typeof getLevelProgress>;
+}
+
+export interface ProgressionGoalDetails {
+  goal: ProgressionGoalRow;
+  actions: ProgressionActionRow[];
 }
 
 function getErrorMessage(error: unknown, fallback: string): string {
@@ -63,6 +67,30 @@ function getNowIso(): string {
 function getActionDescription(description: string | null | undefined): string | null {
   const trimmed = description?.trim();
   return trimmed ? trimmed : null;
+}
+
+function getCheckinIdForAction(
+  checkins: ProgressionCheckinRow[],
+  actionId: string,
+  localDate: string,
+): string | null {
+  const checkin = checkins.find((entry) => entry.action_id === actionId && entry.local_date === localDate);
+  return checkin ? checkin.id : null;
+}
+
+function buildVisibleActionItem(
+  action: ProgressionActionRow,
+  goal: ProgressionGoalRow,
+  checkins: ProgressionCheckinRow[],
+  localDate: string,
+): ProgressionVisibleActionItem {
+  return {
+    id: action.id,
+    title: action.title,
+    goalTitle: goal.title,
+    xpValue: action.xp_per_checkin,
+    checkinId: getCheckinIdForAction(checkins, action.id, localDate),
+  };
 }
 
 async function getProfile(
@@ -278,22 +306,104 @@ export async function getProgressionOverview(
   }
 
   const expiredGoals = (expiredData ?? []) as ProgressionGoalRow[];
+  const actions = (actionsData ?? []) as ProgressionActionRow[];
+  const checkins = (checkinsData ?? []) as ProgressionCheckinRow[];
+  const weekCheckins = checkins.map((checkin) => ({
+    actionId: checkin.action_id,
+    localDate: checkin.local_date,
+  }));
+  const goalsById = new Map(goals.map((goal) => [goal.id, goal]));
+  const todayItems: ProgressionVisibleActionItem[] = [];
+  const weeklyItems: ProgressionVisibleActionItem[] = [];
+
+  for (const action of actions) {
+    const goal = goalsById.get(action.goal_id);
+    if (!goal || goal.status !== "in_progress" || !action.active) {
+      continue;
+    }
+
+    const item = buildVisibleActionItem(action, goal, checkins, todayLocalDate);
+
+    if (action.frequency_type === "weekly_count") {
+      if (
+        isWeeklyCountAvailable(
+          {
+            id: action.id,
+            frequencyType: action.frequency_type as "weekly_count",
+            frequencyConfig: action.frequency_config,
+            active: action.active,
+          },
+          weekCheckins,
+        )
+      ) {
+        weeklyItems.push(item);
+      }
+      continue;
+    }
+
+    if (
+      isActionDueToday(
+        {
+          id: action.id,
+          frequencyType: action.frequency_type as "daily" | "specific_weekdays",
+          frequencyConfig: action.frequency_config,
+          active: action.active,
+        },
+        {
+          todayLocalDate,
+          isoWeekday,
+          weekStart,
+          weekEnd,
+        },
+        weekCheckins,
+      )
+    ) {
+      todayItems.push(item);
+    }
+  }
 
   return {
     success: true,
     overview: {
       profile,
       goals,
-      actions: (actionsData ?? []) as ProgressionActionRow[],
-      checkins: (checkinsData ?? []) as ProgressionCheckinRow[],
+      todayItems,
+      weeklyItems,
       expiredGoals,
       xpHistory: (historyData ?? []) as ProgressionXpHistoryRow[],
       todayLocalDate,
-      isoWeekday,
-      weekStart,
-      weekEnd,
       deadlineWarning: expiredGoals.length > 0,
       levelProgress: getLevelProgress(profile.total_xp),
+    },
+  };
+}
+
+export async function getProgressionGoalDetails(
+  supabase: ProgressionSupabase,
+  userId: string,
+  goalId: string,
+): Promise<ProgressionResult<{ details: ProgressionGoalDetails }>> {
+  const goalResult = await getGoalById(supabase, userId, goalId);
+  if (!goalResult.success) {
+    return goalResult;
+  }
+
+  const { data: actionsData, error: actionsError } = await supabase
+    .from("progression_actions")
+    .select("*")
+    .eq("user_id", userId)
+    .eq("goal_id", goalId)
+    .order("created_at", { ascending: true });
+
+  if (actionsError) {
+    return { success: false, error: getErrorMessage(actionsError, "Action load failed.") };
+  }
+
+  return {
+    success: true,
+    details: {
+      goal: goalResult.goal,
+      actions: (actionsData ?? []) as ProgressionActionRow[],
     },
   };
 }

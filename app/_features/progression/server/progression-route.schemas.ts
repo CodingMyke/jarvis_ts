@@ -28,6 +28,10 @@ export const progressionOverviewQuerySchema = z.object({
   today: dateOnlySchema.optional(),
 });
 
+export const progressionGoalDetailsQuerySchema = z.object({
+  id: uuidSchema,
+});
+
 export const progressionRecurringActionInputSchema = z.discriminatedUnion("frequencyType", [
   z.object({
     id: uuidSchema.optional(),
@@ -134,6 +138,7 @@ export const progressionXpHistoryQuerySchema = z.object({
 
 export type ProgressionProfileBody = z.infer<typeof progressionProfileBodySchema>;
 export type ProgressionOverviewQuery = z.infer<typeof progressionOverviewQuerySchema>;
+export type ProgressionGoalDetailsQuery = z.infer<typeof progressionGoalDetailsQuerySchema>;
 export type ProgressionGoalCreateBody = z.infer<typeof progressionGoalCreateBodySchema>;
 export type ProgressionGoalUpdateBody = z.infer<typeof progressionGoalUpdateBodySchema>;
 export type ProgressionGoalOperationBody = z.infer<typeof progressionGoalOperationBodySchema>;

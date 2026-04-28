@@ -6,6 +6,7 @@ const serviceMocks = vi.hoisted(() => ({
   createProgressionGoal: vi.fn(),
   duplicateProgressionGoal: vi.fn(),
   ensureProgressionProfile: vi.fn(),
+  getProgressionGoalDetails: vi.fn(),
   getProgressionOverview: vi.fn(),
   getProgressionXpHistory: vi.fn(),
   resolveExpiredProgressionGoal: vi.fn(),
@@ -25,7 +26,7 @@ import {
   handleDeleteProgressionGoal,
   handleEnsureProgressionProfile,
   handleGetProgressionDeadlines,
-  handleGetProgressionGoals,
+  handleGetProgressionGoalDetails,
   handleGetProgressionOverview,
   handleGetProgressionXpHistory,
   handleResolveProgressionDeadline,
@@ -115,12 +116,15 @@ describe("progression route handlers", () => {
     });
   });
 
-  it("handles goal list, updates, operations and deletes", async () => {
-    serviceMocks.getProgressionOverview.mockResolvedValueOnce({
+  it("handles goal details, updates, operations and deletes", async () => {
+    serviceMocks.getProgressionGoalDetails.mockResolvedValueOnce({
       success: true,
-      overview: { goals: [{ id: goalId }], actions: [] },
+      details: {
+        goal: { id: goalId },
+        actions: [{ id: actionId }],
+      },
     });
-    const list = await handleGetProgressionGoals(auth, new URLSearchParams("status=all"));
+    const details = await handleGetProgressionGoalDetails(auth, new URLSearchParams(`id=${goalId}`));
 
     serviceMocks.updateProgressionGoal.mockResolvedValueOnce({
       success: true,
@@ -146,7 +150,11 @@ describe("progression route handlers", () => {
     });
     const deleted = await handleDeleteProgressionGoal(auth, {}, new URLSearchParams(`id=${goalId}`));
 
-    await expect(list.json()).resolves.toMatchObject({ success: true, count: 1 });
+    await expect(details.json()).resolves.toMatchObject({
+      success: true,
+      goal: { id: goalId },
+      actions: [{ id: actionId }],
+    });
     await expect(update.json()).resolves.toMatchObject({ success: true, goal: { id: goalId } });
     await expect(complete.json()).resolves.toMatchObject({
       success: true,

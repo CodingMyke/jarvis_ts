@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   getIsoWeekdayForTimezone,
   getLocalDateForTimezone,
+  getMillisecondsUntilNextLocalMidnight,
   getWeekRangeForLocalDate,
   isDeadlineExpired,
 } from "./progression-dates";
@@ -30,5 +31,20 @@ describe("progression dates", () => {
     expect(isDeadlineExpired(null, "2026-04-28")).toBe(false);
     expect(isDeadlineExpired("2026-04-28", "2026-04-28")).toBe(false);
     expect(isDeadlineExpired("2026-04-28", "2026-04-29")).toBe(true);
+  });
+
+  it("calculates the delay until the next local midnight", () => {
+    expect(
+      getMillisecondsUntilNextLocalMidnight(
+        "UTC",
+        new Date("2026-04-29T23:59:30.000Z"),
+      ),
+    ).toBeGreaterThanOrEqual(29000);
+    expect(
+      getMillisecondsUntilNextLocalMidnight(
+        "UTC",
+        new Date("2026-04-29T23:59:30.000Z"),
+      ),
+    ).toBeLessThanOrEqual(31000);
   });
 });

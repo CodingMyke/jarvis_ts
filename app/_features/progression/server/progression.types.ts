@@ -9,6 +9,14 @@ export type ProgressionActionRow = Tables<"progression_actions">;
 export type ProgressionCheckinRow = Tables<"progression_checkins">;
 export type ProgressionXpHistoryRow = Tables<"progression_xp_history">;
 
+export interface ProgressionVisibleActionItem {
+  id: string;
+  title: string;
+  goalTitle: string;
+  xpValue: number;
+  checkinId: string | null;
+}
+
 export interface ProgressionLevelProgress {
   level: number;
   totalXp: number;

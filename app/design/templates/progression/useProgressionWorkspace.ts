@@ -1,14 +1,10 @@
 "use client";
 
-import { startTransition, useEffect, useState } from "react";
-import { getLevelProgress } from "@/app/_features/progression/server/progression-leveling";
-import {
-  isActionDueToday,
-  isWeeklyCountAvailable,
-  type ProgressionCheckinSummary,
-} from "@/app/_features/progression/server/progression-frequency";
-import type { Json } from "@/app/_server/supabase/database.types";
+import { startTransition, useEffect, useRef, useState } from "react";
 import { useProgressionStore } from "@/app/_features/progression/state/progression.store";
+import { getMillisecondsUntilNextLocalMidnight } from "@/app/_features/progression/server/progression-dates";
+import { getLevelProgress } from "@/app/_features/progression/server/progression-leveling";
+import { getProgressionGoalDetails } from "@/app/_features/progression/lib/progression-client";
 import type {
   ProgressionGoalActionDraft,
   ProgressionGoalDraft,
@@ -52,21 +48,14 @@ interface GoalRecord {
   deadlineChangeCount: number;
 }
 
-interface ActionRecord {
+interface GoalDetailActionRecord {
   id: string;
-  goalId: string;
   title: string;
   description: string | null;
   frequencyType: "daily" | "specific_weekdays" | "weekly_count";
-  frequencyConfig: Json;
+  frequencyConfig: Record<string, unknown>;
   xpPerCheckin: number;
   active: boolean;
-}
-
-interface CheckinRecord {
-  id: string;
-  actionId: string;
-  localDate: string;
 }
 
 interface ProgressionWorkspaceResult {
@@ -75,6 +64,8 @@ interface ProgressionWorkspaceResult {
   filteredGoals: ProgressionGoalListItem[];
   formInitialValue: ProgressionGoalDraft | null;
   formMode: "create" | "edit" | "duplicate";
+  formStatus: "idle" | "loading" | "ready" | "error";
+  formError: string | null;
   history: ProgressionHistoryItem[];
   historyOpen: boolean;
   historyStatus: "idle" | "loading" | "ready" | "error";
@@ -89,6 +80,7 @@ interface ProgressionWorkspaceResult {
   openDuplicateGoal: (goalId: string) => void;
   deleteGoal: (goalId: string) => void;
   closeGoalDialog: () => void;
+  retryGoalFormLoad: () => void;
   submitGoalForm: (value: ProgressionGoalDraft) => void;
   setSelectedFilter: (filter: ProgressionGoalFilter) => void;
   retry: () => void;
@@ -120,6 +112,25 @@ function asNumber(value: unknown, fallback = 0): number {
   return typeof value === "number" && Number.isFinite(value) ? value : fallback;
 }
 
+function normalizeVisibleItems(values: unknown[] | undefined): ProgressionTodayActionItem[] {
+  return (values ?? [])
+    .map((value) => {
+      const record = asObject(value);
+      if (!record) {
+        return null;
+      }
+
+      return {
+        id: asString(record.id),
+        title: asString(record.title),
+        goalTitle: asString(record.goalTitle),
+        xpValue: asNumber(record.xpValue),
+        checkinId: asNullableString(record.checkinId),
+      };
+    })
+    .filter((value): value is ProgressionTodayActionItem => value !== null && value.id.length > 0);
+}
+
 function normalizeGoals(values: unknown[] | undefined): GoalRecord[] {
   return (values ?? [])
     .map((value) => {
@@ -141,7 +152,7 @@ function normalizeGoals(values: unknown[] | undefined): GoalRecord[] {
     .filter((value): value is GoalRecord => value !== null && value.id.length > 0);
 }
 
-function normalizeActions(values: unknown[] | undefined): ActionRecord[] {
+function normalizeGoalDetailActions(values: unknown[] | undefined): GoalDetailActionRecord[] {
   return (values ?? [])
     .map((value) => {
       const record = asObject(value);
@@ -151,33 +162,15 @@ function normalizeActions(values: unknown[] | undefined): ActionRecord[] {
 
       return {
         id: asString(record.id),
-        goalId: asString(record.goal_id),
         title: asString(record.title),
         description: asNullableString(record.description),
-        frequencyType: asString(record.frequency_type, "daily") as ActionRecord["frequencyType"],
-        frequencyConfig: (record.frequency_config ?? {}) as Json,
+        frequencyType: asString(record.frequency_type, "daily") as GoalDetailActionRecord["frequencyType"],
+        frequencyConfig: asObject(record.frequency_config) ?? {},
         xpPerCheckin: asNumber(record.xp_per_checkin),
         active: record.active !== false,
       };
     })
-    .filter((value): value is ActionRecord => value !== null && value.id.length > 0);
-}
-
-function normalizeCheckins(values: unknown[] | undefined): CheckinRecord[] {
-  return (values ?? [])
-    .map((value) => {
-      const record = asObject(value);
-      if (!record) {
-        return null;
-      }
-
-      return {
-        id: asString(record.id),
-        actionId: asString(record.action_id),
-        localDate: asString(record.local_date),
-      };
-    })
-    .filter((value): value is CheckinRecord => value !== null && value.id.length > 0);
+    .filter((value): value is GoalDetailActionRecord => value !== null && value.id.length > 0);
 }
 
 function normalizeHistory(values: unknown[]): ProgressionHistoryItem[] {
@@ -209,7 +202,7 @@ function toGoalListItems(goals: GoalRecord[]): ProgressionGoalListItem[] {
   }));
 }
 
-function toGoalDraft(goal: GoalRecord, actions: ActionRecord[]): ProgressionGoalDraft {
+function toGoalDraft(goal: GoalRecord, actions: GoalDetailActionRecord[]): ProgressionGoalDraft {
   return {
     id: goal.id,
     title: goal.title,
@@ -219,7 +212,7 @@ function toGoalDraft(goal: GoalRecord, actions: ActionRecord[]): ProgressionGoal
     startNow: goal.status === "in_progress",
     status: goal.status,
     actions: actions.map((action) => {
-      const frequencyConfig = asObject(action.frequencyConfig) ?? {};
+      const frequencyConfig = action.frequencyConfig;
       return {
         id: action.id,
         title: action.title,
@@ -239,6 +232,7 @@ function toGoalDraft(goal: GoalRecord, actions: ActionRecord[]): ProgressionGoal
 function toActionInput(action: ProgressionGoalActionDraft) {
   if (action.frequencyType === "specific_weekdays") {
     return {
+      id: action.id,
       title: action.title,
       description: action.description || null,
       frequencyType: action.frequencyType,
@@ -250,6 +244,7 @@ function toActionInput(action: ProgressionGoalActionDraft) {
 
   if (action.frequencyType === "weekly_count") {
     return {
+      id: action.id,
       title: action.title,
       description: action.description || null,
       frequencyType: action.frequencyType,
@@ -260,6 +255,7 @@ function toActionInput(action: ProgressionGoalActionDraft) {
   }
 
   return {
+    id: action.id,
     title: action.title,
     description: action.description || null,
     frequencyType: action.frequencyType,
@@ -291,6 +287,10 @@ export function useProgressionWorkspace(): ProgressionWorkspaceResult {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [formMode, setFormMode] = useState<"create" | "edit" | "duplicate">("create");
   const [formInitialValue, setFormInitialValue] = useState<ProgressionGoalDraft | null>(null);
+  const [formStatus, setFormStatus] = useState<"idle" | "loading" | "ready" | "error">("idle");
+  const [formError, setFormError] = useState<string | null>(null);
+  const [requestedGoalId, setRequestedGoalId] = useState<string | null>(null);
+  const formRequestIdRef = useRef(0);
 
   useEffect(() => {
     if (!initialized && status === "idle") {
@@ -299,8 +299,8 @@ export function useProgressionWorkspace(): ProgressionWorkspaceResult {
   }, [initialized, refresh, status]);
 
   const goals = normalizeGoals(overview?.goals as unknown[] | undefined);
-  const actions = normalizeActions(overview?.actions as unknown[] | undefined);
-  const checkins = normalizeCheckins(overview?.checkins as unknown[] | undefined);
+  const todayItems = normalizeVisibleItems(overview?.todayItems as unknown[] | undefined);
+  const weeklyItems = normalizeVisibleItems(overview?.weeklyItems as unknown[] | undefined);
   const history = normalizeHistory(
     historyValues.length > 0 ? historyValues : ((overview?.xpHistory as unknown[]) ?? []),
   );
@@ -317,83 +317,26 @@ export function useProgressionWorkspace(): ProgressionWorkspaceResult {
       }
     : getLevelProgress(totalXp);
 
-  const goalsById = new Map(goals.map((goal) => [goal.id, goal]));
-  const actionsByGoalId = actions.reduce<Map<string, ActionRecord[]>>((map, action) => {
-    const current = map.get(action.goalId) ?? [];
-    current.push(action);
-    map.set(action.goalId, current);
-    return map;
-  }, new Map());
+  const overviewProfile = asObject(overview?.profile);
+  const profileTimezone = asString(overviewProfile?.timezone, "UTC");
 
-  const todayLocalDate = asString(overview?.todayLocalDate, "");
-  const todayContext = {
-    todayLocalDate,
-    isoWeekday: asNumber(overview?.isoWeekday, 1),
-    weekStart: asString(overview?.weekStart, todayLocalDate),
-    weekEnd: asString(overview?.weekEnd, todayLocalDate),
-  };
-  const weekCheckins: ProgressionCheckinSummary[] = checkins.map((checkin) => ({
-    actionId: checkin.actionId,
-    localDate: checkin.localDate,
-  }));
-
-  const todayItems: ProgressionTodayActionItem[] = [];
-  const weeklyItems: ProgressionTodayActionItem[] = [];
-
-  actions.forEach((action) => {
-    const goal = goalsById.get(action.goalId);
-    if (!goal || goal.status !== "in_progress" || !action.active) {
+  useEffect(() => {
+    if (!overview || status !== "ready") {
       return;
     }
 
-    const todayCheckin = checkins.find(
-      (checkin) => checkin.actionId === action.id && checkin.localDate === todayContext.todayLocalDate,
-    );
-
-    const item = {
-      id: action.id,
-      title: action.title,
-      goalTitle: goal.title,
-      xpValue: action.xpPerCheckin,
-      checkinId: todayCheckin?.id ?? null,
-    };
-
-    if (action.frequencyType === "weekly_count") {
-      if (
-        isWeeklyCountAvailable(
-          {
-            id: action.id,
-            frequencyType: action.frequencyType,
-            frequencyConfig: action.frequencyConfig,
-            active: action.active,
-          },
-          weekCheckins,
-        )
-      ) {
-        weeklyItems.push(item);
+    let cancelled = false;
+    const timeoutId = window.setTimeout(() => {
+      if (!cancelled) {
+        void refresh();
       }
-      return;
-    }
+    }, getMillisecondsUntilNextLocalMidnight(profileTimezone));
 
-    if (
-      isActionDueToday(
-        {
-          id: action.id,
-          frequencyType: action.frequencyType,
-          frequencyConfig: action.frequencyConfig,
-          active: action.active,
-        },
-        todayContext,
-        weekCheckins,
-      )
-    ) {
-      todayItems.push(item);
-    }
-  });
-
-  const filteredGoals = toGoalListItems(
-    goals.filter((goal) => goal.status === selectedFilter),
-  );
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timeoutId);
+    };
+  }, [overview, profileTimezone, refresh, status]);
 
   const expiredGoals = normalizeGoals(overview?.expiredGoals as unknown[] | undefined);
   const deadlineGoal = expiredGoals.length > 0
@@ -406,22 +349,87 @@ export function useProgressionWorkspace(): ProgressionWorkspaceResult {
       }
     : null;
 
+  const filteredGoals = toGoalListItems(
+    goals.filter((goal) => goal.status === selectedFilter),
+  );
+
+  async function loadGoalDetails(goalId: string, mode: "edit" | "duplicate") {
+    const requestId = formRequestIdRef.current + 1;
+    formRequestIdRef.current = requestId;
+    setRequestedGoalId(goalId);
+    setFormMode(mode);
+    setFormInitialValue(null);
+    setFormError(null);
+    setFormStatus("loading");
+    setIsFormOpen(true);
+
+    const result = await getProgressionGoalDetails(goalId);
+    if (formRequestIdRef.current !== requestId) {
+      return;
+    }
+
+    if (!result.success) {
+      setFormStatus("error");
+      setFormError(result.errorMessage);
+      return;
+    }
+
+    const goalRecord = asObject(result.goal);
+    if (!goalRecord) {
+      setFormStatus("error");
+      setFormError("Goal details response is invalid.");
+      return;
+    }
+
+    const goal = {
+      id: asString(goalRecord.id),
+      title: asString(goalRecord.title),
+      description: asNullableString(goalRecord.description),
+      status: asString(goalRecord.status, "to_start") as ProgressionGoalFilter,
+      deadline: asNullableString(goalRecord.deadline),
+      completionXp: asNumber(goalRecord.completion_xp),
+      deadlineChangeCount: asNumber(goalRecord.deadline_change_count),
+    };
+
+    if (goal.id.length === 0) {
+      setFormStatus("error");
+      setFormError("Goal details response is invalid.");
+      return;
+    }
+
+    const actions = normalizeGoalDetailActions(result.actions as unknown[] | undefined);
+    setFormInitialValue(toGoalDraft(goal, actions));
+    setFormStatus("ready");
+    setFormError(null);
+  }
+
   function openGoalDialog(
     mode: "create" | "edit" | "duplicate",
     goalId?: string,
   ) {
     if (!goalId) {
+      formRequestIdRef.current += 1;
+      setRequestedGoalId(null);
+      setFormMode(mode);
       setFormInitialValue(null);
-    } else {
-      const goal = goalsById.get(goalId);
-      if (!goal) {
-        return;
-      }
-      setFormInitialValue(toGoalDraft(goal, actionsByGoalId.get(goalId) ?? []));
+      setFormError(null);
+      setFormStatus("ready");
+      setIsFormOpen(true);
+      return;
     }
 
-    setFormMode(mode);
-    setIsFormOpen(true);
+    if (mode === "edit" || mode === "duplicate") {
+      void loadGoalDetails(goalId, mode);
+    }
+  }
+
+  function closeGoalDialog() {
+    formRequestIdRef.current += 1;
+    setRequestedGoalId(null);
+    setIsFormOpen(false);
+    setFormInitialValue(null);
+    setFormError(null);
+    setFormStatus("idle");
   }
 
   return {
@@ -430,6 +438,8 @@ export function useProgressionWorkspace(): ProgressionWorkspaceResult {
     filteredGoals,
     formInitialValue,
     formMode,
+    formStatus,
+    formError,
     history,
     historyOpen,
     historyStatus,
@@ -445,7 +455,16 @@ export function useProgressionWorkspace(): ProgressionWorkspaceResult {
     deleteGoal: (goalId) => {
       void deleteGoal(goalId);
     },
-    closeGoalDialog: () => setIsFormOpen(false),
+    closeGoalDialog,
+    retryGoalFormLoad: () => {
+      if (!requestedGoalId || formMode === "create") {
+        return;
+      }
+
+      if (formMode === "edit" || formMode === "duplicate") {
+        void loadGoalDetails(requestedGoalId, formMode);
+      }
+    },
     submitGoalForm: (value) => {
       const actionsPayload = value.actions
         .filter((action) => action.title.trim().length > 0)
@@ -471,7 +490,7 @@ export function useProgressionWorkspace(): ProgressionWorkspaceResult {
         });
       }
 
-      setIsFormOpen(false);
+      closeGoalDialog();
     },
     setSelectedFilter: (filter) => {
       startTransition(() => {

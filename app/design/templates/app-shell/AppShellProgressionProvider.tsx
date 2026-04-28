@@ -5,6 +5,7 @@ import {
   ensureProgressionProfile,
   getProgressionOverview,
 } from "@/app/_features/progression/lib/progression-client";
+import { getMillisecondsUntilNextLocalMidnight } from "@/app/_features/progression/server/progression-dates";
 
 export interface AppShellProgressionContextValue {
   hasProgressionDeadlineWarning: boolean;
@@ -27,28 +28,43 @@ export function AppShellProgressionProvider({ children }: { children: ReactNode 
 
   useEffect(() => {
     let isCancelled = false;
+    let timeoutId: ReturnType<typeof setTimeout> | null = null;
 
-    async function bootstrapProgression(): Promise<void> {
+    async function loadOverview(): Promise<void> {
       try {
         await ensureProgressionProfile(getBrowserTimezone());
         const overviewResult = await getProgressionOverview();
 
-        if (!isCancelled && overviewResult.success) {
-          setHasProgressionDeadlineWarning(
-            overviewResult.overview.deadlineWarning === true,
-          );
+        if (isCancelled || !overviewResult.success) {
+          return;
         }
+
+        setHasProgressionDeadlineWarning(
+          overviewResult.overview.deadlineWarning === true,
+        );
+
+        const overviewProfile = overviewResult.overview.profile as Record<string, unknown> | undefined;
+        const timezone = typeof overviewProfile?.timezone === "string"
+          ? overviewProfile.timezone
+          : getBrowserTimezone();
+
+        timeoutId = setTimeout(() => {
+          void loadOverview();
+        }, getMillisecondsUntilNextLocalMidnight(timezone));
       } catch {
         if (!isCancelled) {
-          setHasProgressionDeadlineWarning(false);
+          return;
         }
       }
     }
 
-    void bootstrapProgression();
+    void loadOverview();
 
     return () => {
       isCancelled = true;
+      if (timeoutId !== null) {
+        clearTimeout(timeoutId);
+      }
     };
   }, []);
 

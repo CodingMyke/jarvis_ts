@@ -39,8 +39,8 @@ function createOverview() {
   return {
     profile: { user_id: "user-1", total_xp: 10, level: 2, timezone: "Europe/Rome" },
     goals: [{ id: "goal-1", title: "Learn piano" }],
-    actions: [{ id: "action-1", goal_id: "goal-1", title: "Practice", xp_per_checkin: 5 }],
-    checkins: [],
+    todayItems: [],
+    weeklyItems: [],
     expiredGoals: [],
     xpHistory: [],
     todayLocalDate: "2026-04-29",
@@ -126,7 +126,7 @@ describe("progression store", () => {
     expect(getProgressionOverview).toHaveBeenCalledTimes(2);
   });
 
-  it("optimistically adds check-ins and rolls back on failure", async () => {
+  it("stores check-in errors without mutating the overview", async () => {
     useProgressionStore.setState({
       overview: createOverview(),
       status: "ready",
@@ -145,11 +145,11 @@ describe("progression store", () => {
     expect(useProgressionStore.getState()).toMatchObject({
       status: "error",
       error: "Nope",
-      overview: { checkins: [] },
+      overview: createOverview(),
     });
   });
 
-  it("optimistically adds check-ins and updates XP without refreshing", async () => {
+  it("refreshes after a successful check-in", async () => {
     useProgressionStore.setState({
       overview: createOverview(),
       status: "ready",
@@ -165,14 +165,24 @@ describe("progression store", () => {
           resolveCheckin = resolve;
         }),
     );
+    vi.mocked(getProgressionOverview).mockResolvedValue({
+      success: true,
+      overview: {
+        ...createOverview(),
+        profile: { user_id: "user-1", total_xp: 15, level: 2, timezone: "Europe/Rome" },
+        levelProgress: {
+          level: 2,
+          totalXp: 15,
+          xpInCurrentLevel: 5,
+          xpRequiredForNextLevel: 28,
+          xpRemainingForNextLevel: 23,
+        },
+      },
+    });
 
     const promise = useProgressionStore.getState().checkIn("action-1");
 
-    expect(useProgressionStore.getState().overview).toMatchObject({
-      checkins: [expect.objectContaining({ id: "optimistic-action-1", xp_awarded: 5 })],
-      profile: { total_xp: 15 },
-      levelProgress: { totalXp: 15 },
-    });
+    expect(useProgressionStore.getState().overview).toEqual(createOverview());
     expect(getProgressionOverview).not.toHaveBeenCalled();
 
     resolveCheckin?.({ success: true, checkin: createCheckin() });
@@ -180,14 +190,13 @@ describe("progression store", () => {
     await expect(promise).resolves.toBe(true);
 
     expect(useProgressionStore.getState().overview).toMatchObject({
-      checkins: [expect.objectContaining({ id: "checkin-1" })],
       profile: { total_xp: 15 },
       levelProgress: { totalXp: 15 },
     });
-    expect(getProgressionOverview).not.toHaveBeenCalled();
+    expect(getProgressionOverview).toHaveBeenCalledOnce();
   });
 
-  it("optimistically removes check-ins and updates XP without refreshing", async () => {
+  it("refreshes after a successful undo", async () => {
     useProgressionStore.setState({
       overview: {
         ...createOverview(),
@@ -199,7 +208,15 @@ describe("progression store", () => {
           xpRequiredForNextLevel: 28,
           xpRemainingForNextLevel: 23,
         },
-        checkins: [createCheckin()],
+        todayItems: [
+          {
+            id: "action-1",
+            title: "Practice",
+            goalTitle: "Learn piano",
+            xpValue: 5,
+            checkinId: "checkin-1",
+          },
+        ],
       },
       status: "ready",
       initialized: true,
@@ -214,13 +231,21 @@ describe("progression store", () => {
           resolveUndo = resolve;
         }),
     );
+    vi.mocked(getProgressionOverview).mockResolvedValue({
+      success: true,
+      overview: createOverview(),
+    });
 
     const promise = useProgressionStore.getState().undoCheckIn("checkin-1");
 
     expect(useProgressionStore.getState().overview).toMatchObject({
-      checkins: [],
-      profile: { total_xp: 10 },
-      levelProgress: { totalXp: 10 },
+      profile: { total_xp: 15 },
+      levelProgress: { totalXp: 15 },
+      todayItems: [
+        expect.objectContaining({
+          checkinId: "checkin-1",
+        }),
+      ],
     });
     expect(getProgressionOverview).not.toHaveBeenCalled();
 
@@ -229,11 +254,11 @@ describe("progression store", () => {
     await expect(promise).resolves.toBe(true);
 
     expect(useProgressionStore.getState().overview).toMatchObject({
-      checkins: [],
       profile: { total_xp: 10 },
       levelProgress: { totalXp: 10 },
+      todayItems: [],
     });
-    expect(getProgressionOverview).not.toHaveBeenCalled();
+    expect(getProgressionOverview).toHaveBeenCalledOnce();
   });
 
   it("loads XP history on demand", async () => {

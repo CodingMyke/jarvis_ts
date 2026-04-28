@@ -4,6 +4,7 @@ import {
   createProgressionGoal,
   deleteProgressionGoal,
   ensureProgressionProfile,
+  getProgressionGoalDetails,
   getProgressionOverview,
   getProgressionXpHistory,
   resolveProgressionDeadline,
@@ -38,7 +39,7 @@ describe("progression client", () => {
       .mockResolvedValueOnce(
         createJsonResponse({
           success: true,
-          overview: { profile: { total_xp: 10 }, deadlineWarning: true },
+          overview: { profile: { total_xp: 10 }, deadlineWarning: true, todayItems: [] },
         }),
       )
       .mockResolvedValueOnce(
@@ -72,6 +73,7 @@ describe("progression client", () => {
     await createProgressionGoal({ title: "Learn piano", completionXp: 20 });
     await updateProgressionGoal({ id: "goal-1", title: "Updated" });
     await runProgressionGoalOperation({ goalId: "goal-1", operation: "complete" });
+    await getProgressionGoalDetails("goal-1");
     await deleteProgressionGoal("goal-1");
     await createProgressionCheckin("action-1");
     await undoProgressionCheckin("checkin-1");
@@ -101,25 +103,29 @@ describe("progression client", () => {
     expect(fetchMock).toHaveBeenNthCalledWith(
       5,
       "/api/progression/goals?id=goal-1",
-      expect.objectContaining({ method: "DELETE" }),
     );
     expect(fetchMock).toHaveBeenNthCalledWith(
       6,
+      "/api/progression/goals?id=goal-1",
+      expect.objectContaining({ method: "DELETE" }),
+    );
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      7,
       "/api/progression/check-ins",
       expect.objectContaining({ method: "POST" }),
     );
     expect(fetchMock).toHaveBeenNthCalledWith(
-      7,
+      8,
       "/api/progression/check-ins?id=checkin-1",
       expect.objectContaining({ method: "DELETE" }),
     );
     expect(fetchMock).toHaveBeenNthCalledWith(
-      8,
+      9,
       "/api/progression/deadlines",
       expect.objectContaining({ method: "PATCH" }),
     );
     expect(fetchMock).toHaveBeenNthCalledWith(
-      9,
+      10,
       "/api/progression/xp-history?limit=10&offset=20",
     );
   });
