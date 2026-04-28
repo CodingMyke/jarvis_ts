@@ -114,7 +114,7 @@ function asNumber(value: unknown, fallback = 0): number {
 
 function normalizeVisibleItems(values: unknown[] | undefined): ProgressionTodayActionItem[] {
   return (values ?? [])
-    .map((value) => {
+    .map<ProgressionTodayActionItem | null>((value) => {
       const record = asObject(value);
       if (!record) {
         return null;
@@ -126,6 +126,7 @@ function normalizeVisibleItems(values: unknown[] | undefined): ProgressionTodayA
         goalTitle: asString(record.goalTitle),
         xpValue: asNumber(record.xpValue),
         checkinId: asNullableString(record.checkinId),
+        pending: record.pending === true,
       };
     })
     .filter((value): value is ProgressionTodayActionItem => value !== null && value.id.length > 0);

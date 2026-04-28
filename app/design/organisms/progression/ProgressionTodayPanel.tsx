@@ -8,6 +8,7 @@ export interface ProgressionTodayActionItem {
   goalTitle: string;
   xpValue: number;
   checkinId: string | null;
+  pending?: boolean;
 }
 
 interface ProgressionTodayPanelProps {
@@ -40,6 +41,7 @@ function ProgressionActionList({
           <div className="flex items-start gap-3">
             <TodoCheckbox
               checked={item.checkinId !== null}
+              disabled={item.pending === true}
               ariaLabel={
                 item.checkinId ? `Annulla ${item.title}` : `Completa ${item.title}`
               }

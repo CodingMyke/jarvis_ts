@@ -2,18 +2,21 @@ interface TodoCheckboxProps {
   checked: boolean;
   onClick: () => void;
   ariaLabel?: string;
+  disabled?: boolean;
 }
 
 export function TodoCheckbox({
   checked,
   onClick,
   ariaLabel,
+  disabled = false,
 }: TodoCheckboxProps) {
   return (
     <button
       type="button"
       onClick={onClick}
-      className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded border-2 transition-colors ${
+      disabled={disabled}
+      className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded border-2 transition-colors disabled:cursor-not-allowed disabled:opacity-60 ${
         checked
           ? "border-accent bg-accent/20"
           : "border-white/20 bg-transparent hover:border-white/40"
