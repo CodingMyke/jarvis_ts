@@ -398,11 +398,11 @@ function ProgressionGoalFormDialogBody({
           </Button>
           {isCreateMode ? (
             <>
-              <Button type="button" variant="secondary" onClick={() => submitDraft(true)}>
-                Crea e inizia
+              <Button type="button" variant="secondary" onClick={() => submitDraft(false)}>
+                Salva bozza
               </Button>
-              <Button type="button" onClick={() => submitDraft(false)}>
-                Crea
+              <Button type="button" onClick={() => submitDraft(true)}>
+                Crea e inizia
               </Button>
             </>
           ) : (

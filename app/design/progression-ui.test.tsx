@@ -439,7 +439,7 @@ describe("progression page UI", () => {
       }),
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "Crea" }));
+    fireEvent.click(screen.getByRole("button", { name: "Salva bozza" }));
     expect(onSubmit).toHaveBeenLastCalledWith(
       expect.objectContaining({
         startNow: false,
