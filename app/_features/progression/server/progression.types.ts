@@ -2,6 +2,7 @@ import type { Json, Tables } from "@/app/_server/supabase/database.types";
 
 export type ProgressionGoalStatus = "to_start" | "in_progress" | "completed" | "failed";
 export type ProgressionFrequencyType = "daily" | "weekly_count" | "specific_weekdays";
+export type ProgressionStatus = "OK" | "WARNING";
 
 export type ProgressionProfileRow = Tables<"progression_profiles">;
 export type ProgressionGoalRow = Tables<"progression_goals">;

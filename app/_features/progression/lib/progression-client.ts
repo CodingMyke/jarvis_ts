@@ -4,6 +4,7 @@ import type {
   ProgressionGoalOperationInput,
   ProgressionGoalUpdateInput,
 } from "../server/progression-route.schemas";
+import type { ProgressionStatus } from "../server/progression.types";
 
 export interface ProgressionOperationError {
   success: false;
@@ -29,12 +30,17 @@ export interface ProgressionGoalDetailsResponse {
   actions?: unknown[];
 }
 
+export interface ProgressionStatusResponse {
+  status?: ProgressionStatus;
+}
+
 export type ProgressionClientResult<T extends object> =
   | ({ success: true } & T)
   | ProgressionOperationError;
 
 interface ProgressionApiResponse {
   success?: boolean;
+  status?: ProgressionStatus;
   overview?: ProgressionOverviewResponse;
   profile?: unknown;
   goal?: unknown;
@@ -120,6 +126,17 @@ export async function getProgressionOverview(): Promise<
     (data) => data.overview ? { overview: data.overview } : null,
     "GET_PROGRESSION_FAILED",
     "Progression overview response is invalid.",
+  );
+}
+
+export async function getProgressionStatus(
+  timezone: string,
+): Promise<ProgressionClientResult<ProgressionStatusResponse>> {
+  return runProgressionRequest(
+    fetch("/api/progression/status", jsonRequest("POST", { timezone })),
+    (data) => data.status ? { status: data.status } : null,
+    "GET_PROGRESSION_STATUS_FAILED",
+    "Progression status response is invalid.",
   );
 }
 

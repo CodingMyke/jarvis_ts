@@ -38,6 +38,7 @@ const chatsMocks = vi.hoisted(() => ({
 const progressionMocks = vi.hoisted(() => ({
   getProgressionUnauthorizedResponse: vi.fn(),
   handleGetProgressionOverview: vi.fn(),
+  handleGetProgressionStatus: vi.fn(),
   handleEnsureProgressionProfile: vi.fn(),
   handleGetProgressionGoals: vi.fn(),
   handleCreateProgressionGoal: vi.fn(),
@@ -78,6 +79,7 @@ import * as calendarRoute from "./calendar/events/route";
 import * as chatsRoute from "./chats/route";
 import * as progressionRoute from "./progression/route";
 import * as progressionProfileRoute from "./progression/profile/route";
+import * as progressionStatusRoute from "./progression/status/route";
 import * as progressionGoalsRoute from "./progression/goals/route";
 import * as progressionCheckinsRoute from "./progression/check-ins/route";
 import * as progressionDeadlinesRoute from "./progression/deadlines/route";
@@ -488,6 +490,9 @@ describe("progression routes", () => {
     progressionMocks.handleGetProgressionOverview.mockResolvedValue(
       createJsonResponse({ success: true }),
     );
+    progressionMocks.handleGetProgressionStatus.mockResolvedValue(
+      createJsonResponse({ success: true, status: "OK" }),
+    );
     progressionMocks.handleEnsureProgressionProfile.mockResolvedValue(
       createJsonResponse({ success: true }),
     );
@@ -520,6 +525,10 @@ describe("progression routes", () => {
     );
 
     const overviewRequest = new NextRequest("http://localhost/api/progression?status=all");
+    const statusRequest = new NextRequest("http://localhost/api/progression/status", {
+      method: "POST",
+      body: JSON.stringify({ timezone: "Europe/Rome" }),
+    });
     const profileRequest = new NextRequest("http://localhost/api/progression/profile", {
       method: "POST",
       body: JSON.stringify({ timezone: "Europe/Rome" }),
@@ -551,6 +560,7 @@ describe("progression routes", () => {
     const historyRequest = new NextRequest("http://localhost/api/progression/xp-history?limit=10");
 
     await progressionRoute.GET(overviewRequest);
+    await progressionStatusRoute.POST(statusRequest);
     await progressionProfileRoute.POST(profileRequest);
     await progressionGoalsRoute.GET(goalsRequest);
     await progressionGoalsRoute.POST(createGoalRequest);
@@ -565,6 +575,10 @@ describe("progression routes", () => {
     expect(progressionMocks.handleGetProgressionOverview).toHaveBeenCalledWith(
       { userId: "user-1" },
       overviewRequest.nextUrl.searchParams,
+    );
+    expect(progressionMocks.handleGetProgressionStatus).toHaveBeenCalledWith(
+      { userId: "user-1" },
+      { timezone: "Europe/Rome" },
     );
     expect(progressionMocks.handleEnsureProgressionProfile).toHaveBeenCalledWith(
       { userId: "user-1" },

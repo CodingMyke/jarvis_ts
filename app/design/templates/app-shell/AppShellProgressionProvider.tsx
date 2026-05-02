@@ -1,10 +1,7 @@
 "use client";
 
 import { createContext, useEffect, useMemo, useState, type ReactNode } from "react";
-import {
-  ensureProgressionProfile,
-  getProgressionOverview,
-} from "@/app/_features/progression/lib/progression-client";
+import { getProgressionStatus } from "@/app/_features/progression/lib/progression-client";
 import { getMillisecondsUntilNextLocalMidnight } from "@/app/_features/progression/server/progression-dates";
 
 export interface AppShellProgressionContextValue {
@@ -30,26 +27,19 @@ export function AppShellProgressionProvider({ children }: { children: ReactNode 
     let isCancelled = false;
     let timeoutId: ReturnType<typeof setTimeout> | null = null;
 
-    async function loadOverview(): Promise<void> {
+    async function loadStatus(): Promise<void> {
       try {
-        await ensureProgressionProfile(getBrowserTimezone());
-        const overviewResult = await getProgressionOverview();
+        const timezone = getBrowserTimezone();
+        const statusResult = await getProgressionStatus(timezone);
 
-        if (isCancelled || !overviewResult.success) {
+        if (isCancelled || !statusResult.success) {
           return;
         }
 
-        setHasProgressionDeadlineWarning(
-          overviewResult.overview.deadlineWarning === true,
-        );
-
-        const overviewProfile = overviewResult.overview.profile as Record<string, unknown> | undefined;
-        const timezone = typeof overviewProfile?.timezone === "string"
-          ? overviewProfile.timezone
-          : getBrowserTimezone();
+        setHasProgressionDeadlineWarning(statusResult.status === "WARNING");
 
         timeoutId = setTimeout(() => {
-          void loadOverview();
+          void loadStatus();
         }, getMillisecondsUntilNextLocalMidnight(timezone));
       } catch {
         if (!isCancelled) {
@@ -58,7 +48,7 @@ export function AppShellProgressionProvider({ children }: { children: ReactNode 
       }
     }
 
-    void loadOverview();
+    void loadStatus();
 
     return () => {
       isCancelled = true;

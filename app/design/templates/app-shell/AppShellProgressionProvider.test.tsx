@@ -2,17 +2,20 @@
 
 import { render, renderHook, screen, waitFor } from "@testing-library/react";
 import React, { type ReactNode } from "react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { act } from "react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
-  ensureProgressionProfile,
-  getProgressionOverview,
+  getProgressionStatus,
 } from "@/app/_features/progression/lib/progression-client";
 import { AppShellProgressionProvider } from "./AppShellProgressionProvider";
 import { useAppShellProgression } from "./useAppShellProgression";
 
 vi.mock("@/app/_features/progression/lib/progression-client", () => ({
-  ensureProgressionProfile: vi.fn(),
-  getProgressionOverview: vi.fn(),
+  getProgressionStatus: vi.fn(),
+}));
+
+vi.mock("@/app/_features/progression/server/progression-dates", () => ({
+  getMillisecondsUntilNextLocalMidnight: vi.fn(() => 25),
 }));
 
 function ProviderWrapper({ children }: { children: ReactNode }) {
@@ -22,39 +25,63 @@ function ProviderWrapper({ children }: { children: ReactNode }) {
 describe("AppShellProgressionProvider", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.mocked(ensureProgressionProfile).mockResolvedValue({
+    vi.mocked(getProgressionStatus).mockResolvedValue({
       success: true,
-      profile: { timezone: "Europe/Rome" },
-    });
-    vi.mocked(getProgressionOverview).mockResolvedValue({
-      success: true,
-      overview: { deadlineWarning: true },
+      status: "WARNING",
     });
   });
 
-  it("ensures the browser timezone and refreshes deadline warning on mount", async () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("loads progression status on mount and maps WARNING to the sidebar flag", async () => {
     const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
     const { result } = renderHook(() => useAppShellProgression(), {
       wrapper: ProviderWrapper,
     });
 
     await waitFor(() => {
-      expect(ensureProgressionProfile).toHaveBeenCalledWith(timezone);
-      expect(getProgressionOverview).toHaveBeenCalledOnce();
+      expect(getProgressionStatus).toHaveBeenCalledWith(timezone);
       expect(result.current.hasProgressionDeadlineWarning).toBe(true);
     });
   });
 
-  it("fails softly without blocking shell rendering", async () => {
-    vi.mocked(ensureProgressionProfile).mockResolvedValueOnce({
-      success: false,
-      error: "PROFILE_FAILED",
-      errorMessage: "Profile failed",
+  it("keeps OK false and refreshes status again at local midnight", async () => {
+    vi.useFakeTimers();
+    vi.mocked(getProgressionStatus)
+      .mockResolvedValueOnce({
+        success: true,
+        status: "OK",
+      })
+      .mockResolvedValueOnce({
+        success: true,
+        status: "WARNING",
+      });
+
+    const { result } = renderHook(() => useAppShellProgression(), {
+      wrapper: ProviderWrapper,
     });
-    vi.mocked(getProgressionOverview).mockResolvedValueOnce({
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+    expect(result.current.hasProgressionDeadlineWarning).toBe(false);
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(25);
+      await Promise.resolve();
+    });
+
+    expect(getProgressionStatus).toHaveBeenCalledTimes(2);
+    expect(result.current.hasProgressionDeadlineWarning).toBe(true);
+  });
+
+  it("fails softly without blocking shell rendering", async () => {
+    vi.mocked(getProgressionStatus).mockResolvedValueOnce({
       success: false,
-      error: "OVERVIEW_FAILED",
-      errorMessage: "Overview failed",
+      error: "STATUS_FAILED",
+      errorMessage: "Status failed",
     });
 
     render(
@@ -65,7 +92,7 @@ describe("AppShellProgressionProvider", () => {
 
     expect(screen.getByText("Shell content")).toBeInTheDocument();
     await waitFor(() => {
-      expect(ensureProgressionProfile).toHaveBeenCalledOnce();
+      expect(getProgressionStatus).toHaveBeenCalledOnce();
     });
   });
 });

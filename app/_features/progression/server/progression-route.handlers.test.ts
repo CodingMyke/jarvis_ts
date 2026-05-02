@@ -8,6 +8,7 @@ const serviceMocks = vi.hoisted(() => ({
   ensureProgressionProfile: vi.fn(),
   getProgressionGoalDetails: vi.fn(),
   getProgressionOverview: vi.fn(),
+  getProgressionStatus: vi.fn(),
   getProgressionXpHistory: vi.fn(),
   resolveExpiredProgressionGoal: vi.fn(),
   softDeleteProgressionGoal: vi.fn(),
@@ -28,6 +29,7 @@ import {
   handleGetProgressionDeadlines,
   handleGetProgressionGoalDetails,
   handleGetProgressionOverview,
+  handleGetProgressionStatus,
   handleGetProgressionXpHistory,
   handleResolveProgressionDeadline,
   handleUndoProgressionCheckin,
@@ -113,6 +115,33 @@ describe("progression route handlers", () => {
     await expect(goal.json()).resolves.toMatchObject({
       success: true,
       goal: { id: goalId },
+    });
+  });
+
+  it("returns a minimal progression status contract", async () => {
+    serviceMocks.getProgressionStatus.mockResolvedValueOnce({
+      success: true,
+      status: "OK",
+    });
+    const okResponse = await handleGetProgressionStatus(auth, {
+      timezone: "Europe/Rome",
+    });
+
+    serviceMocks.getProgressionStatus.mockResolvedValueOnce({
+      success: true,
+      status: "WARNING",
+    });
+    const warningResponse = await handleGetProgressionStatus(auth, {
+      timezone: "Europe/Rome",
+    });
+
+    await expect(okResponse.json()).resolves.toEqual({
+      success: true,
+      status: "OK",
+    });
+    await expect(warningResponse.json()).resolves.toEqual({
+      success: true,
+      status: "WARNING",
     });
   });
 

@@ -9,6 +9,7 @@ import {
   ensureProgressionProfile,
   getProgressionGoalDetails,
   getProgressionOverview,
+  getProgressionStatus,
   getProgressionXpHistory,
   resolveExpiredProgressionGoal,
   softDeleteProgressionGoal,
@@ -27,6 +28,7 @@ import {
   progressionGoalUpdateBodySchema,
   progressionOverviewQuerySchema,
   progressionProfileBodySchema,
+  progressionStatusBodySchema,
   progressionXpHistoryQuerySchema,
 } from "./progression-route.schemas";
 
@@ -117,6 +119,29 @@ export async function handleEnsureProgressionProfile(auth: AuthContext, body: un
   return jsonOk({
     success: true,
     profile: result.profile,
+  });
+}
+
+export async function handleGetProgressionStatus(auth: AuthContext, body: unknown) {
+  const parsed = progressionStatusBodySchema.safeParse(body);
+  if (!parsed.success) {
+    return jsonError(400, {
+      error: "INVALID_PAYLOAD",
+      message: getZodErrorMessage(parsed.error),
+    });
+  }
+
+  const result = await getProgressionStatus(auth.supabase, auth.userId, parsed.data.timezone);
+  if (!result.success) {
+    return jsonError(500, {
+      error: "EXECUTION_ERROR",
+      message: result.error,
+    });
+  }
+
+  return jsonOk({
+    success: true,
+    status: result.status,
   });
 }
 

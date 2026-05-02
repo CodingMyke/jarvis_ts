@@ -5,7 +5,7 @@ import {
   deleteProgressionGoal,
   ensureProgressionProfile,
   getProgressionGoalDetails,
-  getProgressionOverview,
+  getProgressionStatus,
   getProgressionXpHistory,
   resolveProgressionDeadline,
   runProgressionGoalOperation,
@@ -33,13 +33,13 @@ describe("progression client", () => {
     vi.unstubAllGlobals();
   });
 
-  it("loads overview and normalizes API errors", async () => {
+  it("loads progression status and normalizes API errors", async () => {
     const fetchMock = stubFetch();
     fetchMock
       .mockResolvedValueOnce(
         createJsonResponse({
           success: true,
-          overview: { profile: { total_xp: 10 }, deadlineWarning: true, todayItems: [] },
+          status: "WARNING",
         }),
       )
       .mockResolvedValueOnce(
@@ -53,11 +53,11 @@ describe("progression client", () => {
         ),
       );
 
-    await expect(getProgressionOverview()).resolves.toMatchObject({
+    await expect(getProgressionStatus("Europe/Rome")).resolves.toMatchObject({
       success: true,
-      overview: { deadlineWarning: true },
+      status: "WARNING",
     });
-    await expect(getProgressionOverview()).resolves.toEqual({
+    await expect(getProgressionStatus("Europe/Rome")).resolves.toEqual({
       success: false,
       error: "EXECUTION_ERROR",
       errorMessage: "db failed",
@@ -65,11 +65,12 @@ describe("progression client", () => {
     });
   });
 
-  it("calls profile, goal, check-in, deadline and history endpoints", async () => {
+  it("calls profile, status, goal, check-in, deadline and history endpoints", async () => {
     const fetchMock = stubFetch();
     fetchMock.mockResolvedValue(createJsonResponse({ success: true, goal: { id: "goal-1" } }));
 
     await ensureProgressionProfile("Europe/Rome");
+    await getProgressionStatus("Europe/Rome");
     await createProgressionGoal({ title: "Learn piano", completionXp: 20 });
     await updateProgressionGoal({ id: "goal-1", title: "Updated" });
     await runProgressionGoalOperation({ goalId: "goal-1", operation: "complete" });
@@ -87,13 +88,16 @@ describe("progression client", () => {
     );
     expect(fetchMock).toHaveBeenNthCalledWith(
       2,
-      "/api/progression/goals",
-      expect.objectContaining({ method: "POST" }),
+      "/api/progression/status",
+      expect.objectContaining({
+        method: "POST",
+        body: JSON.stringify({ timezone: "Europe/Rome" }),
+      }),
     );
     expect(fetchMock).toHaveBeenNthCalledWith(
       3,
       "/api/progression/goals",
-      expect.objectContaining({ method: "PATCH" }),
+      expect.objectContaining({ method: "POST" }),
     );
     expect(fetchMock).toHaveBeenNthCalledWith(
       4,
@@ -102,30 +106,35 @@ describe("progression client", () => {
     );
     expect(fetchMock).toHaveBeenNthCalledWith(
       5,
-      "/api/progression/goals?id=goal-1",
+      "/api/progression/goals",
+      expect.objectContaining({ method: "PATCH" }),
     );
     expect(fetchMock).toHaveBeenNthCalledWith(
       6,
       "/api/progression/goals?id=goal-1",
-      expect.objectContaining({ method: "DELETE" }),
     );
     expect(fetchMock).toHaveBeenNthCalledWith(
       7,
+      "/api/progression/goals?id=goal-1",
+      expect.objectContaining({ method: "DELETE" }),
+    );
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      8,
       "/api/progression/check-ins",
       expect.objectContaining({ method: "POST" }),
     );
     expect(fetchMock).toHaveBeenNthCalledWith(
-      8,
+      9,
       "/api/progression/check-ins?id=checkin-1",
       expect.objectContaining({ method: "DELETE" }),
     );
     expect(fetchMock).toHaveBeenNthCalledWith(
-      9,
+      10,
       "/api/progression/deadlines",
       expect.objectContaining({ method: "PATCH" }),
     );
     expect(fetchMock).toHaveBeenNthCalledWith(
-      10,
+      11,
       "/api/progression/xp-history?limit=10&offset=20",
     );
   });

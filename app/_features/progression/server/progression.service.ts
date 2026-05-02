@@ -12,6 +12,7 @@ import type {
   ProgressionCheckinRow,
   ProgressionGoalRow,
   ProgressionProfileRow,
+  ProgressionStatus,
   ProgressionXpHistoryRow,
   ProgressionVisibleActionItem,
 } from "./progression.types";
@@ -219,6 +220,36 @@ export async function ensureProgressionProfile(
   }
 
   return { success: true, profile: data as ProgressionProfileRow };
+}
+
+export async function getProgressionStatus(
+  supabase: ProgressionSupabase,
+  userId: string,
+  timezone: string,
+): Promise<ProgressionResult<{ status: ProgressionStatus }>> {
+  const profileResult = await ensureProgressionProfile(supabase, timezone);
+  if (!profileResult.success) {
+    return profileResult;
+  }
+
+  const todayLocalDate = getLocalDateForTimezone(new Date(), profileResult.profile.timezone);
+  const { data, error } = await supabase
+    .from("progression_goals")
+    .select("id")
+    .eq("user_id", userId)
+    .is("deleted_at", null)
+    .lt("deadline", todayLocalDate)
+    .in("status", ["to_start", "in_progress"])
+    .limit(1);
+
+  if (error) {
+    return { success: false, error: getErrorMessage(error, "Progression status load failed.") };
+  }
+
+  return {
+    success: true,
+    status: (data?.length ?? 0) > 0 ? "WARNING" : "OK",
+  };
 }
 
 export async function getProgressionOverview(

@@ -21,6 +21,8 @@ export const progressionProfileBodySchema = z.object({
   timezone: z.string().trim().min(1).max(120),
 });
 
+export const progressionStatusBodySchema = progressionProfileBodySchema;
+
 export const progressionOverviewQuerySchema = z.object({
   status: z
     .enum(["in_progress", "to_start", "completed", "failed", "all"])
@@ -136,7 +138,13 @@ export const progressionXpHistoryQuerySchema = z.object({
   offset: z.coerce.number().int().min(0).default(0),
 });
 
+export const progressionStatusResponseSchema = z.object({
+  success: z.literal(true),
+  status: z.enum(["OK", "WARNING"]),
+});
+
 export type ProgressionProfileBody = z.infer<typeof progressionProfileBodySchema>;
+export type ProgressionStatusBody = z.infer<typeof progressionStatusBodySchema>;
 export type ProgressionOverviewQuery = z.infer<typeof progressionOverviewQuerySchema>;
 export type ProgressionGoalDetailsQuery = z.infer<typeof progressionGoalDetailsQuerySchema>;
 export type ProgressionGoalCreateBody = z.infer<typeof progressionGoalCreateBodySchema>;
@@ -147,6 +155,7 @@ export type ProgressionCheckinCreateBody = z.infer<typeof progressionCheckinCrea
 export type ProgressionCheckinUndoBody = z.infer<typeof progressionCheckinUndoBodySchema>;
 export type ProgressionDeadlineReviewBody = z.infer<typeof progressionDeadlineReviewBodySchema>;
 export type ProgressionXpHistoryQuery = z.infer<typeof progressionXpHistoryQuerySchema>;
+export type ProgressionStatusResponse = z.infer<typeof progressionStatusResponseSchema>;
 
 export type ProgressionGoalCreateInput = z.input<typeof progressionGoalCreateBodySchema>;
 export type ProgressionGoalUpdateInput = z.input<typeof progressionGoalUpdateBodySchema>;
