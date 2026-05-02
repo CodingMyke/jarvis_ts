@@ -1,5 +1,11 @@
 "use client";
 
+import { startTransition, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import {
+  createProgressionCheckin,
+  undoProgressionCheckin,
+} from "@/app/_features/progression/lib/progression-client";
 import { TodoCheckbox } from "@/app/design/atoms/tasks/TodoCheckbox";
 
 export interface ProgressionTodayActionItem {
@@ -12,10 +18,27 @@ export interface ProgressionTodayActionItem {
 }
 
 interface ProgressionTodayPanelProps {
-  todayItems: ProgressionTodayActionItem[];
-  weeklyItems: ProgressionTodayActionItem[];
-  onCheckIn: (actionId: string) => void;
-  onUndoCheckIn: (checkinId: string) => void;
+  initialTodayItems: ProgressionTodayActionItem[];
+  initialWeeklyItems: ProgressionTodayActionItem[];
+}
+
+function getErrorMessage(result: { errorMessage?: string; error?: string }): string {
+  return result.errorMessage ?? result.error ?? "Progression operation failed.";
+}
+
+function replaceItem(
+  items: ProgressionTodayActionItem[],
+  predicate: (item: ProgressionTodayActionItem) => boolean,
+  update: (item: ProgressionTodayActionItem) => ProgressionTodayActionItem,
+): ProgressionTodayActionItem[] | null {
+  const index = items.findIndex(predicate);
+  if (index < 0) {
+    return null;
+  }
+
+  const nextItems = [...items];
+  nextItems[index] = update(nextItems[index]);
+  return nextItems;
 }
 
 function ProgressionActionList({
@@ -70,13 +93,104 @@ function ProgressionActionList({
 }
 
 export function ProgressionTodayPanel({
-  todayItems,
-  weeklyItems,
-  onCheckIn,
-  onUndoCheckIn,
+  initialTodayItems,
+  initialWeeklyItems,
 }: ProgressionTodayPanelProps) {
+  const router = useRouter();
+  const [todayItems, setTodayItems] = useState(initialTodayItems);
+  const [weeklyItems, setWeeklyItems] = useState(initialWeeklyItems);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    setTodayItems(initialTodayItems);
+  }, [initialTodayItems]);
+
+  useEffect(() => {
+    setWeeklyItems(initialWeeklyItems);
+  }, [initialWeeklyItems]);
+
+  function refreshPage(): void {
+    startTransition(() => {
+      router.refresh();
+    });
+  }
+
+  async function runCheckin(actionId: string): Promise<void> {
+    const previousTodayItems = todayItems;
+    const previousWeeklyItems = weeklyItems;
+    const nextTodayItems = replaceItem(
+      todayItems,
+      (item) => item.id === actionId && item.checkinId === null,
+      (item) => ({ ...item, checkinId: `optimistic:${actionId}`, pending: true }),
+    );
+    const nextWeeklyItems = nextTodayItems
+      ? null
+      : replaceItem(
+          weeklyItems,
+          (item) => item.id === actionId && item.checkinId === null,
+          (item) => ({ ...item, checkinId: `optimistic:${actionId}`, pending: true }),
+        );
+
+    if (nextTodayItems) {
+      setTodayItems(nextTodayItems);
+    } else if (nextWeeklyItems) {
+      setWeeklyItems(nextWeeklyItems);
+    }
+
+    const result = await createProgressionCheckin(actionId);
+    if (!result.success) {
+      setTodayItems(previousTodayItems);
+      setWeeklyItems(previousWeeklyItems);
+      setErrorMessage(getErrorMessage(result));
+      return;
+    }
+
+    setErrorMessage(null);
+    refreshPage();
+  }
+
+  async function runUndo(checkinId: string): Promise<void> {
+    const previousTodayItems = todayItems;
+    const previousWeeklyItems = weeklyItems;
+    const nextTodayItems = replaceItem(
+      todayItems,
+      (item) => item.checkinId === checkinId,
+      (item) => ({ ...item, checkinId: null, pending: true }),
+    );
+    const nextWeeklyItems = nextTodayItems
+      ? null
+      : replaceItem(
+          weeklyItems,
+          (item) => item.checkinId === checkinId,
+          (item) => ({ ...item, checkinId: null, pending: true }),
+        );
+
+    if (nextTodayItems) {
+      setTodayItems(nextTodayItems);
+    } else if (nextWeeklyItems) {
+      setWeeklyItems(nextWeeklyItems);
+    }
+
+    const result = await undoProgressionCheckin(checkinId);
+    if (!result.success) {
+      setTodayItems(previousTodayItems);
+      setWeeklyItems(previousWeeklyItems);
+      setErrorMessage(getErrorMessage(result));
+      return;
+    }
+
+    setErrorMessage(null);
+    refreshPage();
+  }
+
   return (
     <section className="space-y-4">
+      {errorMessage ? (
+        <div className="rounded-2xl border border-red-400/20 bg-red-500/5 p-4">
+          <p className="text-sm text-red-100">{errorMessage}</p>
+        </div>
+      ) : null}
+
       <div
         data-testid="progression-today-panel"
         className="rounded-[28px] border border-white/10 bg-white/[0.04] p-5"
@@ -89,8 +203,12 @@ export function ProgressionTodayPanel({
         </div>
         <ProgressionActionList
           items={todayItems}
-          onCheckIn={onCheckIn}
-          onUndoCheckIn={onUndoCheckIn}
+          onCheckIn={(actionId) => {
+            void runCheckin(actionId);
+          }}
+          onUndoCheckIn={(checkinId) => {
+            void runUndo(checkinId);
+          }}
         />
       </div>
 
@@ -104,8 +222,12 @@ export function ProgressionTodayPanel({
         </div>
         <ProgressionActionList
           items={weeklyItems}
-          onCheckIn={onCheckIn}
-          onUndoCheckIn={onUndoCheckIn}
+          onCheckIn={(actionId) => {
+            void runCheckin(actionId);
+          }}
+          onUndoCheckIn={(checkinId) => {
+            void runUndo(checkinId);
+          }}
         />
       </div>
     </section>

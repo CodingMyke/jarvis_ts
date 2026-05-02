@@ -1,5 +1,5 @@
-import { ProgressionTemplate } from "@/app/design/templates/progression/ProgressionTemplate";
+import { ProgressionPage as ProgressionPageTemplate } from "@/app/design/templates/progression/ProgressionPage";
 
 export default function ProgressionPage() {
-  return <ProgressionTemplate />;
+  return <ProgressionPageTemplate />;
 }

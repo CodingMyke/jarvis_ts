@@ -87,7 +87,7 @@ The result should remove the single page-level overview dependency without chang
 - Modify: `app/_features/progression/lib/progression-client.test.ts`
 - Modify: `app/api/core-routes.test.ts`
 
-- [ ] **Step 1: Write the failing contract tests**
+- [x] **Step 1: Write the failing contract tests**
 
 Add tests for the new section-shaped responses:
 
@@ -99,7 +99,7 @@ Add tests for the new section-shaped responses:
 
 The key behavior to lock in is that the page no longer needs a single overview response.
 
-- [ ] **Step 2: Run the targeted tests to verify they fail**
+- [x] **Step 2: Run the targeted tests to verify they fail**
 
 Run:
 
@@ -109,7 +109,7 @@ npm run test -- app/_features/progression/server/progression-route.handlers.test
 
 Expected: fail because the section endpoints and client helpers do not exist yet.
 
-- [ ] **Step 3: Split the progression service into reusable loaders**
+- [x] **Step 3: Split the progression service into reusable loaders**
 
 Refactor `progression.service.ts` so the page can load each section independently without duplicating the full overview query.
 
@@ -124,7 +124,7 @@ Implement the minimal shared helpers needed for:
 
 Keep the existing overview function available only as legacy compatibility until the new page no longer uses it.
 
-- [ ] **Step 4: Add the section routes and handlers**
+- [x] **Step 4: Add the section routes and handlers**
 
 Implement these contracts:
 
@@ -137,7 +137,7 @@ Implement these contracts:
 
 Keep the route handlers thin and validate request inputs with the existing Zod boundary patterns.
 
-- [ ] **Step 5: Run the contract tests again**
+- [x] **Step 5: Run the contract tests again**
 
 Run:
 
@@ -178,7 +178,7 @@ git commit -m "feat: split progression data contracts"
 - Modify: `app/design/templates/progression/useProgressionWorkspace.ts`
 - Modify: `app/design/templates/progression/useProgressionWorkspace.test.tsx`
 
-- [ ] **Step 1: Write the failing page composition tests**
+- [x] **Step 1: Write the failing page composition tests**
 
 Add tests that prove the page renders as separate sections with independent loading states:
 
@@ -188,7 +188,7 @@ Add tests that prove the page renders as separate sections with independent load
 - the deadline review area can block the page independently
 - the page no longer depends on one all-or-nothing workspace status
 
-- [ ] **Step 2: Run the page UI tests to verify they fail**
+- [x] **Step 2: Run the page UI tests to verify they fail**
 
 Run:
 
@@ -198,7 +198,7 @@ npm run test -- app/design/progression-ui.test.tsx app/design/templates/progress
 
 Expected: fail because the current page still uses the monolithic workspace hook.
 
-- [ ] **Step 3: Build the server-composed progression page**
+- [x] **Step 3: Build the server-composed progression page**
 
 Implement a server page that composes the sections with `Suspense`:
 
@@ -211,7 +211,7 @@ Implement a server page that composes the sections with `Suspense`:
 
 Keep the presentational atoms and molecules intact. The goal is to move data ownership, not to redesign the UI.
 
-- [ ] **Step 4: Remove or reduce the monolithic workspace hook**
+- [x] **Step 4: Remove or reduce the monolithic workspace hook**
 
 Once the page sections own their data, delete the `useProgressionWorkspace` coupling or shrink it to only the tiny bits that are still truly shared.
 
@@ -221,7 +221,7 @@ The rule is simple:
 - no page-wide `overview` store
 - no client-side derivation of data that the server already knows
 
-- [ ] **Step 5: Re-run the page tests**
+- [x] **Step 5: Re-run the page tests**
 
 Run:
 
@@ -253,7 +253,7 @@ git commit -m "feat: split progression page into sections"
 - Modify: `app/design/organisms/progression/ProgressionDeadlineReviewDialog.tsx`
 - Modify: `app/design/templates/app-shell/AppShellProgressionProvider.tsx` only if the history opener bridge needs to be re-registered
 
-- [ ] **Step 1: Write the failing interaction tests**
+- [x] **Step 1: Write the failing interaction tests**
 
 Add tests that prove the client islands still behave like real UI:
 
@@ -263,7 +263,7 @@ Add tests that prove the client islands still behave like real UI:
 - history still opens on demand
 - deadline review still submits resolution actions
 
-- [ ] **Step 2: Run the interaction tests to verify they fail**
+- [x] **Step 2: Run the interaction tests to verify they fail**
 
 Run:
 
@@ -273,7 +273,7 @@ npm run test -- app/design/progression-ui.test.tsx app/_features/progression/lib
 
 Expected: fail if any client island still assumes the old workspace hook shape.
 
-- [ ] **Step 3: Reconnect each island to its own API contract**
+- [x] **Step 3: Reconnect each island to its own API contract**
 
 Keep each interactive organism focused:
 
@@ -285,7 +285,7 @@ Keep each interactive organism focused:
 
 If a component only displays data, keep it server-fed and stateless.
 
-- [ ] **Step 4: Re-run the interaction tests**
+- [x] **Step 4: Re-run the interaction tests**
 
 Run:
 
@@ -314,15 +314,15 @@ git commit -m "feat: preserve progression interactivity after split"
 - Modify: `app/design/templates/progression/useProgressionWorkspace.test.tsx`
 - Modify: any file that still references the removed monolithic progression workspace
 
-- [ ] **Step 1: Fix any remaining test imports or snapshots**
+- [x] **Step 1: Fix any remaining test imports or snapshots**
 
 Update any stale test setup that still expects the old workspace shape or the old single-fetch behavior.
 
-- [ ] **Step 2: Update the architecture docs**
+- [x] **Step 2: Update the architecture docs**
 
 Add a short README note that the progression page now loads in sections with server-composed data and client-only interactive islands.
 
-- [ ] **Step 3: Run the full progression-focused verification**
+- [x] **Step 3: Run the full progression-focused verification**
 
 Run:
 
@@ -342,4 +342,3 @@ Run:
 git add README.md app/design/progression-ui.test.tsx app/design/templates/progression/useProgressionWorkspace.test.tsx
 git commit -m "docs: update progression split architecture"
 ```
-

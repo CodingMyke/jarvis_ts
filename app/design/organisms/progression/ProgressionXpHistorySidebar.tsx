@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect, useState } from "react";
+import { getProgressionXpHistory } from "@/app/_features/progression/lib/progression-client";
 import { Button } from "@/app/design/atoms/shared/Button";
 
 interface ProgressionXpHistoryItem {
@@ -11,17 +13,81 @@ interface ProgressionXpHistoryItem {
 
 interface ProgressionXpHistorySidebarProps {
   open: boolean;
-  history: ProgressionXpHistoryItem[];
-  status: "idle" | "loading" | "ready" | "error";
   onClose: () => void;
+}
+
+function asObject(value: unknown): Record<string, unknown> | null {
+  return typeof value === "object" && value !== null ? (value as Record<string, unknown>) : null;
+}
+
+function asString(value: unknown): string {
+  return typeof value === "string" ? value : "";
+}
+
+function asNullableString(value: unknown): string | null {
+  return typeof value === "string" && value.trim().length > 0 ? value : null;
+}
+
+function asNumber(value: unknown): number {
+  return typeof value === "number" && Number.isFinite(value) ? value : 0;
+}
+
+function normalizeHistory(values: unknown[]): ProgressionXpHistoryItem[] {
+  return values
+    .map((value) => {
+      const record = asObject(value);
+      if (!record) {
+        return null;
+      }
+
+      return {
+        id: asString(record.id),
+        description: asNullableString(record.description),
+        xpAmount: asNumber(record.xp_amount),
+        createdAt: asString(record.created_at),
+      };
+    })
+    .filter((value): value is ProgressionXpHistoryItem => value !== null && value.id.length > 0);
 }
 
 export function ProgressionXpHistorySidebar({
   open,
-  history,
-  status,
   onClose,
 }: ProgressionXpHistorySidebarProps) {
+  const [history, setHistory] = useState<ProgressionXpHistoryItem[]>([]);
+  const [status, setStatus] = useState<"idle" | "loading" | "ready" | "error">("idle");
+
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+
+    let isCancelled = false;
+
+    async function loadHistory(): Promise<void> {
+      setStatus("loading");
+      const result = await getProgressionXpHistory({ limit: 50, offset: 0 });
+
+      if (isCancelled) {
+        return;
+      }
+
+      if (!result.success) {
+        setStatus("error");
+        return;
+      }
+
+      setHistory(normalizeHistory(result.history));
+      setStatus("ready");
+    }
+
+    void loadHistory();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [open]);
+
   if (!open) {
     return null;
   }
@@ -43,7 +109,7 @@ export function ProgressionXpHistorySidebar({
       data-testid="progression-xp-history"
       className="fixed inset-y-0 right-0 z-40 w-full max-w-md border-l border-white/10 bg-[#0f1218] p-4 shadow-[-24px_0_60px_rgba(0,0,0,0.4)]"
     >
-      <div className="flex pb-2 items-center justify-between gap-4 border-b border-white/10">
+      <div className="flex items-center justify-between gap-4 border-b border-white/10 pb-2">
         <div className="flex items-center gap-2">
           <h2 className="text-xl font-semibold text-foreground">Cronologia XP</h2>
           {status === "loading" ? (

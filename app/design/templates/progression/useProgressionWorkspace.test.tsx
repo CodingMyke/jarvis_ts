@@ -2,93 +2,83 @@
 
 import { act, renderHook, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { getProgressionGoalDetails } from "@/app/_features/progression/lib/progression-client";
+import {
+  deleteProgressionGoal,
+  getProgressionGoalDetails,
+  runProgressionGoalOperation,
+  updateProgressionGoal,
+} from "@/app/_features/progression/lib/progression-client";
 import { useProgressionWorkspace } from "./useProgressionWorkspace";
 
-const progressionWorkspaceMocks = vi.hoisted(() => ({
-  storeState: {
-    overview: {
-      profile: {
-        user_id: "user-1",
-        total_xp: 10,
-        level: 2,
-        timezone: "Europe/Rome",
-      },
-      goals: [],
-      todayItems: [],
-      weeklyItems: [],
-      expiredGoals: [],
-      xpHistory: [],
-      todayLocalDate: "2026-04-29",
-      deadlineWarning: false,
-      levelProgress: {
-        level: 2,
-        totalXp: 10,
-        xpInCurrentLevel: 0,
-        xpRequiredForNextLevel: 28,
-        xpRemainingForNextLevel: 28,
-      },
-    },
-    status: "ready" as const,
-    error: null as string | null,
-    initialized: true,
-    history: [],
-    historyStatus: "idle" as const,
-    deadlineWarning: false,
-    refresh: vi.fn(),
-    ensureProfile: vi.fn(),
-    createGoal: vi.fn(),
-    updateGoal: vi.fn(),
-    runGoalOperation: vi.fn(),
-    deleteGoal: vi.fn(),
-    checkIn: vi.fn(),
-    undoCheckIn: vi.fn(),
-    resolveDeadline: vi.fn(),
-    loadHistory: vi.fn(),
-  },
+const navigationMocks = vi.hoisted(() => ({
+  refresh: vi.fn(),
+}));
+
+vi.mock("next/navigation", () => ({
+  useRouter: () => navigationMocks,
 }));
 
 vi.mock("@/app/_features/progression/lib/progression-client", () => ({
+  createProgressionGoal: vi.fn(),
+  deleteProgressionGoal: vi.fn(),
   getProgressionGoalDetails: vi.fn(),
+  runProgressionGoalOperation: vi.fn(),
+  updateProgressionGoal: vi.fn(),
 }));
 
-vi.mock("@/app/_features/progression/state/progression.store", () => ({
-  useProgressionStore: (
-    selector: (state: typeof progressionWorkspaceMocks.storeState) => unknown,
-  ) => selector(progressionWorkspaceMocks.storeState),
-}));
+const initialGoals = [
+  {
+    id: "goal-1",
+    title: "Ship progression UI",
+    description: "",
+    status: "in_progress",
+    deadline: null,
+    completion_xp: 25,
+  },
+  {
+    id: "goal-2",
+    title: "Review the weekly plan",
+    description: "",
+    status: "to_start",
+    deadline: null,
+    completion_xp: 15,
+  },
+];
 
 describe("useProgressionWorkspace", () => {
   beforeEach(() => {
-    progressionWorkspaceMocks.storeState.loadHistory.mockReset();
-    vi.mocked(getProgressionGoalDetails).mockReset();
+    vi.clearAllMocks();
   });
 
-  it("loads only the latest 50 XP history records when opening history", () => {
-    const { result } = renderHook(() => useProgressionWorkspace());
+  it("defaults to in-progress goals and routes lifecycle actions through the split APIs", async () => {
+    vi.mocked(runProgressionGoalOperation).mockResolvedValue({ success: true });
+    vi.mocked(deleteProgressionGoal).mockResolvedValue({ success: true, goal: { id: "goal-2" } });
+
+    const { result } = renderHook(() => useProgressionWorkspace(initialGoals));
+
+    expect(result.current.selectedFilter).toBe("in_progress");
+    expect(result.current.filteredGoals).toHaveLength(1);
+    expect(result.current.filteredGoals[0]?.id).toBe("goal-1");
 
     act(() => {
-      result.current.openHistory();
+      result.current.startGoal("goal-2");
+      result.current.deleteGoal("goal-2");
     });
 
-    expect(progressionWorkspaceMocks.storeState.loadHistory).toHaveBeenCalledWith({
-      limit: 50,
-      offset: 0,
+    await waitFor(() => {
+      expect(runProgressionGoalOperation).toHaveBeenCalledWith({
+        goalId: "goal-2",
+        operation: "start",
+      });
+      expect(deleteProgressionGoal).toHaveBeenCalledWith("goal-2");
+      expect(navigationMocks.refresh).toHaveBeenCalledTimes(2);
     });
   });
 
   it("loads goal details on demand and preserves recurring action ids when submitting an edited goal", async () => {
     vi.mocked(getProgressionGoalDetails).mockResolvedValue({
       success: true,
-      goal: {
-        id: "goal-1",
-        title: "Ship progression UI",
-        description: "",
-        status: "in_progress",
-        deadline: null,
-        completion_xp: 25,
-        deadline_change_count: 0,
-      },
+      goal: { id: "goal-1" },
       actions: [
         {
           id: "action-1",
@@ -101,23 +91,12 @@ describe("useProgressionWorkspace", () => {
         },
       ],
     });
+    vi.mocked(updateProgressionGoal).mockResolvedValue({
+      success: true,
+      goal: { id: "goal-1" },
+    });
 
-    const overview = progressionWorkspaceMocks.storeState.overview as {
-      goals: Array<Record<string, unknown>>;
-    };
-    overview.goals = [
-      {
-        id: "goal-1",
-        title: "Ship progression UI",
-        description: "",
-        status: "in_progress",
-        deadline: null,
-        completion_xp: 25,
-        deadline_change_count: 0,
-      },
-    ];
-
-    const { result } = renderHook(() => useProgressionWorkspace());
+    const { result } = renderHook(() => useProgressionWorkspace(initialGoals));
 
     act(() => {
       result.current.openEditGoal("goal-1");
@@ -153,16 +132,19 @@ describe("useProgressionWorkspace", () => {
       });
     });
 
-    expect(progressionWorkspaceMocks.storeState.updateGoal).toHaveBeenCalledWith(
-      expect.objectContaining({
-        id: "goal-1",
-        actions: [
-          expect.objectContaining({
-            id: "action-1",
-            title: "Daily polish updated",
-          }),
-        ],
-      }),
-    );
+    await waitFor(() => {
+      expect(updateProgressionGoal).toHaveBeenCalledWith(
+        expect.objectContaining({
+          id: "goal-1",
+          actions: [
+            expect.objectContaining({
+              id: "action-1",
+              title: "Daily polish updated",
+            }),
+          ],
+        }),
+      );
+      expect(navigationMocks.refresh).toHaveBeenCalled();
+    });
   });
 });

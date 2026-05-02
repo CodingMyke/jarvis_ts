@@ -30,6 +30,17 @@ export interface ProgressionGoalDetailsResponse {
   actions?: unknown[];
 }
 
+export interface ProgressionLevelResponse {
+  profile?: unknown;
+  levelProgress?: unknown;
+}
+
+export interface ProgressionTodayResponse {
+  todayItems?: unknown[];
+  weeklyItems?: unknown[];
+  todayLocalDate?: string;
+}
+
 export interface ProgressionStatusResponse {
   status?: ProgressionStatus;
 }
@@ -42,6 +53,9 @@ interface ProgressionApiResponse {
   success?: boolean;
   status?: ProgressionStatus;
   overview?: ProgressionOverviewResponse;
+  level?: ProgressionLevelResponse;
+  today?: ProgressionTodayResponse;
+  goals?: unknown[];
   profile?: unknown;
   goal?: unknown;
   actions?: unknown[];
@@ -126,6 +140,39 @@ export async function getProgressionOverview(): Promise<
     (data) => data.overview ? { overview: data.overview } : null,
     "GET_PROGRESSION_FAILED",
     "Progression overview response is invalid.",
+  );
+}
+
+export async function getProgressionLevel(): Promise<
+  ProgressionClientResult<{ level: ProgressionLevelResponse }>
+> {
+  return runProgressionRequest(
+    fetch("/api/progression/level"),
+    (data) => data.level ? { level: data.level } : null,
+    "GET_PROGRESSION_LEVEL_FAILED",
+    "Progression level response is invalid.",
+  );
+}
+
+export async function getProgressionToday(): Promise<
+  ProgressionClientResult<{ today: ProgressionTodayResponse }>
+> {
+  return runProgressionRequest(
+    fetch("/api/progression/today"),
+    (data) => data.today ? { today: data.today } : null,
+    "GET_PROGRESSION_TODAY_FAILED",
+    "Progression today response is invalid.",
+  );
+}
+
+export async function getProgressionGoals(): Promise<
+  ProgressionClientResult<{ goals: unknown[] }>
+> {
+  return runProgressionRequest(
+    fetch("/api/progression/goals"),
+    (data) => ({ goals: Array.isArray(data.goals) ? data.goals : [] }),
+    "GET_PROGRESSION_GOALS_FAILED",
+    "Progression goals response is invalid.",
   );
 }
 

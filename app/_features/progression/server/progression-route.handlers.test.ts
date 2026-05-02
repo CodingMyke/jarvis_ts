@@ -6,9 +6,13 @@ const serviceMocks = vi.hoisted(() => ({
   createProgressionGoal: vi.fn(),
   duplicateProgressionGoal: vi.fn(),
   ensureProgressionProfile: vi.fn(),
+  getProgressionDeadlineReview: vi.fn(),
   getProgressionGoalDetails: vi.fn(),
+  getProgressionGoals: vi.fn(),
+  getProgressionLevel: vi.fn(),
   getProgressionOverview: vi.fn(),
   getProgressionStatus: vi.fn(),
+  getProgressionToday: vi.fn(),
   getProgressionXpHistory: vi.fn(),
   resolveExpiredProgressionGoal: vi.fn(),
   softDeleteProgressionGoal: vi.fn(),
@@ -25,11 +29,15 @@ import {
   handleCreateProgressionCheckin,
   handleCreateProgressionGoal,
   handleDeleteProgressionGoal,
+  handleGetProgressionDeadlineReview,
   handleEnsureProgressionProfile,
   handleGetProgressionDeadlines,
   handleGetProgressionGoalDetails,
+  handleGetProgressionGoals,
+  handleGetProgressionLevel,
   handleGetProgressionOverview,
   handleGetProgressionStatus,
+  handleGetProgressionToday,
   handleGetProgressionXpHistory,
   handleResolveProgressionDeadline,
   handleUndoProgressionCheckin,
@@ -145,6 +153,52 @@ describe("progression route handlers", () => {
     });
   });
 
+  it("returns split contracts for level, today and goals list", async () => {
+    serviceMocks.getProgressionLevel.mockResolvedValueOnce({
+      success: true,
+      level: {
+        profile: { timezone: "Europe/Rome", total_xp: 42 },
+        levelProgress: { level: 3, totalXp: 42 },
+      },
+    });
+    const level = await handleGetProgressionLevel(auth);
+
+    serviceMocks.getProgressionToday.mockResolvedValueOnce({
+      success: true,
+      today: {
+        todayItems: [{ id: actionId }],
+        weeklyItems: [],
+        todayLocalDate: "2026-05-02",
+      },
+    });
+    const today = await handleGetProgressionToday(auth);
+
+    serviceMocks.getProgressionGoals.mockResolvedValueOnce({
+      success: true,
+      goals: [{ id: goalId }],
+    });
+    const goals = await handleGetProgressionGoals(auth, new URLSearchParams());
+
+    await expect(level.json()).resolves.toMatchObject({
+      success: true,
+      level: {
+        profile: { total_xp: 42 },
+        levelProgress: { level: 3 },
+      },
+    });
+    await expect(today.json()).resolves.toMatchObject({
+      success: true,
+      today: {
+        todayItems: [{ id: actionId }],
+        todayLocalDate: "2026-05-02",
+      },
+    });
+    await expect(goals.json()).resolves.toMatchObject({
+      success: true,
+      goals: [{ id: goalId }],
+    });
+  });
+
   it("handles goal details, updates, operations and deletes", async () => {
     serviceMocks.getProgressionGoalDetails.mockResolvedValueOnce({
       success: true,
@@ -208,9 +262,9 @@ describe("progression route handlers", () => {
     });
     const undo = await handleUndoProgressionCheckin(auth, { checkinId }, new URLSearchParams());
 
-    serviceMocks.getProgressionOverview.mockResolvedValueOnce({
+    serviceMocks.getProgressionDeadlineReview.mockResolvedValueOnce({
       success: true,
-      overview: { expiredGoals: [{ id: goalId }], deadlineWarning: true },
+      review: { expiredGoals: [{ id: goalId }], deadlineWarning: true },
     });
     const deadlines = await handleGetProgressionDeadlines(auth);
 
@@ -238,5 +292,24 @@ describe("progression route handlers", () => {
     });
     await expect(resolved.json()).resolves.toMatchObject({ success: true });
     await expect(history.json()).resolves.toMatchObject({ success: true, count: 1 });
+  });
+
+  it("returns deadline review data without the overview payload", async () => {
+    serviceMocks.getProgressionDeadlineReview.mockResolvedValueOnce({
+      success: true,
+      review: {
+        deadlineWarning: true,
+        expiredGoals: [{ id: goalId }],
+      },
+    });
+
+    const response = await handleGetProgressionDeadlineReview(auth);
+
+    await expect(response.json()).resolves.toMatchObject({
+      success: true,
+      deadlineWarning: true,
+      expiredGoals: [{ id: goalId }],
+      count: 1,
+    });
   });
 });

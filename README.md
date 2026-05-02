@@ -141,7 +141,7 @@ npm run gen-supabase-types  # Regenerate Supabase TypeScript types
 
 - Pages, layouts, and routes stay thin and import through `app/_features`, `app/_shared`, and `app/_server`.
 - Shared authenticated navigation lives in `app/(app-shell)` and exposes `/dashboard`, `/projects`, `/academy`, `/reflections`, `/learning`, `/progression`, `/news`, and `/settings`.
-- The progression flow is owned by `app/_features/progression`, with Supabase RPC-backed XP/check-in mutations, server-driven action visibility, on-demand goal details, and a client workspace in `app/design/templates/progression`.
+- The progression flow is owned by `app/_features/progression`, with Supabase RPC-backed XP/check-in mutations, server-composed `/progression` sections for level/goals/today/deadlines, and client-only islands for edits, check-ins, deadline actions, and on-demand XP history.
 - `/assistant` stays available as a legacy standalone protected route and is not exposed in the main shell navigation.
 - `/setup/calendar` stays standalone + protected, discoverable from the `/settings` page (`Integrazioni` section).
 - API routes validate inputs with Zod and delegate business logic to feature handlers/services.

@@ -5,7 +5,10 @@ import {
   deleteProgressionGoal,
   ensureProgressionProfile,
   getProgressionGoalDetails,
+  getProgressionGoals,
+  getProgressionLevel,
   getProgressionStatus,
+  getProgressionToday,
   getProgressionXpHistory,
   resolveProgressionDeadline,
   runProgressionGoalOperation,
@@ -71,6 +74,9 @@ describe("progression client", () => {
 
     await ensureProgressionProfile("Europe/Rome");
     await getProgressionStatus("Europe/Rome");
+    await getProgressionLevel();
+    await getProgressionToday();
+    await getProgressionGoals();
     await createProgressionGoal({ title: "Learn piano", completionXp: 20 });
     await updateProgressionGoal({ id: "goal-1", title: "Updated" });
     await runProgressionGoalOperation({ goalId: "goal-1", operation: "complete" });
@@ -96,45 +102,57 @@ describe("progression client", () => {
     );
     expect(fetchMock).toHaveBeenNthCalledWith(
       3,
-      "/api/progression/goals",
-      expect.objectContaining({ method: "POST" }),
+      "/api/progression/level",
     );
     expect(fetchMock).toHaveBeenNthCalledWith(
       4,
-      "/api/progression/goals",
-      expect.objectContaining({ method: "PATCH" }),
+      "/api/progression/today",
     );
     expect(fetchMock).toHaveBeenNthCalledWith(
       5,
       "/api/progression/goals",
-      expect.objectContaining({ method: "PATCH" }),
     );
     expect(fetchMock).toHaveBeenNthCalledWith(
       6,
-      "/api/progression/goals?id=goal-1",
+      "/api/progression/goals",
+      expect.objectContaining({ method: "POST" }),
     );
     expect(fetchMock).toHaveBeenNthCalledWith(
       7,
+      "/api/progression/goals",
+      expect.objectContaining({ method: "PATCH" }),
+    );
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      8,
+      "/api/progression/goals",
+      expect.objectContaining({ method: "PATCH" }),
+    );
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      9,
+      "/api/progression/goals?id=goal-1",
+    );
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      10,
       "/api/progression/goals?id=goal-1",
       expect.objectContaining({ method: "DELETE" }),
     );
     expect(fetchMock).toHaveBeenNthCalledWith(
-      8,
+      11,
       "/api/progression/check-ins",
       expect.objectContaining({ method: "POST" }),
     );
     expect(fetchMock).toHaveBeenNthCalledWith(
-      9,
+      12,
       "/api/progression/check-ins?id=checkin-1",
       expect.objectContaining({ method: "DELETE" }),
     );
     expect(fetchMock).toHaveBeenNthCalledWith(
-      10,
+      13,
       "/api/progression/deadlines",
       expect.objectContaining({ method: "PATCH" }),
     );
     expect(fetchMock).toHaveBeenNthCalledWith(
-      11,
+      14,
       "/api/progression/xp-history?limit=10&offset=20",
     );
   });

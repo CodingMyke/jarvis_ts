@@ -11,6 +11,7 @@ import type {
   ProgressionActionRow,
   ProgressionCheckinRow,
   ProgressionGoalRow,
+  ProgressionGoalStatus,
   ProgressionProfileRow,
   ProgressionStatus,
   ProgressionXpHistoryRow,
@@ -44,6 +45,22 @@ export interface ProgressionOverview {
 export interface ProgressionGoalDetails {
   goal: ProgressionGoalRow;
   actions: ProgressionActionRow[];
+}
+
+export interface ProgressionLevelSection {
+  profile: ProgressionProfileRow;
+  levelProgress: ReturnType<typeof getLevelProgress>;
+}
+
+export interface ProgressionTodaySection {
+  todayItems: ProgressionVisibleActionItem[];
+  weeklyItems: ProgressionVisibleActionItem[];
+  todayLocalDate: string;
+}
+
+export interface ProgressionDeadlineReview {
+  expiredGoals: ProgressionGoalRow[];
+  deadlineWarning: boolean;
 }
 
 function getErrorMessage(error: unknown, fallback: string): string {
@@ -91,6 +108,176 @@ function buildVisibleActionItem(
     goalTitle: goal.title,
     xpValue: action.xp_per_checkin,
     checkinId: getCheckinIdForAction(checkins, action.id, localDate),
+  };
+}
+
+interface ProgressionDateContext {
+  todayLocalDate: string;
+  isoWeekday: number;
+  weekStart: string;
+  weekEnd: string;
+}
+
+function getDateContext(timezone: string, today?: string): ProgressionDateContext {
+  const todayLocalDate = today ?? getLocalDateForTimezone(new Date(), timezone);
+  const isoWeekday = getIsoWeekdayForTimezone(new Date(`${todayLocalDate}T12:00:00.000Z`), "UTC");
+  const { start: weekStart, end: weekEnd } = getWeekRangeForLocalDate(todayLocalDate);
+
+  return {
+    todayLocalDate,
+    isoWeekday,
+    weekStart,
+    weekEnd,
+  };
+}
+
+async function loadGoals(
+  supabase: ProgressionSupabase,
+  userId: string,
+  status: ProgressionGoalStatus | "all" = "all",
+): Promise<ProgressionResult<{ goals: ProgressionGoalRow[] }>> {
+  let query = supabase
+    .from("progression_goals")
+    .select("*")
+    .eq("user_id", userId)
+    .is("deleted_at", null);
+
+  if (status !== "all") {
+    query = query.eq("status", status);
+  }
+
+  const { data, error } = await query.order("created_at", {
+    ascending: false,
+  });
+
+  if (error) {
+    return { success: false, error: getErrorMessage(error, "Goals load failed.") };
+  }
+
+  return { success: true, goals: (data ?? []) as ProgressionGoalRow[] };
+}
+
+async function loadActionsForGoals(
+  supabase: ProgressionSupabase,
+  userId: string,
+  goalIds: string[],
+): Promise<ProgressionResult<{ actions: ProgressionActionRow[] }>> {
+  const { data, error } = await supabase
+    .from("progression_actions")
+    .select("*")
+    .eq("user_id", userId)
+    .in("goal_id", goalIds.length > 0 ? goalIds : ["00000000-0000-0000-0000-000000000000"])
+    .order("created_at", { ascending: true });
+
+  if (error) {
+    return { success: false, error: getErrorMessage(error, "Actions load failed.") };
+  }
+
+  return { success: true, actions: (data ?? []) as ProgressionActionRow[] };
+}
+
+async function loadCheckinsForDateRange(
+  supabase: ProgressionSupabase,
+  userId: string,
+  weekStart: string,
+  todayLocalDate: string,
+): Promise<ProgressionResult<{ checkins: ProgressionCheckinRow[] }>> {
+  const { data, error } = await supabase
+    .from("progression_checkins")
+    .select("*")
+    .eq("user_id", userId)
+    .gte("local_date", weekStart)
+    .lte("local_date", todayLocalDate)
+    .order("local_date", { ascending: false });
+
+  if (error) {
+    return { success: false, error: getErrorMessage(error, "Check-ins load failed.") };
+  }
+
+  return { success: true, checkins: (data ?? []) as ProgressionCheckinRow[] };
+}
+
+async function loadExpiredGoals(
+  supabase: ProgressionSupabase,
+  userId: string,
+  todayLocalDate: string,
+): Promise<ProgressionResult<{ expiredGoals: ProgressionGoalRow[] }>> {
+  const { data, error } = await supabase
+    .from("progression_goals")
+    .select("*")
+    .eq("user_id", userId)
+    .is("deleted_at", null)
+    .lt("deadline", todayLocalDate)
+    .neq("status", "completed")
+    .neq("status", "failed")
+    .order("deadline", { ascending: true });
+
+  if (error) {
+    return { success: false, error: getErrorMessage(error, "Deadline load failed.") };
+  }
+
+  return { success: true, expiredGoals: (data ?? []) as ProgressionGoalRow[] };
+}
+
+function buildTodaySection(
+  goals: ProgressionGoalRow[],
+  actions: ProgressionActionRow[],
+  checkins: ProgressionCheckinRow[],
+  dateContext: ProgressionDateContext,
+): ProgressionTodaySection {
+  const weekCheckins = checkins.map((checkin) => ({
+    actionId: checkin.action_id,
+    localDate: checkin.local_date,
+  }));
+  const goalsById = new Map(goals.map((goal) => [goal.id, goal]));
+  const todayItems: ProgressionVisibleActionItem[] = [];
+  const weeklyItems: ProgressionVisibleActionItem[] = [];
+
+  for (const action of actions) {
+    const goal = goalsById.get(action.goal_id);
+    if (!goal || goal.status !== "in_progress" || !action.active) {
+      continue;
+    }
+
+    const item = buildVisibleActionItem(action, goal, checkins, dateContext.todayLocalDate);
+
+    if (action.frequency_type === "weekly_count") {
+      if (
+        isWeeklyCountAvailable(
+          {
+            id: action.id,
+            frequencyType: action.frequency_type as "weekly_count",
+            frequencyConfig: action.frequency_config,
+            active: action.active,
+          },
+          weekCheckins,
+        )
+      ) {
+        weeklyItems.push(item);
+      }
+      continue;
+    }
+
+    if (
+      isActionDueToday(
+        {
+          id: action.id,
+          frequencyType: action.frequency_type as "daily" | "specific_weekdays",
+          frequencyConfig: action.frequency_config,
+          active: action.active,
+        },
+        dateContext,
+        weekCheckins,
+      )
+    ) {
+      todayItems.push(item);
+    }
+  }
+
+  return {
+    todayItems,
+    weeklyItems,
+    todayLocalDate: dateContext.todayLocalDate,
   };
 }
 
@@ -252,6 +439,103 @@ export async function getProgressionStatus(
   };
 }
 
+export async function getProgressionLevel(
+  supabase: ProgressionSupabase,
+  userId: string,
+): Promise<ProgressionResult<{ level: ProgressionLevelSection }>> {
+  const profileResult = await getProfile(supabase, userId);
+  if (!profileResult.success) {
+    return profileResult;
+  }
+
+  return {
+    success: true,
+    level: {
+      profile: profileResult.profile,
+      levelProgress: getLevelProgress(profileResult.profile.total_xp),
+    },
+  };
+}
+
+export async function getProgressionGoals(
+  supabase: ProgressionSupabase,
+  userId: string,
+  options: { status?: ProgressionGoalStatus | "all" } = {},
+): Promise<ProgressionResult<{ goals: ProgressionGoalRow[] }>> {
+  return loadGoals(supabase, userId, options.status ?? "all");
+}
+
+export async function getProgressionToday(
+  supabase: ProgressionSupabase,
+  userId: string,
+  options: { today?: string } = {},
+): Promise<ProgressionResult<{ today: ProgressionTodaySection }>> {
+  const profileResult = await getProfile(supabase, userId);
+  if (!profileResult.success) {
+    return profileResult;
+  }
+
+  const dateContext = getDateContext(profileResult.profile.timezone, options.today);
+  const goalsResult = await loadGoals(supabase, userId, "in_progress");
+  if (!goalsResult.success) {
+    return goalsResult;
+  }
+
+  const actionsResult = await loadActionsForGoals(
+    supabase,
+    userId,
+    goalsResult.goals.map((goal) => goal.id),
+  );
+  if (!actionsResult.success) {
+    return actionsResult;
+  }
+
+  const checkinsResult = await loadCheckinsForDateRange(
+    supabase,
+    userId,
+    dateContext.weekStart,
+    dateContext.todayLocalDate,
+  );
+  if (!checkinsResult.success) {
+    return checkinsResult;
+  }
+
+  return {
+    success: true,
+    today: buildTodaySection(
+      goalsResult.goals,
+      actionsResult.actions,
+      checkinsResult.checkins,
+      dateContext,
+    ),
+  };
+}
+
+export async function getProgressionDeadlineReview(
+  supabase: ProgressionSupabase,
+  userId: string,
+  options: { today?: string } = {},
+): Promise<ProgressionResult<{ review: ProgressionDeadlineReview }>> {
+  const profileResult = await getProfile(supabase, userId);
+  if (!profileResult.success) {
+    return profileResult;
+  }
+
+  const dateContext = getDateContext(profileResult.profile.timezone, options.today);
+  const expiredGoalsResult = await loadExpiredGoals(supabase, userId, dateContext.todayLocalDate);
+  if (!expiredGoalsResult.success) {
+    return expiredGoalsResult;
+  }
+
+  return {
+    success: true,
+    review: {
+      expiredGoals: expiredGoalsResult.expiredGoals,
+      deadlineWarning: expiredGoalsResult.expiredGoals.length > 0,
+    },
+  };
+}
+
 export async function getProgressionOverview(
   supabase: ProgressionSupabase,
   userId: string,
@@ -263,66 +547,31 @@ export async function getProgressionOverview(
   }
 
   const profile = profileResult.profile;
-  const todayLocalDate = options.today ?? getLocalDateForTimezone(new Date(), profile.timezone);
-  const isoWeekday = getIsoWeekdayForTimezone(new Date(`${todayLocalDate}T12:00:00.000Z`), "UTC");
-  const { start: weekStart, end: weekEnd } = getWeekRangeForLocalDate(todayLocalDate);
-
-  let goalsQuery = supabase
-    .from("progression_goals")
-    .select("*")
-    .eq("user_id", userId)
-    .is("deleted_at", null);
-
-  if (options.status && options.status !== "all") {
-    goalsQuery = goalsQuery.eq("status", options.status);
+  const dateContext = getDateContext(profile.timezone, options.today);
+  const goalsResult = await loadGoals(supabase, userId, options.status ?? "all");
+  if (!goalsResult.success) {
+    return goalsResult;
   }
-
-  const { data: goalsData, error: goalsError } = await goalsQuery.order("created_at", {
-    ascending: false,
-  });
-
-  if (goalsError) {
-    return { success: false, error: getErrorMessage(goalsError, "Goals load failed.") };
+  const actionsResult = await loadActionsForGoals(
+    supabase,
+    userId,
+    goalsResult.goals.map((goal) => goal.id),
+  );
+  if (!actionsResult.success) {
+    return actionsResult;
   }
-
-  const goals = (goalsData ?? []) as ProgressionGoalRow[];
-  const goalIds = goals.map((goal) => goal.id);
-
-  const { data: actionsData, error: actionsError } = await supabase
-    .from("progression_actions")
-    .select("*")
-    .eq("user_id", userId)
-    .in("goal_id", goalIds.length > 0 ? goalIds : ["00000000-0000-0000-0000-000000000000"])
-    .order("created_at", { ascending: true });
-
-  if (actionsError) {
-    return { success: false, error: getErrorMessage(actionsError, "Actions load failed.") };
+  const checkinsResult = await loadCheckinsForDateRange(
+    supabase,
+    userId,
+    dateContext.weekStart,
+    dateContext.todayLocalDate,
+  );
+  if (!checkinsResult.success) {
+    return checkinsResult;
   }
-
-  const { data: checkinsData, error: checkinsError } = await supabase
-    .from("progression_checkins")
-    .select("*")
-    .eq("user_id", userId)
-    .gte("local_date", weekStart)
-    .lte("local_date", todayLocalDate)
-    .order("local_date", { ascending: false });
-
-  if (checkinsError) {
-    return { success: false, error: getErrorMessage(checkinsError, "Check-ins load failed.") };
-  }
-
-  const { data: expiredData, error: expiredError } = await supabase
-    .from("progression_goals")
-    .select("*")
-    .eq("user_id", userId)
-    .is("deleted_at", null)
-    .lt("deadline", todayLocalDate)
-    .neq("status", "completed")
-    .neq("status", "failed")
-    .order("deadline", { ascending: true });
-
-  if (expiredError) {
-    return { success: false, error: getErrorMessage(expiredError, "Deadline load failed.") };
+  const expiredGoalsResult = await loadExpiredGoals(supabase, userId, dateContext.todayLocalDate);
+  if (!expiredGoalsResult.success) {
+    return expiredGoalsResult;
   }
 
   const { data: historyData, error: historyError } = await supabase
@@ -336,73 +585,25 @@ export async function getProgressionOverview(
     return { success: false, error: getErrorMessage(historyError, "XP history load failed.") };
   }
 
-  const expiredGoals = (expiredData ?? []) as ProgressionGoalRow[];
-  const actions = (actionsData ?? []) as ProgressionActionRow[];
-  const checkins = (checkinsData ?? []) as ProgressionCheckinRow[];
-  const weekCheckins = checkins.map((checkin) => ({
-    actionId: checkin.action_id,
-    localDate: checkin.local_date,
-  }));
-  const goalsById = new Map(goals.map((goal) => [goal.id, goal]));
-  const todayItems: ProgressionVisibleActionItem[] = [];
-  const weeklyItems: ProgressionVisibleActionItem[] = [];
-
-  for (const action of actions) {
-    const goal = goalsById.get(action.goal_id);
-    if (!goal || goal.status !== "in_progress" || !action.active) {
-      continue;
-    }
-
-    const item = buildVisibleActionItem(action, goal, checkins, todayLocalDate);
-
-    if (action.frequency_type === "weekly_count") {
-      if (
-        isWeeklyCountAvailable(
-          {
-            id: action.id,
-            frequencyType: action.frequency_type as "weekly_count",
-            frequencyConfig: action.frequency_config,
-            active: action.active,
-          },
-          weekCheckins,
-        )
-      ) {
-        weeklyItems.push(item);
-      }
-      continue;
-    }
-
-    if (
-      isActionDueToday(
-        {
-          id: action.id,
-          frequencyType: action.frequency_type as "daily" | "specific_weekdays",
-          frequencyConfig: action.frequency_config,
-          active: action.active,
-        },
-        {
-          todayLocalDate,
-          isoWeekday,
-          weekStart,
-          weekEnd,
-        },
-        weekCheckins,
-      )
-    ) {
-      todayItems.push(item);
-    }
-  }
+  const goals = goalsResult.goals;
+  const todaySection = buildTodaySection(
+    goals,
+    actionsResult.actions,
+    checkinsResult.checkins,
+    dateContext,
+  );
+  const expiredGoals = expiredGoalsResult.expiredGoals;
 
   return {
     success: true,
     overview: {
       profile,
       goals,
-      todayItems,
-      weeklyItems,
+      todayItems: todaySection.todayItems,
+      weeklyItems: todaySection.weeklyItems,
       expiredGoals,
       xpHistory: (historyData ?? []) as ProgressionXpHistoryRow[],
-      todayLocalDate,
+      todayLocalDate: todaySection.todayLocalDate,
       deadlineWarning: expiredGoals.length > 0,
       levelProgress: getLevelProgress(profile.total_xp),
     },

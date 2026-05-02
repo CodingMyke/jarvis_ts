@@ -38,8 +38,10 @@ const chatsMocks = vi.hoisted(() => ({
 const progressionMocks = vi.hoisted(() => ({
   getProgressionUnauthorizedResponse: vi.fn(),
   handleGetProgressionOverview: vi.fn(),
+  handleGetProgressionLevel: vi.fn(),
   handleGetProgressionStatus: vi.fn(),
   handleEnsureProgressionProfile: vi.fn(),
+  handleGetProgressionToday: vi.fn(),
   handleGetProgressionGoals: vi.fn(),
   handleCreateProgressionGoal: vi.fn(),
   handleUpdateProgressionGoal: vi.fn(),
@@ -47,6 +49,7 @@ const progressionMocks = vi.hoisted(() => ({
   handleCreateProgressionCheckin: vi.fn(),
   handleUndoProgressionCheckin: vi.fn(),
   handleGetProgressionDeadlines: vi.fn(),
+  handleGetProgressionDeadlineReview: vi.fn(),
   handleResolveProgressionDeadline: vi.fn(),
   handleGetProgressionXpHistory: vi.fn(),
 }));
@@ -78,8 +81,10 @@ import * as authGoogleRoute from "./auth/google/route";
 import * as calendarRoute from "./calendar/events/route";
 import * as chatsRoute from "./chats/route";
 import * as progressionRoute from "./progression/route";
+import * as progressionLevelRoute from "./progression/level/route";
 import * as progressionProfileRoute from "./progression/profile/route";
 import * as progressionStatusRoute from "./progression/status/route";
+import * as progressionTodayRoute from "./progression/today/route";
 import * as progressionGoalsRoute from "./progression/goals/route";
 import * as progressionCheckinsRoute from "./progression/check-ins/route";
 import * as progressionDeadlinesRoute from "./progression/deadlines/route";
@@ -490,14 +495,20 @@ describe("progression routes", () => {
     progressionMocks.handleGetProgressionOverview.mockResolvedValue(
       createJsonResponse({ success: true }),
     );
+    progressionMocks.handleGetProgressionLevel.mockResolvedValue(
+      createJsonResponse({ success: true, level: { levelProgress: { level: 3 } } }),
+    );
     progressionMocks.handleGetProgressionStatus.mockResolvedValue(
       createJsonResponse({ success: true, status: "OK" }),
     );
     progressionMocks.handleEnsureProgressionProfile.mockResolvedValue(
       createJsonResponse({ success: true }),
     );
+    progressionMocks.handleGetProgressionToday.mockResolvedValue(
+      createJsonResponse({ success: true, today: { todayItems: [] } }),
+    );
     progressionMocks.handleGetProgressionGoals.mockResolvedValue(
-      createJsonResponse({ success: true }),
+      createJsonResponse({ success: true, goals: [] }),
     );
     progressionMocks.handleCreateProgressionGoal.mockResolvedValue(
       createJsonResponse({ success: true }),
@@ -517,6 +528,9 @@ describe("progression routes", () => {
     progressionMocks.handleGetProgressionDeadlines.mockResolvedValue(
       createJsonResponse({ success: true }),
     );
+    progressionMocks.handleGetProgressionDeadlineReview.mockResolvedValue(
+      createJsonResponse({ success: true, expiredGoals: [] }),
+    );
     progressionMocks.handleResolveProgressionDeadline.mockResolvedValue(
       createJsonResponse({ success: true }),
     );
@@ -534,6 +548,7 @@ describe("progression routes", () => {
       body: JSON.stringify({ timezone: "Europe/Rome" }),
     });
     const goalsRequest = new NextRequest("http://localhost/api/progression/goals?id=goal-1");
+    const goalsListRequest = new NextRequest("http://localhost/api/progression/goals");
     const createGoalRequest = new NextRequest("http://localhost/api/progression/goals", {
       method: "POST",
       body: JSON.stringify({ title: "Learn piano" }),
@@ -561,8 +576,11 @@ describe("progression routes", () => {
 
     await progressionRoute.GET(overviewRequest);
     await progressionStatusRoute.POST(statusRequest);
+    await progressionLevelRoute.GET();
     await progressionProfileRoute.POST(profileRequest);
+    await progressionTodayRoute.GET();
     await progressionGoalsRoute.GET(goalsRequest);
+    await progressionGoalsRoute.GET(goalsListRequest);
     await progressionGoalsRoute.POST(createGoalRequest);
     await progressionGoalsRoute.PATCH(updateGoalRequest);
     await progressionGoalsRoute.DELETE(deleteGoalRequest);
@@ -580,13 +598,23 @@ describe("progression routes", () => {
       { userId: "user-1" },
       { timezone: "Europe/Rome" },
     );
+    expect(progressionMocks.handleGetProgressionLevel).toHaveBeenCalledWith({
+      userId: "user-1",
+    });
     expect(progressionMocks.handleEnsureProgressionProfile).toHaveBeenCalledWith(
       { userId: "user-1" },
       { timezone: "Europe/Rome" },
     );
+    expect(progressionMocks.handleGetProgressionToday).toHaveBeenCalledWith({
+      userId: "user-1",
+    });
     expect(progressionMocks.handleGetProgressionGoals).toHaveBeenCalledWith(
       { userId: "user-1" },
       goalsRequest.nextUrl.searchParams,
+    );
+    expect(progressionMocks.handleGetProgressionGoals).toHaveBeenCalledWith(
+      { userId: "user-1" },
+      goalsListRequest.nextUrl.searchParams,
     );
     expect(progressionMocks.handleCreateProgressionGoal).toHaveBeenCalledWith(
       { userId: "user-1" },

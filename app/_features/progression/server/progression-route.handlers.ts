@@ -7,9 +7,13 @@ import {
   createProgressionGoal,
   duplicateProgressionGoal,
   ensureProgressionProfile,
+  getProgressionDeadlineReview,
   getProgressionGoalDetails,
+  getProgressionGoals,
+  getProgressionLevel,
   getProgressionOverview,
   getProgressionStatus,
+  getProgressionToday,
   getProgressionXpHistory,
   resolveExpiredProgressionGoal,
   softDeleteProgressionGoal,
@@ -24,6 +28,7 @@ import {
   progressionGoalCreateBodySchema,
   progressionGoalDeleteBodySchema,
   progressionGoalDetailsQuerySchema,
+  progressionGoalsQuerySchema,
   progressionGoalOperationBodySchema,
   progressionGoalUpdateBodySchema,
   progressionOverviewQuerySchema,
@@ -66,6 +71,36 @@ export async function handleGetProgressionOverview(
   return jsonOk({
     success: true,
     overview: result.overview,
+  });
+}
+
+export async function handleGetProgressionLevel(auth: AuthContext) {
+  const result = await getProgressionLevel(auth.supabase, auth.userId);
+  if (!result.success) {
+    return jsonError(500, {
+      error: "EXECUTION_ERROR",
+      message: result.error,
+    });
+  }
+
+  return jsonOk({
+    success: true,
+    level: result.level,
+  });
+}
+
+export async function handleGetProgressionToday(auth: AuthContext) {
+  const result = await getProgressionToday(auth.supabase, auth.userId);
+  if (!result.success) {
+    return jsonError(500, {
+      error: "EXECUTION_ERROR",
+      message: result.error,
+    });
+  }
+
+  return jsonOk({
+    success: true,
+    today: result.today,
   });
 }
 
@@ -149,7 +184,36 @@ export async function handleGetProgressionGoals(
   auth: AuthContext,
   searchParams: URLSearchParams,
 ) {
-  return handleGetProgressionGoalDetails(auth, searchParams);
+  const parsed = progressionGoalsQuerySchema.safeParse({
+    id: searchParams.get("id") ?? undefined,
+    status: searchParams.get("status") ?? undefined,
+  });
+
+  if (!parsed.success) {
+    return jsonError(400, {
+      error: "INVALID_QUERY",
+      message: getZodErrorMessage(parsed.error),
+    });
+  }
+
+  if (parsed.data.id) {
+    return handleGetProgressionGoalDetails(auth, searchParams);
+  }
+
+  const result = await getProgressionGoals(auth.supabase, auth.userId, {
+    status: parsed.data.status,
+  });
+  if (!result.success) {
+    return jsonError(500, {
+      error: "EXECUTION_ERROR",
+      message: result.error,
+    });
+  }
+
+  return jsonOk({
+    success: true,
+    goals: result.goals,
+  });
 }
 
 export async function handleCreateProgressionGoal(auth: AuthContext, body: unknown) {
@@ -332,7 +396,7 @@ export async function handleUndoProgressionCheckin(
 }
 
 export async function handleGetProgressionDeadlines(auth: AuthContext) {
-  const result = await getProgressionOverview(auth.supabase, auth.userId, {});
+  const result = await getProgressionDeadlineReview(auth.supabase, auth.userId, {});
   if (!result.success) {
     return jsonError(500, {
       error: "EXECUTION_ERROR",
@@ -342,10 +406,14 @@ export async function handleGetProgressionDeadlines(auth: AuthContext) {
 
   return jsonOk({
     success: true,
-    deadlineWarning: result.overview.deadlineWarning,
-    expiredGoals: result.overview.expiredGoals,
-    count: result.overview.expiredGoals.length,
+    deadlineWarning: result.review.deadlineWarning,
+    expiredGoals: result.review.expiredGoals,
+    count: result.review.expiredGoals.length,
   });
+}
+
+export async function handleGetProgressionDeadlineReview(auth: AuthContext) {
+  return handleGetProgressionDeadlines(auth);
 }
 
 export async function handleResolveProgressionDeadline(auth: AuthContext, body: unknown) {
