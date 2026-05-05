@@ -107,7 +107,7 @@ npm run test -- app/_features/progression/server/progression-route.handlers.test
 
 Expected: pass.
 
-- [ ] **Step 5: Commit the server-side status endpoint**
+- [x] **Step 5: Commit the server-side status endpoint**
 
 Run:
 
@@ -168,7 +168,7 @@ npm run test -- app/_features/progression/lib/progression-client.test.ts app/des
 
 Expected: pass.
 
-- [ ] **Step 5: Commit the provider swap**
+- [x] **Step 5: Commit the provider swap**
 
 Run:
 
@@ -210,7 +210,7 @@ npm run typecheck
 
 Expected: both pass without warnings or type errors.
 
-- [ ] **Step 4: Commit the final test adjustments**
+- [x] **Step 4: Commit the final test adjustments**
 
 Run:
 

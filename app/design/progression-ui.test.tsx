@@ -130,6 +130,14 @@ const initialGoals = [
     deadline: null,
     completion_xp: 10,
   },
+  {
+    id: "goal-failed",
+    title: "Fix the overdue goal",
+    description: "Recover the blocked plan.",
+    status: "failed",
+    deadline: null,
+    completion_xp: 8,
+  },
 ];
 
 const todayItems = [
@@ -311,6 +319,23 @@ describe("progression page UI", () => {
     await waitFor(() => {
       expect(deleteProgressionGoal).toHaveBeenCalledWith("goal-to-start");
     });
+  });
+
+  it("shows delete for failed goals with a separate destructive section", async () => {
+    render(<ProgressionTemplate initialGoals={initialGoals} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Falliti" }));
+
+    const failedCard = screen.getByTestId("progression-goal-goal-failed");
+    fireEvent.click(
+      within(failedCard).getByRole("button", {
+        name: "Apri azioni obiettivo di Fix the overdue goal",
+      }),
+    );
+
+    expect(within(failedCard).getByRole("menuitem", { name: "Duplica" })).toBeInTheDocument();
+    expect(within(failedCard).getByRole("menuitem", { name: "Modifica" })).toBeInTheDocument();
+    expect(within(failedCard).getByRole("menuitem", { name: "Elimina" })).toBeInTheDocument();
   });
 
   it("loads goal details on demand and preserves recurring action ids during edit submit", async () => {

@@ -147,7 +147,7 @@ npm run test -- app/_features/progression/server/progression-route.handlers.test
 
 Expected: pass.
 
-- [ ] **Step 6: Commit the data contract split**
+- [x] **Step 6: Commit the data contract split**
 
 Run:
 
@@ -231,7 +231,7 @@ npm run test -- app/design/progression-ui.test.tsx app/design/templates/progress
 
 Expected: pass.
 
-- [ ] **Step 6: Commit the page split**
+- [x] **Step 6: Commit the page split**
 
 Run:
 
@@ -295,7 +295,7 @@ npm run test -- app/design/progression-ui.test.tsx app/_features/progression/lib
 
 Expected: pass.
 
-- [ ] **Step 5: Commit the interactive island work**
+- [x] **Step 5: Commit the interactive island work**
 
 Run:
 
@@ -334,7 +334,7 @@ npm run typecheck
 
 Expected: all pass.
 
-- [ ] **Step 4: Commit the final cleanup**
+- [x] **Step 4: Commit the final cleanup**
 
 Run:
 

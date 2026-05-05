@@ -118,6 +118,13 @@ function GoalActions({
     });
   }
 
+  if (goal.status === "failed") {
+    destructiveActions.push({
+      label: "Elimina",
+      onClick: () => runAction(() => onDeleteGoal(goal.id)),
+    });
+  }
+
   primaryActions.push(
     {
       label: "Duplica",

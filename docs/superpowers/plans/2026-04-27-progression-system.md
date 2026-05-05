@@ -639,7 +639,7 @@ Run: `npm run test -- app/design/progression-ui.test.tsx`
 
 Expected: PASS.
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 Run: `git add 'app/(app-shell)/progression/page.tsx' app/design`
 
@@ -671,7 +671,7 @@ Mention progression in:
 If implementation uses the assumptions above, add a short "Implementation Clarifications"
 section to `docs/progression-system-spec.md`.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 Run: `git add README.md docs/progression-system-spec.md`
 
@@ -721,7 +721,7 @@ Run: `npm run build`
 
 Expected: PASS.
 
-- [ ] **Step 7: Manual browser check**
+- [x] **Step 7: Manual browser check**
 
 Run: `npm run dev`
 
@@ -735,7 +735,7 @@ Open `/progression` and verify:
 - Deadline dialog blocks only the progression page.
 - XP history shows immutable descriptions.
 
-- [ ] **Step 8: Commit any fixes**
+- [x] **Step 8: Commit any fixes**
 
 Run: `git status --short`
 
@@ -751,13 +751,13 @@ Expected: only if verification required fixes.
 
 **Files:** none
 
-- [ ] **Step 1: Push branch**
+- [x] **Step 1: Push branch**
 
 Run: `git push -u origin codex/progression-system`
 
 Expected: branch is pushed.
 
-- [ ] **Step 2: Open a draft PR**
+- [x] **Step 2: Open a draft PR**
 
 Use GitHub MCP tools first. Default repository: `CodingMyke/jarvis_ts`.
 
