@@ -16,6 +16,7 @@ export { AppShellTemplate } from "./templates/app-shell/AppShellTemplate";
 export { LoginTemplate } from "./templates/auth/LoginTemplate";
 export { DashboardCalendarTemplate } from "./templates/dashboard/DashboardCalendarTemplate";
 export { DashboardTodoTemplate } from "./templates/dashboard/DashboardTodoTemplate";
+export { ProgressionTemplate } from "./templates/progression/ProgressionTemplate";
 export { SettingsTemplate } from "./templates/settings/SettingsTemplate";
 export { CalendarPanel } from "./organisms/calendar/CalendarPanel";
 export { DashboardTodoPanel } from "./organisms/tasks/DashboardTodoPanel";

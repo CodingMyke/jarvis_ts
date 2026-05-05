@@ -6,6 +6,7 @@ import {
   getAppShellNavigationItemFromPath,
 } from "@/app/_features/navigation/app-shell-navigation";
 import { useAppShellAssistant } from "@/app/design/templates/app-shell/useAppShellAssistant";
+import { useAppShellProgression } from "@/app/design/templates/app-shell/useAppShellProgression";
 
 type SidebarVariant = "desktop" | "mobile";
 
@@ -45,17 +46,27 @@ function NavItem({
   item,
   isActive,
   onNavigate,
+  showWarning = false,
 }: {
   item: AppShellNavigationItem;
   isActive: boolean;
   onNavigate?: () => void;
+  showWarning?: boolean;
 }) {
   const navItemClassName = getNavItemClasses(isActive, item.enabled);
-  const badge = item.enabled ? null : (
+  const warningBadge = showWarning ? (
+    <span
+      data-testid={`nav-warning-${item.key}`}
+      aria-label={`${item.label} deadline warning`}
+      className="h-2.5 w-2.5 rounded-full bg-amber-400 shadow-[0_0_14px_rgba(251,191,36,0.55)]"
+    />
+  ) : null;
+  const disabledBadge = item.enabled ? null : (
     <span className="rounded-full border border-white/15 bg-white/5 px-2 py-0.5 text-xs text-muted">
       Presto
     </span>
   );
+  const badge = warningBadge ?? disabledBadge;
 
   if (!item.enabled) {
     return (
@@ -96,6 +107,7 @@ export function AppSidebar({
   const activeItem = getAppShellNavigationItemFromPath(currentPathname);
   const isDesktop = variant === "desktop";
   const { listeningMode, logoBorderClassName, onLogoToggle } = useAppShellAssistant();
+  const { hasProgressionDeadlineWarning } = useAppShellProgression();
 
   const sidebarClassName = isDesktop
     ? "hidden h-dvh w-56 flex-col border-r border-white/10 bg-background/95 md:flex"
@@ -137,6 +149,7 @@ export function AppSidebar({
               item={item}
               isActive={activeItem.key === item.key}
               onNavigate={onNavigate}
+              showWarning={item.key === "progression" && hasProgressionDeadlineWarning}
             />
           ))}
         </div>

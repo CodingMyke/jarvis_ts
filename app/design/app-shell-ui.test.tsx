@@ -17,6 +17,11 @@ const appShellAssistantMocks = vi.hoisted(() => ({
   onLogoToggle: vi.fn(),
 }));
 
+const appShellProgressionMocks = vi.hoisted(() => ({
+  hasProgressionDeadlineWarning: false,
+  openProgressionHistory: vi.fn(),
+}));
+
 vi.mock("next/navigation", () => ({
   usePathname: () => appShellMocks.pathname,
 }));
@@ -27,6 +32,14 @@ vi.mock("@/app/design/templates/app-shell/useAppShellAssistant", () => ({
 
 vi.mock("@/app/design/templates/app-shell/AppShellAssistantProvider", () => ({
   AppShellAssistantProvider: ({ children }: React.PropsWithChildren) => children,
+}));
+
+vi.mock("@/app/design/templates/app-shell/useAppShellProgression", () => ({
+  useAppShellProgression: () => appShellProgressionMocks,
+}));
+
+vi.mock("@/app/design/templates/app-shell/AppShellProgressionProvider", () => ({
+  AppShellProgressionProvider: ({ children }: React.PropsWithChildren) => children,
 }));
 
 vi.mock("next/link", () => ({
@@ -47,6 +60,8 @@ describe("app shell design", () => {
     appShellAssistantMocks.listeningMode = "idle";
     appShellAssistantMocks.logoBorderClassName = "border-white/10";
     appShellAssistantMocks.onLogoToggle.mockReset();
+    appShellProgressionMocks.hasProgressionDeadlineWarning = false;
+    appShellProgressionMocks.openProgressionHistory.mockReset();
   });
 
   it("renders the desktop shell with active item and disabled sections", () => {
@@ -72,6 +87,10 @@ describe("app shell design", () => {
     expect(projectsItem).toHaveAttribute("aria-disabled", "true");
     expect(projectsItem).toHaveAttribute("data-active", "false");
     expect(within(projectsItem).getByText("Presto")).toBeInTheDocument();
+
+    const progressionItem = within(desktopSidebar).getByTestId("nav-item-progression");
+    expect(progressionItem).toHaveAttribute("aria-disabled", "false");
+    expect(within(progressionItem).queryByText("Presto")).not.toBeInTheDocument();
   });
 
   it("renders app shell without throwing provider errors", () => {
@@ -130,5 +149,49 @@ describe("app shell design", () => {
     rerender(<AppTopbar currentPathname="/learning" onOpenMobileSidebar={vi.fn()} />);
 
     expect(screen.getByText("Apprendimento")).toBeInTheDocument();
+  });
+
+  it("shows progression warning badges on desktop and mobile navigation", () => {
+    appShellProgressionMocks.hasProgressionDeadlineWarning = true;
+
+    render(
+      <>
+        <AppSidebar currentPathname="/dashboard" />
+        <AppSidebar currentPathname="/dashboard" variant="mobile" />
+      </>,
+    );
+
+    const desktopSidebar = screen.getByTestId("app-sidebar-desktop");
+    const mobileSidebar = screen.getByTestId("app-sidebar-mobile");
+
+    expect(
+      within(desktopSidebar).getByTestId("nav-warning-progression"),
+    ).toBeInTheDocument();
+    expect(
+      within(mobileSidebar).getByTestId("nav-warning-progression"),
+    ).toBeInTheDocument();
+    expect(
+      within(desktopSidebar).queryByTestId("nav-warning-dashboard"),
+    ).not.toBeInTheDocument();
+  });
+
+  it("shows the progression history button in the topbar on the progression route", () => {
+    appShellMocks.pathname = "/progression";
+    appShellProgressionMocks.openProgressionHistory = vi.fn();
+
+    render(
+      <AppShellTemplate>
+        <div>Progression content</div>
+      </AppShellTemplate>,
+    );
+
+    const topbar = screen.getByTestId("app-shell-topbar");
+    const historyButton = within(topbar).getByRole("button", { name: "Cronologia XP" });
+
+    expect(historyButton).toBeInTheDocument();
+
+    fireEvent.click(historyButton);
+
+    expect(appShellProgressionMocks.openProgressionHistory).toHaveBeenCalledOnce();
   });
 });

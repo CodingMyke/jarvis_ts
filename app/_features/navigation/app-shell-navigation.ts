@@ -57,7 +57,7 @@ export const APP_SHELL_MAIN_NAVIGATION: readonly AppShellNavigationItem[] = [
     href: "/progression",
     label: "Progressione",
     title: "Progressione",
-    enabled: false,
+    enabled: true,
   },
   {
     key: "news",
