@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { render, screen, within } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import React from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { AppShellTemplate } from "@/app/design/templates/app-shell/AppShellTemplate";
@@ -11,8 +11,22 @@ const appShellMocks = vi.hoisted(() => ({
   pathname: "/dashboard",
 }));
 
+const appShellAssistantMocks = vi.hoisted(() => ({
+  listeningMode: "idle" as "idle" | "wake_word" | "connected",
+  logoBorderClassName: "border-white/10",
+  onLogoToggle: vi.fn(),
+}));
+
 vi.mock("next/navigation", () => ({
   usePathname: () => appShellMocks.pathname,
+}));
+
+vi.mock("@/app/design/templates/app-shell/useAppShellAssistant", () => ({
+  useAppShellAssistant: () => appShellAssistantMocks,
+}));
+
+vi.mock("@/app/design/templates/app-shell/AppShellAssistantProvider", () => ({
+  AppShellAssistantProvider: ({ children }: React.PropsWithChildren) => children,
 }));
 
 vi.mock("next/link", () => ({
@@ -30,6 +44,9 @@ vi.mock("next/link", () => ({
 describe("app shell design", () => {
   beforeEach(() => {
     appShellMocks.pathname = "/dashboard";
+    appShellAssistantMocks.listeningMode = "idle";
+    appShellAssistantMocks.logoBorderClassName = "border-white/10";
+    appShellAssistantMocks.onLogoToggle.mockReset();
   });
 
   it("renders the desktop shell with active item and disabled sections", () => {
@@ -57,6 +74,16 @@ describe("app shell design", () => {
     expect(within(projectsItem).getByText("Presto")).toBeInTheDocument();
   });
 
+  it("renders app shell without throwing provider errors", () => {
+    expect(() =>
+      render(
+        <AppShellTemplate>
+          <div>Content</div>
+        </AppShellTemplate>,
+      ),
+    ).not.toThrow();
+  });
+
   it("shows disabled placeholder routes as active when opened directly", () => {
     render(
       <AppSidebar currentPathname="/projects" />,
@@ -65,6 +92,32 @@ describe("app shell design", () => {
     const projectsItem = screen.getByTestId("nav-item-projects");
     expect(projectsItem).toHaveAttribute("aria-disabled", "true");
     expect(projectsItem).toHaveAttribute("data-active", "true");
+  });
+
+  it("renders logo control as button and toggles assistant without navigation", () => {
+    render(<AppSidebar currentPathname="/dashboard" />);
+
+    const logoButton = screen.getByTestId("app-sidebar-logo-toggle");
+    expect(logoButton.tagName).toBe("BUTTON");
+    expect(logoButton).toHaveClass("border-white/10");
+
+    fireEvent.click(logoButton);
+
+    expect(appShellAssistantMocks.onLogoToggle).toHaveBeenCalledOnce();
+  });
+
+  it("applies wake-word and connected border colors", () => {
+    appShellAssistantMocks.listeningMode = "wake_word";
+    appShellAssistantMocks.logoBorderClassName = "border-amber-400/80";
+
+    const { rerender } = render(<AppSidebar currentPathname="/dashboard" />);
+    expect(screen.getByTestId("app-sidebar-logo-toggle")).toHaveClass("border-amber-400/80");
+
+    appShellAssistantMocks.listeningMode = "connected";
+    appShellAssistantMocks.logoBorderClassName = "border-cyan-400/80";
+
+    rerender(<AppSidebar currentPathname="/dashboard" />);
+    expect(screen.getByTestId("app-sidebar-logo-toggle")).toHaveClass("border-cyan-400/80");
   });
 
   it("selects topbar title from shared navigation config", () => {

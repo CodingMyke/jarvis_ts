@@ -71,10 +71,13 @@ Authenticated users now land on a shared `/dashboard` shell.
 2. **Dashboard**: `/dashboard` shows `Eventi` and `ToDo` side by side when space allows (wrap on smaller widths).
    Calendar empty/error states: `Nessun evento nei prossimi 7 giorni` / `Si è verificato un errore`.
    ToDo empty/error states: `Non ci sono elementi` / `Si è verificato un errore`.
-3. **Start**: click the microphone orb; the assistant listens locally for the wake word.
-4. **Activation**: say "Jarvis" (or your configured wake word); the app connects to Gemini and starts live voice chat.
-5. **Commands**: ask to create/edit events, tasks, timers, save memories, or search memories; tools are called automatically.
-6. **End conversation**: explicitly finish (for example, "bye" or "thanks") to trigger end-conversation behavior, or ask to disable the assistant.
+3. **Start**: click the `Jarvis / Personal OS` logo box in the app-shell sidebar.
+4. **Activation**: the assistant enters wake-word mode (yellow border).
+   Say "Jarvis" (or your configured wake word) to connect (cyan border).
+5. **Commands**: ask to create/edit events, tasks, timers, save memories, or search memories.
+   Tools are called automatically, and the assistant session persists while navigating app-shell routes.
+6. **Stop**: click the same logo box to force `idle`, or end by voice
+   (for example, "bye" or "thanks") to trigger end-conversation behavior.
 
 ## Project Structure
 
