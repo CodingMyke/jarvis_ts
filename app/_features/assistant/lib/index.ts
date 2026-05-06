@@ -29,8 +29,6 @@ export { WakeWordManager, type WakeWordManagerOptions } from "./audio";
 // Storage
 export {
   ConversationStorage,
-  summarizeConversation,
-  createSummaryTurns,
   type ConversationTurn,
   type SavedConversation,
 } from "./storage";

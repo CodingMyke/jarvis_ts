@@ -1,7 +1,7 @@
 // used the fkg testing skill zioo
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-describe("gemini summary helpers", () => {
+describe("gemini chat metadata helpers", () => {
   beforeEach(() => {
     vi.resetModules();
   });
@@ -9,23 +9,6 @@ describe("gemini summary helpers", () => {
   afterEach(() => {
     vi.restoreAllMocks();
     vi.unstubAllEnvs();
-  });
-
-  it("returns an empty summary without calling Gemini for empty turns", async () => {
-    const generateContent = vi.fn();
-    class MockGoogleGenAI {
-      readonly models = {
-        generateContent,
-      };
-    }
-    vi.doMock("@google/genai", () => ({
-      GoogleGenAI: MockGoogleGenAI,
-    }));
-
-    const { generateSummaryFromTurns } = await import("./gemini-summary");
-
-    await expect(generateSummaryFromTurns([])).resolves.toBe("");
-    expect(generateContent).not.toHaveBeenCalled();
   });
 
   it("requires a Gemini API key", async () => {
@@ -50,10 +33,10 @@ describe("gemini summary helpers", () => {
     }));
     vi.stubEnv("GEMINI_API_KEY", "server-key");
 
-    const { generateSummaryFromTurns } = await import("./gemini-summary");
+    const { generateChatSummaryForSearch } = await import("./gemini-summary");
 
     await expect(
-      generateSummaryFromTurns([
+      generateChatSummaryForSearch([
         { role: "user", parts: [{ text: "Ciao" }] },
         { role: "model", parts: [{ text: "Come posso aiutarti?" }] },
       ]),

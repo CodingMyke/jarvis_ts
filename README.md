@@ -14,7 +14,7 @@ Authenticated users now land on a shared `/dashboard` shell.
   - **Timer**: start, pause, resume, stop, status
   - **Memories**: episodic and semantic memories (Supabase), create/update/search/delete
   - **Session control**: end conversation, clear chat, disable assistant
-- **Conversation persistence**: Supabase-backed chat storage with compaction and semantic search (local storage is used as a client-side layer)
+- **Conversation persistence**: Supabase-backed chat storage with rolling assistant history and semantic search; automatic summary-turn compaction is disabled for now (local storage is used as a client-side layer)
 - **Progression system**: Supabase-backed goals, recurring actions, server-rendered daily/weekly visibility, XP history, leveling, and deadline review in `/progression`
 - **Authentication**: Google OAuth via Supabase; memory/calendar/tasks routes are session-protected
 - **UI**: thin App Router entrypoints, feature boundaries, markdown chat rendering, voice orb, shared app shell (`/dashboard` + sibling sections), dashboard calendar + ToDo blocks (explicit empty/error states), progression workspace + deadline warning, standalone legacy `/assistant`, standalone `/setup/calendar`
@@ -116,7 +116,7 @@ jarvis_ts/
 │   └── setup/                   # Calendar/Tasks setup pages
 ├── public/
 │   └── audio-capture-processor.worklet.js
-├── Description.md               # Deep spec for chat memory and compaction
+├── Description.md               # Deep spec for chat memory and retention
 └── README.md
 ```
 

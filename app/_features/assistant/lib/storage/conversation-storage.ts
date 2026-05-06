@@ -41,16 +41,9 @@ export class ConversationStorage {
   }
 
   /**
-   * Verifica se la conversazione necessita di un riassunto.
-   */
-  needsSummarization(messages: Message[]): boolean {
-    return this.countUserMessages(messages) >= this.config.summarizeThreshold;
-  }
-
-  /**
    * Salva la conversazione nel localStorage.
    */
-  save(messages: Message[], isSummarized = false): void {
+  save(messages: Message[]): void {
     if (typeof window === 'undefined') return;
 
     const turns = this.messagesToTurns(messages);
@@ -63,16 +56,15 @@ export class ConversationStorage {
       createdAt: existing?.createdAt || now,
       updatedAt: now,
       turns,
-      isSummarized,
     };
 
     localStorage.setItem(this.config.storageKey, JSON.stringify(conversation));
   }
 
   /**
-   * Salva i turns già formattati (es. dopo summarization).
+   * Salva i turns già formattati.
    */
-  saveTurns(turns: ConversationTurn[], isSummarized = false): void {
+  saveTurns(turns: ConversationTurn[]): void {
     if (typeof window === 'undefined') return;
 
     const now = Date.now();
@@ -83,7 +75,6 @@ export class ConversationStorage {
       createdAt: existing?.createdAt || now,
       updatedAt: now,
       turns,
-      isSummarized,
     };
 
     localStorage.setItem(this.config.storageKey, JSON.stringify(conversation));
