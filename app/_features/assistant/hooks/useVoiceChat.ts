@@ -35,7 +35,8 @@ export interface UseVoiceChatOptions {
   onToolExecuted?: (toolName: string, result: unknown) => void;
 }
 
-export function useVoiceChat(_options?: UseVoiceChatOptions): UseVoiceChatReturn {
+export function useVoiceChat(options?: UseVoiceChatOptions): UseVoiceChatReturn {
+  void options;
   const runtime = useVoiceChatRuntime();
   const snapshot = useSyncExternalStore(
     runtime.subscribe,

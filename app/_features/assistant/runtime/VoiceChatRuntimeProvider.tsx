@@ -4,7 +4,7 @@ import {
   createContext,
   useContext,
   useEffect,
-  useRef,
+  useState,
   type ReactNode,
 } from "react";
 import { createVoiceChatRuntime } from "@/app/_features/assistant/lib";
@@ -13,21 +13,16 @@ import type { VoiceChatRuntime } from "./voice-chat-runtime.types";
 const VoiceChatRuntimeContext = createContext<VoiceChatRuntime | null>(null);
 
 export function VoiceChatRuntimeProvider({ children }: { children: ReactNode }) {
-  const runtimeRef = useRef<VoiceChatRuntime | null>(null);
-
-  if (!runtimeRef.current) {
-    runtimeRef.current = createVoiceChatRuntime();
-  }
+  const [runtime] = useState<VoiceChatRuntime>(() => createVoiceChatRuntime());
 
   useEffect(() => {
     return () => {
-      runtimeRef.current?.dispose();
-      runtimeRef.current = null;
+      runtime.dispose();
     };
-  }, []);
+  }, [runtime]);
 
   return (
-    <VoiceChatRuntimeContext.Provider value={runtimeRef.current}>
+    <VoiceChatRuntimeContext.Provider value={runtime}>
       {children}
     </VoiceChatRuntimeContext.Provider>
   );

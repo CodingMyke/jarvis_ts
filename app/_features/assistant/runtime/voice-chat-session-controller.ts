@@ -1,4 +1,5 @@
 import { JARVIS_CONFIG } from "@/app/_features/assistant/lib/jarvis.config";
+import type { ConversationTurn } from "@/app/_features/assistant/lib/storage";
 import type { Message } from "@/app/_features/assistant/types/speech.types";
 import { VoiceChatError } from "@/app/_features/assistant/types/client.types";
 import type { VoiceChatChatManager } from "./voice-chat-chat-manager";
@@ -171,7 +172,7 @@ export function createVoiceChatSessionController(
     dependencies.store.setError(null);
 
     try {
-      let assistantHistory = [];
+      let assistantHistory: ConversationTurn[] = [];
       const hadChatId = Boolean(dependencies.store.getSnapshot().chatId);
 
       if (hadChatId) {

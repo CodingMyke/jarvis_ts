@@ -556,7 +556,7 @@ git commit -m "refactor: rewire assistant ui adapters to voice chat runtime"
 - Modify: `README.md`
 - Modify: `CONTEXT.md` (only if the implementation sharpens the runtime term further)
 
-- [ ] **Step 1: Update the assistant architecture notes in README**
+- [x] **Step 1: Update the assistant architecture notes in README**
 
 Document:
 
@@ -565,7 +565,7 @@ Document:
 - `useVoiceChat` as a thin adapter
 - UI adapters reacting to `tool executed` subscriptions
 
-- [ ] **Step 2: Run the assistant-focused test suite**
+- [x] **Step 2: Run the assistant-focused test suite**
 
 Run:
 
@@ -575,7 +575,7 @@ npm run test -- app/_features/assistant/runtime/voice-chat-runtime.test.ts app/_
 
 Expected: PASS.
 
-- [ ] **Step 3: Run lint**
+- [x] **Step 3: Run lint**
 
 Run:
 
@@ -585,7 +585,7 @@ npm run lint
 
 Expected: PASS.
 
-- [ ] **Step 4: Run typecheck**
+- [x] **Step 4: Run typecheck**
 
 Run:
 
@@ -611,7 +611,7 @@ Then verify manually:
 - confirm delete/new/switch chat still use reconnect behavior
 - confirm calendar/task tool side effects still refresh UI
 
-- [ ] **Step 6: Commit docs and final verification changes**
+- [x] **Step 6: Commit docs and final verification changes**
 
 Run:
 

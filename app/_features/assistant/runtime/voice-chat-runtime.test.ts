@@ -1,8 +1,10 @@
-import type { ConversationTurn, VoiceChatError } from "@/app/_features/assistant/lib";
+import { VoiceChatError } from "@/app/_features/assistant/lib";
+import type { ConversationTurn } from "@/app/_features/assistant/lib";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createVoiceChatRuntime } from "../lib";
 import { createVoiceChatChatManager } from "./voice-chat-chat-manager";
 import { createVoiceChatRuntimeStore } from "./voice-chat-runtime.store";
+import type { VoiceChatRuntimeDependencies } from "./voice-chat-runtime.types";
 
 function buildTurn(role: "user" | "model", text: string, thinking?: string): ConversationTurn {
   return {
@@ -43,7 +45,28 @@ type MockTransport = {
   startListening: ReturnType<typeof vi.fn>;
 };
 
-function createRuntimeDeps(overrides?: Partial<ReturnType<typeof createRuntimeDeps>>) {
+type RuntimeDeps = {
+  appendChatTurns: ReturnType<typeof vi.fn>;
+  connectImpl: ReturnType<typeof vi.fn>;
+  createChat: ReturnType<typeof vi.fn>;
+  createTransport: ReturnType<typeof vi.fn>;
+  createWakeWord: ReturnType<typeof vi.fn>;
+  deleteChatById: ReturnType<typeof vi.fn>;
+  emitWakeWord(transcript: string): Promise<void>;
+  fetchChatById: ReturnType<typeof vi.fn>;
+  initialChatId: string | null;
+  transports: MockTransport[];
+  wakeWordManager: {
+    dispose: ReturnType<typeof vi.fn>;
+    resume: ReturnType<typeof vi.fn>;
+  };
+  wakeWordOptions(): {
+    onError: (error: VoiceChatError) => void;
+    onWakeWord: (transcript: string) => Promise<void>;
+  } | null;
+};
+
+function createRuntimeDeps(overrides?: Partial<RuntimeDeps>): RuntimeDeps {
   const transports: MockTransport[] = [];
   const appendChatTurns = vi.fn().mockResolvedValue({
     chat: buildChat("chat-1", { title: "Chat aggiornata" }),
@@ -379,7 +402,7 @@ describe("voice chat runtime chat manager", () => {
 describe("voice chat runtime store", () => {
   it("updates non-chat snapshot fields through deterministic mutation methods", () => {
     const store = createVoiceChatRuntimeStore();
-    const error = new Error("boom");
+    const error = new VoiceChatError("boom", "UNKNOWN_ERROR", false);
 
     store.setConnectionState("connected");
     store.setListeningMode("wake_word");
@@ -407,7 +430,7 @@ describe("voice chat runtime session flow", () => {
 
   it("starts in wake-word mode, connects on wake word, appends transcripts and saves on stop", async () => {
     const deps = createRuntimeDeps();
-    const runtime = createVoiceChatRuntime(deps);
+    const runtime = createVoiceChatRuntime(deps as unknown as VoiceChatRuntimeDependencies);
 
     runtime.startListening();
 
@@ -465,7 +488,7 @@ describe("voice chat runtime session flow", () => {
       }),
       initialChatId: "seed-chat",
     });
-    const runtime = createVoiceChatRuntime(deps);
+    const runtime = createVoiceChatRuntime(deps as unknown as VoiceChatRuntimeDependencies);
 
     runtime.startListening();
     await deps.emitWakeWord("Jarvis riprendi");
@@ -497,7 +520,7 @@ describe("voice chat runtime session flow", () => {
 
   it("returns to wake-word mode after the inactivity timeout fires", async () => {
     const deps = createRuntimeDeps();
-    const runtime = createVoiceChatRuntime(deps);
+    const runtime = createVoiceChatRuntime(deps as unknown as VoiceChatRuntimeDependencies);
 
     runtime.startListening();
     await deps.emitWakeWord("Jarvis");
@@ -528,7 +551,7 @@ describe("voice chat runtime session flow", () => {
           chat: buildChat("chat-2"),
         }),
     });
-    const runtime = createVoiceChatRuntime(deps);
+    const runtime = createVoiceChatRuntime(deps as unknown as VoiceChatRuntimeDependencies);
 
     runtime.startListening();
     await deps.emitWakeWord("Jarvis");
@@ -558,7 +581,7 @@ describe("voice chat runtime session flow", () => {
 
   it("surfaces wake-word and connection failures as runtime errors", async () => {
     const deps = createRuntimeDeps();
-    const runtime = createVoiceChatRuntime(deps);
+    const runtime = createVoiceChatRuntime(deps as unknown as VoiceChatRuntimeDependencies);
     const { VoiceChatError } = await import("@/app/_features/assistant/lib");
 
     runtime.startListening();

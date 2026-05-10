@@ -1,5 +1,6 @@
 import type { Message } from "@/app/_features/assistant/types/speech.types";
 import type { ConversationTurn } from "@/app/_features/assistant/lib/storage";
+import type { GeminiVoice } from "@/app/_features/assistant/lib/config/voices.config";
 import type {
   ConnectionState,
   CurrentChatContext,
@@ -72,7 +73,7 @@ export interface VoiceChatRuntimeAssistantConfig {
   assistantName: string;
   language: string;
   systemPrompt: string;
-  voice: string;
+  voice: GeminiVoice;
   wakeWord: string;
 }
 
