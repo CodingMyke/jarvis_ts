@@ -21,6 +21,7 @@ export async function ProgressionTodaySection() {
     <ProgressionTodayPanel
       initialTodayItems={result.today.todayItems}
       initialWeeklyItems={result.today.weeklyItems}
+      timezone={result.today.timezone}
     />
   );
 }

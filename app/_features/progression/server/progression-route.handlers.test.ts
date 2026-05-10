@@ -169,6 +169,7 @@ describe("progression route handlers", () => {
         todayItems: [{ id: actionId }],
         weeklyItems: [],
         todayLocalDate: "2026-05-02",
+        timezone: "Europe/Rome",
       },
     });
     const today = await handleGetProgressionToday(auth);
@@ -191,6 +192,7 @@ describe("progression route handlers", () => {
       today: {
         todayItems: [{ id: actionId }],
         todayLocalDate: "2026-05-02",
+        timezone: "Europe/Rome",
       },
     });
     await expect(goals.json()).resolves.toMatchObject({

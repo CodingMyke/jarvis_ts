@@ -10,6 +10,7 @@ import { isActionDueToday, isWeeklyCountAvailable } from "./progression-frequenc
 import type {
   ProgressionActionRow,
   ProgressionCheckinRow,
+  ProgressionFrequencyType,
   ProgressionGoalRow,
   ProgressionGoalStatus,
   ProgressionProfileRow,
@@ -56,6 +57,7 @@ export interface ProgressionTodaySection {
   todayItems: ProgressionVisibleActionItem[];
   weeklyItems: ProgressionVisibleActionItem[];
   todayLocalDate: string;
+  timezone: string;
 }
 
 export interface ProgressionDeadlineReview {
@@ -111,7 +113,20 @@ function buildVisibleActionItem(
   };
 }
 
+function getVisibleFrequencyType(action: ProgressionActionRow): ProgressionFrequencyType {
+  if (
+    action.frequency_type === "daily"
+    || action.frequency_type === "specific_weekdays"
+    || action.frequency_type === "weekly_count"
+  ) {
+    return action.frequency_type;
+  }
+
+  return "daily";
+}
+
 interface ProgressionDateContext {
+  timezone: string;
   todayLocalDate: string;
   isoWeekday: number;
   weekStart: string;
@@ -124,6 +139,7 @@ function getDateContext(timezone: string, today?: string): ProgressionDateContex
   const { start: weekStart, end: weekEnd } = getWeekRangeForLocalDate(todayLocalDate);
 
   return {
+    timezone,
     todayLocalDate,
     isoWeekday,
     weekStart,
@@ -240,13 +256,14 @@ function buildTodaySection(
     }
 
     const item = buildVisibleActionItem(action, goal, checkins, dateContext.todayLocalDate);
+    const frequencyType = getVisibleFrequencyType(action);
 
-    if (action.frequency_type === "weekly_count") {
+    if (frequencyType === "weekly_count") {
       if (
         isWeeklyCountAvailable(
           {
             id: action.id,
-            frequencyType: action.frequency_type as "weekly_count",
+            frequencyType,
             frequencyConfig: action.frequency_config,
             active: action.active,
           },
@@ -262,7 +279,7 @@ function buildTodaySection(
       isActionDueToday(
         {
           id: action.id,
-          frequencyType: action.frequency_type as "daily" | "specific_weekdays",
+          frequencyType,
           frequencyConfig: action.frequency_config,
           active: action.active,
         },
@@ -278,6 +295,7 @@ function buildTodaySection(
     todayItems,
     weeklyItems,
     todayLocalDate: dateContext.todayLocalDate,
+    timezone: dateContext.timezone,
   };
 }
 

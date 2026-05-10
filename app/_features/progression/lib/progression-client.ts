@@ -39,6 +39,7 @@ export interface ProgressionTodayResponse {
   todayItems?: unknown[];
   weeklyItems?: unknown[];
   todayLocalDate?: string;
+  timezone?: string;
 }
 
 export interface ProgressionStatusResponse {

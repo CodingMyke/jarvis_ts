@@ -174,6 +174,37 @@ describe("progression.service", () => {
     });
   });
 
+  it("treats legacy actions without a stored frequency type as daily", async () => {
+    const { getProgressionToday } = await import("./progression.service");
+    const legacyAction = {
+      ...actionRow,
+      frequency_type: undefined,
+    } as unknown as ProgressionActionRow;
+
+    const supabase = createSupabase([
+      { data: { user_id: userId, timezone: "Europe/Rome", total_xp: 10, level: 2 }, error: null },
+      { data: [openGoal], error: null },
+      { data: [legacyAction], error: null },
+      { data: [], error: null },
+    ]);
+
+    await expect(
+      getProgressionToday(supabase as never, userId, {
+        today: "2026-04-29",
+      }),
+    ).resolves.toMatchObject({
+      success: true,
+      today: {
+        todayItems: [
+          {
+            id: actionId,
+            goalTitle: "Learn piano",
+          },
+        ],
+      },
+    });
+  });
+
   it("loads goal details with the goal actions", async () => {
     const { getProgressionGoalDetails } = await import("./progression.service");
     const supabase = createSupabase([

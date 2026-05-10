@@ -272,6 +272,7 @@ describe("progression page UI", () => {
       <ProgressionTodayPanel
         initialTodayItems={todayItems}
         initialWeeklyItems={weeklyItems}
+        timezone="Europe/Rome"
       />,
     );
 
