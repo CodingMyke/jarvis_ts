@@ -36,6 +36,7 @@ interface GoalDetailActionRecord {
   frequencyConfig: Record<string, unknown>;
   xpPerCheckin: number;
   active: boolean;
+  hasHistory: boolean;
 }
 
 export interface ProgressionWorkspaceResult {
@@ -116,6 +117,7 @@ function normalizeGoalDetailActions(values: unknown[] | undefined): GoalDetailAc
         frequencyConfig: asObject(record.frequency_config) ?? {},
         xpPerCheckin: asNumber(record.xp_per_checkin),
         active: record.active !== false,
+        hasHistory: record.has_history === true,
       };
     })
     .filter((value): value is GoalDetailActionRecord => value !== null && value.id.length > 0);
@@ -154,6 +156,7 @@ function toGoalDraft(goal: GoalRecord, actions: GoalDetailActionRecord[]): Progr
         targetCount: asNumber(frequencyConfig.targetCount, 3),
         xpPerCheckin: action.xpPerCheckin,
         active: action.active,
+        hasHistory: action.hasHistory,
       };
     }),
   };

@@ -11,6 +11,7 @@ import type {
   ProgressionActionRow,
   ProgressionCheckinRow,
   ProgressionFrequencyType,
+  ProgressionGoalDetailActionRow,
   ProgressionGoalRow,
   ProgressionGoalStatus,
   ProgressionProfileRow,
@@ -45,7 +46,7 @@ export interface ProgressionOverview {
 
 export interface ProgressionGoalDetails {
   goal: ProgressionGoalRow;
-  actions: ProgressionActionRow[];
+  actions: ProgressionGoalDetailActionRow[];
 }
 
 export interface ProgressionLevelSection {
@@ -649,11 +650,38 @@ export async function getProgressionGoalDetails(
     return { success: false, error: getErrorMessage(actionsError, "Action load failed.") };
   }
 
+  const actions = (actionsData ?? []) as ProgressionActionRow[];
+  const { data: checkinsData, error: checkinsError } = await supabase
+    .from("progression_checkins")
+    .select("action_id")
+    .eq("user_id", userId)
+    .in(
+      "action_id",
+      actions.length > 0 ? actions.map((action) => action.id) : ["00000000-0000-0000-0000-000000000000"],
+    );
+
+  if (checkinsError) {
+    return { success: false, error: getErrorMessage(checkinsError, "Check-in load failed.") };
+  }
+
+  const actionsWithHistory = new Set(
+    (checkinsData ?? [])
+      .map((entry) => (
+        typeof entry === "object" && entry !== null && "action_id" in entry
+          ? String((entry as { action_id?: unknown }).action_id ?? "")
+          : ""
+      ))
+      .filter((actionId) => actionId.length > 0),
+  );
+
   return {
     success: true,
     details: {
       goal: goalResult.goal,
-      actions: (actionsData ?? []) as ProgressionActionRow[],
+      actions: actions.map((action) => ({
+        ...action,
+        has_history: actionsWithHistory.has(action.id),
+      })),
     },
   };
 }

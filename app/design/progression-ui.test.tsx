@@ -444,6 +444,7 @@ describe("progression page UI", () => {
               targetCount: 3,
               xpPerCheckin: 5,
               active: true,
+              hasHistory: false,
             },
           ],
         }}
@@ -481,26 +482,33 @@ describe("progression page UI", () => {
               title: "Daily polish",
               description: "",
               frequencyType: "daily",
-              weekdays: [1, 3, 5],
-              targetCount: 3,
-              xpPerCheckin: 5,
-              active: true,
-            },
-          ],
-        }}
+            weekdays: [1, 3, 5],
+            targetCount: 3,
+            xpPerCheckin: 5,
+            active: true,
+            hasHistory: false,
+          },
+        ],
+      }}
         onClose={vi.fn()}
         onSubmit={onSubmit}
       />,
     );
 
-    expect(screen.queryByRole("checkbox")).not.toBeInTheDocument();
     expect(screen.getAllByText("Titolo")).toHaveLength(2);
     expect(screen.getByText("Ricorrenza")).toBeInTheDocument();
     expect(screen.getByText("XP")).toBeInTheDocument();
+    expect(screen.getByText("Active")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Aggiungi azione" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Rimuovi azione Daily polish" })).toBeInTheDocument();
+    expect(screen.getByRole("checkbox", { name: "Azione attiva Daily polish" })).toBeChecked();
     expect(
       screen.getByText("Se fallisci questo obiettivo perderai 8 XP."),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "Le azioni con storico non si eliminano: puoi disattivarle per nasconderle dai check-in futuri.",
+      ),
     ).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Crea e inizia" }));
@@ -514,6 +522,63 @@ describe("progression page UI", () => {
     expect(onSubmit).toHaveBeenLastCalledWith(
       expect.objectContaining({
         startNow: false,
+      }),
+    );
+  });
+
+  it("disables delete for actions with history and submits active changes", () => {
+    const onSubmit = vi.fn();
+
+    render(
+      <ProgressionGoalFormDialog
+        open
+        mode="edit"
+        initialValue={{
+          id: "goal-1",
+          title: "Ship progression UI",
+          description: "",
+          deadline: "",
+          completionXp: 25,
+          startNow: true,
+          status: "in_progress",
+          actions: [
+            {
+              id: "action-1",
+              title: "Daily polish",
+              description: "",
+              frequencyType: "daily",
+              weekdays: [1, 3, 5],
+              targetCount: 3,
+              xpPerCheckin: 5,
+              active: false,
+              hasHistory: true,
+            },
+          ],
+        }}
+        onClose={vi.fn()}
+        onSubmit={onSubmit}
+      />,
+    );
+
+    const activeCheckbox = screen.getByRole("checkbox", { name: "Azione attiva Daily polish" });
+    const deleteButton = screen.getByRole("button", { name: "Non eliminabile: ha già uno storico." });
+
+    expect(activeCheckbox).not.toBeChecked();
+    expect(deleteButton).toBeDisabled();
+    expect(deleteButton).toHaveAttribute("title", "Non eliminabile: ha già uno storico.");
+
+    fireEvent.click(activeCheckbox);
+    fireEvent.click(screen.getByRole("button", { name: "Salva" }));
+
+    expect(onSubmit).toHaveBeenCalledWith(
+      expect.objectContaining({
+        actions: [
+          expect.objectContaining({
+            id: "action-1",
+            active: true,
+            hasHistory: true,
+          }),
+        ],
       }),
     );
   });

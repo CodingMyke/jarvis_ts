@@ -205,11 +205,12 @@ describe("progression.service", () => {
     });
   });
 
-  it("loads goal details with the goal actions", async () => {
+  it("loads goal details with action history metadata", async () => {
     const { getProgressionGoalDetails } = await import("./progression.service");
     const supabase = createSupabase([
       { data: openGoal, error: null },
       { data: [actionRow], error: null },
+      { data: [{ action_id: actionId }], error: null },
     ]);
 
     await expect(
@@ -218,7 +219,7 @@ describe("progression.service", () => {
       success: true,
       details: {
         goal: { id: goalId },
-        actions: [{ id: actionId }],
+        actions: [{ id: actionId, has_history: true }],
       },
     });
   });

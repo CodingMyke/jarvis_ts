@@ -88,6 +88,7 @@ describe("useProgressionWorkspace", () => {
           frequency_config: {},
           xp_per_checkin: 5,
           active: true,
+          has_history: true,
         },
       ],
     });
@@ -106,6 +107,7 @@ describe("useProgressionWorkspace", () => {
       expect(getProgressionGoalDetails).toHaveBeenCalledWith("goal-1");
       expect(result.current.formStatus).toBe("ready");
       expect(result.current.formInitialValue).not.toBeNull();
+      expect(result.current.formInitialValue?.actions[0]?.hasHistory).toBe(true);
     });
 
     act(() => {
@@ -127,6 +129,7 @@ describe("useProgressionWorkspace", () => {
             targetCount: 3,
             xpPerCheckin: 5,
             active: true,
+            hasHistory: true,
           },
         ],
       });

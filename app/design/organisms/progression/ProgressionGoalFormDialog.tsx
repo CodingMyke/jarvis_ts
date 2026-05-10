@@ -14,6 +14,7 @@ export interface ProgressionGoalActionDraft {
   targetCount: number;
   xpPerCheckin: number;
   active: boolean;
+  hasHistory: boolean;
 }
 
 export interface ProgressionGoalDraft {
@@ -58,6 +59,7 @@ function createActionDraft(): ProgressionGoalActionDraft {
     targetCount: 3,
     xpPerCheckin: 0,
     active: true,
+    hasHistory: false,
   };
 }
 
@@ -74,7 +76,7 @@ function getFailurePenaltyXp(completionXp: number): number {
 }
 
 const ACTION_GRID_COLUMNS =
-  "md:grid-cols-[minmax(0,1.55fr)_minmax(0,0.8fr)_minmax(0,0.55fr)_auto]";
+  "md:grid-cols-[minmax(0,1.45fr)_minmax(0,0.8fr)_minmax(0,0.55fr)_minmax(0,0.45fr)_auto]";
 
 const ACTION_FIELD_CLASS_NAME =
   "min-h-11 rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-sm "
@@ -296,7 +298,8 @@ function ProgressionGoalFormDialogBody({
             <div>
               <p className="text-sm font-medium text-foreground">Azioni ricorrenti</p>
               <p className="text-xs text-muted">
-                La penalità in caso di fallimento è un terzo degli XP di completamento.
+                Le azioni con storico non si eliminano: puoi disattivarle per nasconderle dai
+                check-in futuri.
               </p>
             </div>
             <Button
@@ -321,6 +324,7 @@ function ProgressionGoalFormDialogBody({
                 <span>Titolo</span>
                 <span>Ricorrenza</span>
                 <span>XP</span>
+                <span>Active</span>
                 <span aria-hidden="true" />
               </div>
               {draft.actions.map((action) => (
@@ -372,11 +376,31 @@ function ProgressionGoalFormDialogBody({
                     }}
                     className={ACTION_FIELD_CLASS_NAME}
                   />
+                  <label className="flex min-h-11 items-center justify-center rounded-xl border border-white/10 bg-black/20">
+                    <input
+                      type="checkbox"
+                      checked={action.active}
+                      aria-label={`Azione attiva ${action.title || "senza titolo"}`}
+                      onChange={(event) => {
+                        const active = event.target.checked;
+                        setDraft((current) => ({
+                          ...current,
+                          actions: current.actions.map((entry) =>
+                            entry.id === action.id ? { ...entry, active } : entry,
+                          ),
+                        }));
+                      }}
+                    />
+                  </label>
                   <Button
                     type="button"
                     variant="secondary"
                     className="!p-1 text-red-300 hover:bg-red-500/10 hover:text-red-100"
-                    aria-label={`Rimuovi azione ${action.title || "senza titolo"}`}
+                    aria-label={action.hasHistory
+                      ? "Non eliminabile: ha già uno storico."
+                      : `Rimuovi azione ${action.title || "senza titolo"}`}
+                    title={action.hasHistory ? "Non eliminabile: ha già uno storico." : undefined}
+                    disabled={action.hasHistory}
                     onClick={() => {
                       setDraft((current) => ({
                         ...current,
