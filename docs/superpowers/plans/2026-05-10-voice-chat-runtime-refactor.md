@@ -288,7 +288,7 @@ git commit -m "feat: extract voice chat runtime chat modules"
 - Modify: `app/_features/assistant/lib/index.ts`
 - Test: `app/_features/assistant/runtime/voice-chat-runtime.test.ts`
 
-- [ ] **Step 1: Write the failing session-flow tests**
+- [x] **Step 1: Write the failing session-flow tests**
 
 Add runtime orchestration tests for:
 
@@ -315,7 +315,7 @@ it("returns to wake_word after inactivity timeout", async () => {
 });
 ```
 
-- [ ] **Step 2: Run the session-flow tests to verify they fail**
+- [x] **Step 2: Run the session-flow tests to verify they fail**
 
 Run:
 
@@ -325,7 +325,7 @@ npm run test -- app/_features/assistant/runtime/voice-chat-runtime.test.ts
 
 Expected: FAIL because the runtime orchestrator and adapters do not exist yet.
 
-- [ ] **Step 3: Wrap the existing Gemini client behind a transport adapter**
+- [x] **Step 3: Wrap the existing Gemini client behind a transport adapter**
 
 Create `gemini-transport.adapter.ts` that normalizes:
 
@@ -339,7 +339,7 @@ Create `gemini-transport.adapter.ts` that normalizes:
 
 Do not let the runtime depend directly on the concrete Gemini client class.
 
-- [ ] **Step 4: Wrap wake-word lifecycle behind an adapter**
+- [x] **Step 4: Wrap wake-word lifecycle behind an adapter**
 
 Create `wake-word.adapter.ts` that normalizes:
 
@@ -349,7 +349,7 @@ Create `wake-word.adapter.ts` that normalizes:
 - wake-word event emission
 - wake-word error emission
 
-- [ ] **Step 5: Implement the session controller**
+- [x] **Step 5: Implement the session controller**
 
 Move lifecycle orchestration out of the hook:
 
@@ -367,7 +367,7 @@ Keep `disconnect -> reset -> reconnect` explicit and centralized for:
 - delete current chat
 - create new chat
 
-- [ ] **Step 6: Implement the runtime orchestrator**
+- [x] **Step 6: Implement the runtime orchestrator**
 
 Create `voice-chat-runtime.ts` as the deep module that composes:
 
@@ -378,7 +378,7 @@ Create `voice-chat-runtime.ts` as the deep module that composes:
 
 The runtime should be the only thing the provider and hook know about.
 
-- [ ] **Step 7: Run the runtime tests again**
+- [x] **Step 7: Run the runtime tests again**
 
 Run:
 
@@ -388,7 +388,7 @@ npm run test -- app/_features/assistant/runtime/voice-chat-runtime.test.ts
 
 Expected: PASS for lifecycle, transcript, persistence, and reconnect behavior.
 
-- [ ] **Step 8: Commit the runtime orchestrator**
+- [x] **Step 8: Commit the runtime orchestrator**
 
 Run:
 
