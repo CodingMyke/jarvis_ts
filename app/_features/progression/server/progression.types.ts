@@ -10,6 +10,10 @@ export type ProgressionActionRow = Tables<"progression_actions">;
 export type ProgressionCheckinRow = Tables<"progression_checkins">;
 export type ProgressionXpHistoryRow = Tables<"progression_xp_history">;
 
+export interface ProgressionGoalDetailActionRow extends ProgressionActionRow {
+  has_history: boolean;
+}
+
 export interface ProgressionVisibleActionItem {
   id: string;
   title: string;

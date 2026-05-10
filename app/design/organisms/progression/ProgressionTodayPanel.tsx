@@ -1,11 +1,12 @@
 "use client";
 
-import { startTransition, useEffect, useState } from "react";
+import { startTransition, useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   createProgressionCheckin,
   undoProgressionCheckin,
 } from "@/app/_features/progression/lib/progression-client";
+import { getMillisecondsUntilNextLocalMidnight } from "@/app/_features/progression/server/progression-dates";
 import { TodoCheckbox } from "@/app/design/atoms/tasks/TodoCheckbox";
 
 export interface ProgressionTodayActionItem {
@@ -20,6 +21,7 @@ export interface ProgressionTodayActionItem {
 interface ProgressionTodayPanelProps {
   initialTodayItems: ProgressionTodayActionItem[];
   initialWeeklyItems: ProgressionTodayActionItem[];
+  timezone: string;
 }
 
 function getErrorMessage(result: { errorMessage?: string; error?: string }): string {
@@ -95,11 +97,18 @@ function ProgressionActionList({
 export function ProgressionTodayPanel({
   initialTodayItems,
   initialWeeklyItems,
+  timezone,
 }: ProgressionTodayPanelProps) {
   const router = useRouter();
   const [todayItems, setTodayItems] = useState(initialTodayItems);
   const [weeklyItems, setWeeklyItems] = useState(initialWeeklyItems);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  const refreshPage = useCallback((): void => {
+    startTransition(() => {
+      router.refresh();
+    });
+  }, [router]);
 
   useEffect(() => {
     setTodayItems(initialTodayItems);
@@ -109,11 +118,30 @@ export function ProgressionTodayPanel({
     setWeeklyItems(initialWeeklyItems);
   }, [initialWeeklyItems]);
 
-  function refreshPage(): void {
-    startTransition(() => {
-      router.refresh();
-    });
-  }
+  useEffect(() => {
+    let isCancelled = false;
+    let timeoutId: ReturnType<typeof setTimeout> | null = null;
+
+    function scheduleRefresh(): void {
+      timeoutId = setTimeout(() => {
+        if (isCancelled) {
+          return;
+        }
+
+        refreshPage();
+        scheduleRefresh();
+      }, getMillisecondsUntilNextLocalMidnight(timezone));
+    }
+
+    scheduleRefresh();
+
+    return () => {
+      isCancelled = true;
+      if (timeoutId !== null) {
+        clearTimeout(timeoutId);
+      }
+    };
+  }, [refreshPage, timezone]);
 
   async function runCheckin(actionId: string): Promise<void> {
     const previousTodayItems = todayItems;
