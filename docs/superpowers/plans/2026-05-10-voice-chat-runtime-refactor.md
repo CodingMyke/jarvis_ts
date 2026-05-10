@@ -173,7 +173,7 @@ git commit -m "feat: define voice chat runtime contracts"
 - Modify: `app/_features/assistant/lib/conversation-persistence.test.ts`
 - Test: `app/_features/assistant/runtime/voice-chat-runtime.test.ts`
 
-- [ ] **Step 1: Write the failing chat-manager tests**
+- [x] **Step 1: Write the failing chat-manager tests**
 
 Add tests for runtime-owned chat state rules:
 
@@ -208,7 +208,7 @@ Also add tests for:
 - switching chat resets current messages and metadata
 - creating a new chat does not keep the command turn in saved history
 
-- [ ] **Step 2: Run the runtime tests to verify they fail**
+- [x] **Step 2: Run the runtime tests to verify they fail**
 
 Run:
 
@@ -218,7 +218,7 @@ npm run test -- app/_features/assistant/runtime/voice-chat-runtime.test.ts app/_
 
 Expected: FAIL because the chat manager/store do not exist and persistence helpers still expose the old shape only.
 
-- [ ] **Step 3: Extract the chat persistence adapter**
+- [x] **Step 3: Extract the chat persistence adapter**
 
 Move raw `fetch` request details behind `chat-persistence.adapter.ts`.
 
@@ -231,7 +231,7 @@ The adapter should expose small assistant-specific operations:
 
 Keep request URLs and `fetch` details here only.
 
-- [ ] **Step 4: Build the runtime store**
+- [x] **Step 4: Build the runtime store**
 
 Create a focused store that owns:
 
@@ -244,7 +244,7 @@ Create a focused store that owns:
 
 Make the store expose deterministic mutation methods instead of direct object mutation.
 
-- [ ] **Step 5: Build the chat manager**
+- [x] **Step 5: Build the chat manager**
 
 Move these responsibilities out of `useVoiceChat`:
 
@@ -257,7 +257,7 @@ Move these responsibilities out of `useVoiceChat`:
 
 The chat manager must not touch React state directly.
 
-- [ ] **Step 6: Run the runtime and persistence tests again**
+- [x] **Step 6: Run the runtime and persistence tests again**
 
 Run:
 
@@ -267,7 +267,7 @@ npm run test -- app/_features/assistant/runtime/voice-chat-runtime.test.ts app/_
 
 Expected: PASS for chat-loading, delta-saving, and chat-reset invariants.
 
-- [ ] **Step 7: Commit the runtime chat modules**
+- [x] **Step 7: Commit the runtime chat modules**
 
 Run:
 
