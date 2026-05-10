@@ -494,7 +494,7 @@ git commit -m "feat: mount shared voice chat runtime provider"
 - Test: `app/design/app-shell-ui.test.tsx`
 - Test: `app/design/assistant-ui.test.tsx`
 
-- [ ] **Step 1: Write the failing UI adapter tests**
+- [x] **Step 1: Write the failing UI adapter tests**
 
 Add tests that prove:
 
@@ -502,7 +502,7 @@ Add tests that prove:
 - assistant workspace still reads `messages`, `chatTitle`, `outputAudioLevel`, and `deleteChat`
 - calendar/task refreshes are driven by `tool executed` subscriptions outside the runtime
 
-- [ ] **Step 2: Run the UI adapter tests to verify they fail**
+- [x] **Step 2: Run the UI adapter tests to verify they fail**
 
 Run:
 
@@ -512,7 +512,7 @@ npm run test -- app/design/templates/app-shell/AppShellAssistantProvider.test.ts
 
 Expected: FAIL because UI adapters still assume the old hook-owned runtime behavior.
 
-- [ ] **Step 3: Rewire the app-shell assistant adapter**
+- [x] **Step 3: Rewire the app-shell assistant adapter**
 
 Update `AppShellAssistantProvider` to:
 
@@ -520,7 +520,7 @@ Update `AppShellAssistantProvider` to:
 - subscribe to runtime `tool executed` events via the provider/runtime hook
 - keep calendar/task refresh timing in this UI adapter only
 
-- [ ] **Step 4: Rewire the assistant workspace adapter**
+- [x] **Step 4: Rewire the assistant workspace adapter**
 
 Update `useAssistantWorkspace` to:
 
@@ -529,7 +529,7 @@ Update `useAssistantWorkspace` to:
 - subscribe to runtime `tool executed` events for calendar/task refreshes
 - keep `orbState` and button behavior outside the runtime
 
-- [ ] **Step 5: Run the UI adapter tests again**
+- [x] **Step 5: Run the UI adapter tests again**
 
 Run:
 
@@ -539,7 +539,7 @@ npm run test -- app/design/templates/app-shell/AppShellAssistantProvider.test.ts
 
 Expected: PASS with unchanged visible behavior.
 
-- [ ] **Step 6: Commit the UI adapter rewiring**
+- [x] **Step 6: Commit the UI adapter rewiring**
 
 Run:
 

@@ -8,14 +8,20 @@ import { useAppShellAssistant } from "./useAppShellAssistant";
 
 const providerMocks = vi.hoisted(() => ({
   calendarRefresh: vi.fn(),
+  runtimeSubscribeToolExecuted: vi.fn(),
   startListening: vi.fn(),
   stopListening: vi.fn(),
   tasksRefresh: vi.fn(),
   useVoiceChat: vi.fn(),
+  useVoiceChatRuntime: vi.fn(),
 }));
 
 vi.mock("@/app/_features/assistant/hooks/useVoiceChat", () => ({
   useVoiceChat: providerMocks.useVoiceChat,
+}));
+
+vi.mock("@/app/_features/assistant/runtime/useVoiceChatRuntime", () => ({
+  useVoiceChatRuntime: providerMocks.useVoiceChatRuntime,
 }));
 
 vi.mock("@/app/_features/calendar/state/calendar.store", () => ({
@@ -39,17 +45,23 @@ describe("AppShellAssistantProvider", () => {
     vi.useFakeTimers();
 
     providerMocks.calendarRefresh.mockReset();
+    providerMocks.runtimeSubscribeToolExecuted.mockReset();
     providerMocks.startListening.mockReset();
     providerMocks.stopListening.mockReset();
     providerMocks.tasksRefresh.mockReset();
     providerMocks.useVoiceChat.mockReset();
+    providerMocks.useVoiceChatRuntime.mockReset();
 
     providerMocks.calendarRefresh.mockResolvedValue(undefined);
     providerMocks.tasksRefresh.mockResolvedValue(undefined);
+    providerMocks.runtimeSubscribeToolExecuted.mockReturnValue(() => undefined);
     providerMocks.useVoiceChat.mockReturnValue({
       listeningMode: "idle",
       startListening: providerMocks.startListening,
       stopListening: providerMocks.stopListening,
+    });
+    providerMocks.useVoiceChatRuntime.mockReturnValue({
+      subscribeToolExecuted: providerMocks.runtimeSubscribeToolExecuted,
     });
   });
 
@@ -101,13 +113,13 @@ describe("AppShellAssistantProvider", () => {
       wrapper: ProviderWrapper,
     });
 
-    const providerOptions = providerMocks.useVoiceChat.mock.calls[0]?.[0];
+    const listener = providerMocks.runtimeSubscribeToolExecuted.mock.calls[0]?.[0];
 
     act(() => {
-      providerOptions?.onToolExecuted?.("createCalendarEvent", { success: true });
-      providerOptions?.onToolExecuted?.("createTodo", { success: true });
-      providerOptions?.onToolExecuted?.("createTodo", { success: false });
-      providerOptions?.onToolExecuted?.("listChats", { success: true });
+      listener?.({ toolName: "createCalendarEvent", result: { success: true } });
+      listener?.({ toolName: "createTodo", result: { success: true } });
+      listener?.({ toolName: "createTodo", result: { success: false } });
+      listener?.({ toolName: "listChats", result: { success: true } });
     });
 
     await act(async () => {
