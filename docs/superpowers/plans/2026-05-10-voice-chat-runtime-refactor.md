@@ -411,7 +411,7 @@ git commit -m "feat: build voice chat runtime orchestrator"
 - Test: `app/_features/assistant/runtime/VoiceChatRuntimeProvider.test.tsx`
 - Test: `app/_features/assistant/hooks/useVoiceChat.test.tsx`
 
-- [ ] **Step 1: Write the failing provider and hook-adapter tests**
+- [x] **Step 1: Write the failing provider and hook-adapter tests**
 
 Add tests that prove:
 
@@ -435,7 +435,7 @@ it("shares one runtime across multiple consumers", () => {
 });
 ```
 
-- [ ] **Step 2: Run the provider and hook tests to verify they fail**
+- [x] **Step 2: Run the provider and hook tests to verify they fail**
 
 Run:
 
@@ -445,15 +445,15 @@ npm run test -- app/_features/assistant/runtime/VoiceChatRuntimeProvider.test.ts
 
 Expected: FAIL because the provider and thin-hook behavior do not exist yet.
 
-- [ ] **Step 3: Implement the runtime provider**
+- [x] **Step 3: Implement the runtime provider**
 
 Mount one runtime instance high in the app tree and expose it through context. Use `app/layout.tsx` so the session survives navigation between app-shell routes and `/assistant`.
 
-- [ ] **Step 4: Implement `useVoiceChatRuntime`**
+- [x] **Step 4: Implement `useVoiceChatRuntime`**
 
 Create a tiny helper hook that throws clearly if used outside the provider and returns the runtime instance.
 
-- [ ] **Step 5: Reduce `useVoiceChat` to a thin adapter**
+- [x] **Step 5: Reduce `useVoiceChat` to a thin adapter**
 
 Rewrite `useVoiceChat` so it:
 
@@ -463,7 +463,7 @@ Rewrite `useVoiceChat` so it:
 
 Remove runtime ownership from the hook entirely.
 
-- [ ] **Step 6: Run the provider and hook tests again**
+- [x] **Step 6: Run the provider and hook tests again**
 
 Run:
 
@@ -473,7 +473,7 @@ npm run test -- app/_features/assistant/runtime/VoiceChatRuntimeProvider.test.ts
 
 Expected: PASS with small hook tests and provider-backed shared runtime behavior.
 
-- [ ] **Step 7: Commit the provider and thin hook**
+- [x] **Step 7: Commit the provider and thin hook**
 
 Run:
 
