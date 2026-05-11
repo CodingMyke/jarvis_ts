@@ -420,6 +420,21 @@ describe("voice chat runtime store", () => {
       error,
     });
   });
+
+  it("returns a cached snapshot reference until state changes", () => {
+    const store = createVoiceChatRuntimeStore();
+
+    const initialSnapshot = store.getSnapshot();
+
+    expect(store.getSnapshot()).toBe(initialSnapshot);
+
+    store.setAudioLevel(0.5);
+
+    const updatedSnapshot = store.getSnapshot();
+
+    expect(updatedSnapshot).not.toBe(initialSnapshot);
+    expect(store.getSnapshot()).toBe(updatedSnapshot);
+  });
 });
 
 describe("voice chat runtime session flow", () => {

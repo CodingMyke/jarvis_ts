@@ -60,7 +60,14 @@ const DEFAULT_SNAPSHOT: VoiceChatRuntimeSnapshot = {
 };
 
 function cloneMessages(messages: Message[]): Message[] {
-  return messages.map((message) => ({ ...message }));
+  return Object.freeze(messages.map((message) => Object.freeze({ ...message }))) as Message[];
+}
+
+function createPublicSnapshot(snapshot: VoiceChatRuntimeSnapshot): VoiceChatRuntimeSnapshot {
+  return Object.freeze({
+    ...snapshot,
+    messages: cloneMessages(snapshot.messages),
+  }) as VoiceChatRuntimeSnapshot;
 }
 
 function projectTurnsToMessages(turns: ConversationTurn[]): Message[] {
@@ -78,6 +85,7 @@ export function createVoiceChatRuntimeStore(): VoiceChatRuntimeStore {
     ...DEFAULT_SNAPSHOT,
     messages: [],
   };
+  let publicSnapshot = createPublicSnapshot(snapshot);
 
   let assistantHistory: ConversationTurn[] = [];
   let lastSavedTurnCount = 0;
@@ -93,6 +101,10 @@ export function createVoiceChatRuntimeStore(): VoiceChatRuntimeStore {
     }
   };
 
+  const refreshSnapshot = () => {
+    publicSnapshot = createPublicSnapshot(snapshot);
+  };
+
   return {
     clearChatState(nextChatId = null) {
       snapshot.chatId = nextChatId;
@@ -105,6 +117,7 @@ export function createVoiceChatRuntimeStore(): VoiceChatRuntimeStore {
         createdAt: null,
         lastActivityAt: null,
       };
+      refreshSnapshot();
       notify();
     },
     getAssistantHistory() {
@@ -123,13 +136,11 @@ export function createVoiceChatRuntimeStore(): VoiceChatRuntimeStore {
       return lastSavedTurnCount;
     },
     getSnapshot() {
-      return {
-        ...snapshot,
-        messages: cloneMessages(snapshot.messages),
-      };
+      return publicSnapshot;
     },
     setAudioLevel(level) {
       snapshot.audioLevel = level;
+      refreshSnapshot();
       notify();
     },
     setAssistantHistory(turns) {
@@ -141,6 +152,7 @@ export function createVoiceChatRuntimeStore(): VoiceChatRuntimeStore {
     },
     setChatId(chatId) {
       snapshot.chatId = chatId;
+      refreshSnapshot();
       notify();
     },
     setChatStateFromHistory(chatId, history) {
@@ -157,10 +169,12 @@ export function createVoiceChatRuntimeStore(): VoiceChatRuntimeStore {
         createdAt: history.created_at ?? null,
         lastActivityAt: history.last_activity_at ?? null,
       };
+      refreshSnapshot();
       notify();
     },
     setConnectionState(state) {
       snapshot.connectionState = state;
+      refreshSnapshot();
       notify();
     },
     setCurrentMessageIds(ids) {
@@ -172,6 +186,7 @@ export function createVoiceChatRuntimeStore(): VoiceChatRuntimeStore {
     },
     setError(error) {
       snapshot.error = error;
+      refreshSnapshot();
       notify();
     },
     setLastSavedTurnCount(count) {
@@ -180,18 +195,22 @@ export function createVoiceChatRuntimeStore(): VoiceChatRuntimeStore {
     },
     setListeningMode(mode) {
       snapshot.listeningMode = mode;
+      refreshSnapshot();
       notify();
     },
     setMessages(messages) {
       snapshot.messages = cloneMessages(messages);
+      refreshSnapshot();
       notify();
     },
     setMuted(isMuted) {
       snapshot.isMuted = isMuted;
+      refreshSnapshot();
       notify();
     },
     setOutputAudioLevel(level) {
       snapshot.outputAudioLevel = level;
+      refreshSnapshot();
       notify();
     },
     subscribe(listener) {
@@ -204,6 +223,7 @@ export function createVoiceChatRuntimeStore(): VoiceChatRuntimeStore {
     updateChatMetadata(metadata) {
       if (metadata.title !== undefined) {
         snapshot.chatTitle = metadata.title ?? null;
+        refreshSnapshot();
       }
 
       chatMetadata = {
