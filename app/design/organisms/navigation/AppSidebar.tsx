@@ -1,9 +1,13 @@
 import Link from "next/link";
+import { Fragment, useEffect, useState } from "react";
 import {
   APP_SHELL_MAIN_NAVIGATION,
+  APP_SHELL_ACADEMY_NAVIGATION,
+  APP_SHELL_ACADEMY_NAVIGATION_ITEM,
   APP_SHELL_SETTINGS_NAVIGATION,
   type AppShellNavigationItem,
   getAppShellNavigationItemFromPath,
+  isAcademyPathname,
 } from "@/app/_features/navigation/app-shell-navigation";
 import { useAppShellAssistant } from "@/app/design/templates/app-shell/useAppShellAssistant";
 import { useAppShellProgression } from "@/app/design/templates/app-shell/useAppShellProgression";
@@ -42,21 +46,28 @@ function getNavItemClasses(isActive: boolean, isEnabled: boolean): string {
   ].join(" ");
 }
 
+function getNavItemTestId(itemKey: AppShellNavigationItem["key"]): string {
+  return `nav-item-${String(itemKey).replace(/([a-z])([A-Z])/g, "$1-$2").toLowerCase()}`;
+}
+
 function NavItem({
   item,
   isActive,
   onNavigate,
   showWarning = false,
+  testId,
 }: {
   item: AppShellNavigationItem;
   isActive: boolean;
   onNavigate?: () => void;
   showWarning?: boolean;
+  testId?: string;
 }) {
   const navItemClassName = getNavItemClasses(isActive, item.enabled);
+  const navItemTestId = testId ?? getNavItemTestId(item.key);
   const warningBadge = showWarning ? (
     <span
-      data-testid={`nav-warning-${item.key}`}
+      data-testid={`nav-warning-${String(item.key).replace(/([a-z])([A-Z])/g, "$1-$2").toLowerCase()}`}
       aria-label={`${item.label} deadline warning`}
       className="h-2.5 w-2.5 rounded-full bg-amber-400 shadow-[0_0_14px_rgba(251,191,36,0.55)]"
     />
@@ -71,7 +82,7 @@ function NavItem({
   if (!item.enabled) {
     return (
       <div
-        data-testid={`nav-item-${item.key}`}
+        data-testid={navItemTestId}
         data-active={isActive}
         aria-disabled="true"
         aria-current={isActive ? "page" : undefined}
@@ -86,9 +97,8 @@ function NavItem({
   return (
     <Link
       href={item.href}
-      data-testid={`nav-item-${item.key}`}
+      data-testid={navItemTestId}
       data-active={isActive}
-      aria-disabled="false"
       aria-current={isActive ? "page" : undefined}
       className={navItemClassName}
       onClick={onNavigate}
@@ -99,15 +109,87 @@ function NavItem({
   );
 }
 
+function AcademySection({
+  currentPathname,
+  isExpanded,
+  isActive,
+  activeItemKey,
+  onToggle,
+  onNavigate,
+}: {
+  currentPathname: string;
+  isExpanded: boolean;
+  isActive: boolean;
+  activeItemKey: AppShellNavigationItem["key"];
+  onToggle: () => void;
+  onNavigate?: () => void;
+}) {
+  const toggleLabel = isExpanded ? "Chiudi Accademia" : "Apri Accademia";
+  const isAcademyLandingPage = currentPathname === APP_SHELL_ACADEMY_NAVIGATION_ITEM.href;
+
+  return (
+    <div className="space-y-2">
+      <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-2">
+        <Link
+          href={APP_SHELL_ACADEMY_NAVIGATION_ITEM.href}
+          data-testid="nav-item-academy"
+          data-active={isActive}
+          aria-current={isAcademyLandingPage ? "page" : undefined}
+          className={getNavItemClasses(isActive, true)}
+          onClick={onNavigate}
+        >
+          <span>Accademia</span>
+        </Link>
+
+        <button
+          type="button"
+          aria-expanded={isExpanded}
+          aria-controls="app-sidebar-academy-children"
+          aria-label={toggleLabel}
+          className={[
+            "rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-muted transition-colors",
+            "hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-accent/20",
+          ].join(" ")}
+          onClick={onToggle}
+        >
+          <span aria-hidden className="text-base leading-none">
+            {isExpanded ? "−" : "+"}
+          </span>
+        </button>
+      </div>
+
+      {isExpanded ? (
+        <div id="app-sidebar-academy-children" className="space-y-2 pl-3">
+          {APP_SHELL_ACADEMY_NAVIGATION.map((item) => (
+            <NavItem
+              key={item.key}
+              item={item}
+              isActive={activeItemKey === item.key}
+              onNavigate={onNavigate}
+              testId={getNavItemTestId(item.key)}
+            />
+          ))}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 export function AppSidebar({
   currentPathname,
   onNavigate,
   variant = "desktop",
 }: AppSidebarProps) {
   const activeItem = getAppShellNavigationItemFromPath(currentPathname);
+  const isAcademyRoute = isAcademyPathname(currentPathname);
+  const [isAcademyExpanded, setIsAcademyExpanded] = useState(isAcademyRoute);
   const isDesktop = variant === "desktop";
   const { listeningMode, logoBorderClassName, onLogoToggle } = useAppShellAssistant();
   const { hasProgressionDeadlineWarning } = useAppShellProgression();
+
+  useEffect(() => {
+    setIsAcademyExpanded(isAcademyRoute);
+  }, [isAcademyRoute]);
 
   const sidebarClassName = isDesktop
     ? "hidden h-dvh w-56 flex-col border-r border-white/10 bg-background/95 md:flex"
@@ -144,13 +226,24 @@ export function AppSidebar({
       <nav className="min-h-0 flex-1 overflow-y-auto p-4">
         <div className="space-y-2">
           {APP_SHELL_MAIN_NAVIGATION.map((item) => (
-            <NavItem
-              key={item.key}
-              item={item}
-              isActive={activeItem.key === item.key}
-              onNavigate={onNavigate}
-              showWarning={item.key === "progression" && hasProgressionDeadlineWarning}
-            />
+            <Fragment key={item.key}>
+              <NavItem
+                item={item}
+                isActive={activeItem.key === item.key}
+                onNavigate={onNavigate}
+                showWarning={item.key === "progression" && hasProgressionDeadlineWarning}
+              />
+              {item.key === "projects" ? (
+                <AcademySection
+                  currentPathname={currentPathname}
+                  isExpanded={isAcademyExpanded}
+                  isActive={isAcademyRoute}
+                  activeItemKey={activeItem.key}
+                  onToggle={() => setIsAcademyExpanded((currentValue) => !currentValue)}
+                  onNavigate={onNavigate}
+                />
+              ) : null}
+            </Fragment>
           ))}
         </div>
       </nav>

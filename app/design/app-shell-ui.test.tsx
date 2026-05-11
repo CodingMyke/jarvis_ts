@@ -89,7 +89,7 @@ describe("app shell design", () => {
     expect(within(projectsItem).getByText("Presto")).toBeInTheDocument();
 
     const progressionItem = within(desktopSidebar).getByTestId("nav-item-progression");
-    expect(progressionItem).toHaveAttribute("aria-disabled", "false");
+    expect(progressionItem).not.toHaveAttribute("aria-disabled");
     expect(within(progressionItem).queryByText("Presto")).not.toBeInTheDocument();
   });
 
@@ -111,6 +111,95 @@ describe("app shell design", () => {
     const projectsItem = screen.getByTestId("nav-item-projects");
     expect(projectsItem).toHaveAttribute("aria-disabled", "true");
     expect(projectsItem).toHaveAttribute("data-active", "true");
+  });
+
+  it("expands the academy section on desktop to reveal reels and courses", () => {
+    render(<AppSidebar currentPathname="/dashboard" />);
+
+    const desktopSidebar = screen.getByTestId("app-sidebar-desktop");
+    expect(within(desktopSidebar).queryByText("Reel")).not.toBeInTheDocument();
+    expect(within(desktopSidebar).queryByText("Corsi")).not.toBeInTheDocument();
+
+    fireEvent.click(within(desktopSidebar).getByRole("button", { name: "Apri Accademia" }));
+
+    expect(within(desktopSidebar).getByText("Reel")).toBeInTheDocument();
+    expect(within(desktopSidebar).getByText("Corsi")).toBeInTheDocument();
+  });
+
+  it("expands the academy section on mobile to reveal reels and courses", () => {
+    render(<AppSidebar currentPathname="/dashboard" variant="mobile" />);
+
+    const mobileSidebar = screen.getByTestId("app-sidebar-mobile");
+    expect(within(mobileSidebar).queryByText("Reel")).not.toBeInTheDocument();
+    expect(within(mobileSidebar).queryByText("Corsi")).not.toBeInTheDocument();
+
+    fireEvent.click(within(mobileSidebar).getByRole("button", { name: "Apri Accademia" }));
+
+    expect(within(mobileSidebar).getByText("Reel")).toBeInTheDocument();
+    expect(within(mobileSidebar).getByText("Corsi")).toBeInTheDocument();
+  });
+
+  it("marks academy subroutes active and keeps the academy title in the topbar", () => {
+    appShellMocks.pathname = "/academy/reels";
+
+    const { rerender } = render(<AppShellTemplate><div>Academy content</div></AppShellTemplate>);
+
+    const desktopSidebar = screen.getByTestId("app-sidebar-desktop");
+    expect(within(desktopSidebar).getByText("Reel")).toBeInTheDocument();
+    expect(within(desktopSidebar).getByTestId("nav-item-academy-reels")).toHaveAttribute(
+      "aria-current",
+      "page",
+    );
+    expect(screen.getByTestId("app-shell-topbar")).toHaveTextContent("Accademia");
+
+    appShellMocks.pathname = "/academy/courses";
+
+    rerender(<AppShellTemplate><div>Academy content</div></AppShellTemplate>);
+
+    const rerenderedDesktopSidebar = screen.getByTestId("app-sidebar-desktop");
+    expect(within(rerenderedDesktopSidebar).getByText("Corsi")).toBeInTheDocument();
+    expect(
+      within(rerenderedDesktopSidebar).getByTestId("nav-item-academy-courses"),
+    ).toHaveAttribute("aria-current", "page");
+    expect(screen.getByTestId("app-shell-topbar")).toHaveTextContent("Accademia");
+
+    appShellMocks.pathname = "/academy/reels/published";
+
+    rerender(<AppShellTemplate><div>Academy content</div></AppShellTemplate>);
+
+    const publishedDesktopSidebar = screen.getByTestId("app-sidebar-desktop");
+    expect(within(publishedDesktopSidebar).getByTestId("nav-item-academy-reels")).toHaveAttribute(
+      "aria-current",
+      "page",
+    );
+    expect(screen.getByTestId("app-shell-topbar")).toHaveTextContent("Accademia");
+  });
+
+  it("keeps the academy parent link pointed at /academy across academy routes", () => {
+    const { rerender } = render(<AppSidebar currentPathname="/academy/reels" />);
+
+    const desktopSidebar = screen.getByTestId("app-sidebar-desktop");
+    const academyLink = within(desktopSidebar).getByTestId("nav-item-academy");
+    const academyToggle = within(desktopSidebar).getByRole("button", { name: "Chiudi Accademia" });
+
+    expect(academyLink).toHaveAttribute("href", "/academy");
+    expect(academyLink).not.toHaveAttribute("aria-current");
+    expect(academyLink).not.toHaveAttribute("aria-disabled");
+    expect(academyToggle).toHaveAttribute("aria-expanded", "true");
+    expect(academyToggle).toHaveAttribute("aria-controls", "app-sidebar-academy-children");
+    expect(academyToggle).not.toHaveAttribute("aria-current");
+
+    rerender(<AppSidebar currentPathname="/academy" />);
+
+    const rerenderedSidebar = screen.getByTestId("app-sidebar-desktop");
+    expect(within(rerenderedSidebar).getByTestId("nav-item-academy")).toHaveAttribute(
+      "href",
+      "/academy",
+    );
+    expect(within(rerenderedSidebar).getByTestId("nav-item-academy")).toHaveAttribute(
+      "aria-current",
+      "page",
+    );
   });
 
   it("renders logo control as button and toggles assistant without navigation", () => {

@@ -17,6 +17,7 @@ Authenticated users now land on a shared `/dashboard` shell.
 - **Conversation persistence**: Supabase-backed chat storage with rolling assistant history and semantic search; automatic summary-turn compaction is disabled for now
 - **Voice Chat Runtime**: one shared runtime owns wake word, Gemini transport, transcript projection, persistence, reconnect flows, and chat switching/deletion/new-chat orchestration
 - **Progression system**: Supabase-backed goals, recurring actions, server-rendered daily/weekly visibility, XP history, leveling, and deadline review in `/progression`
+- **Academy reels board**: owner-scoped editorial Kanban in `/academy/reels` with quick idea capture, drawer editing, drag/drop status changes, hard delete confirmation, and a published-column cap with placeholder archive routes
 - **Authentication**: Google OAuth via Supabase; memory/calendar/tasks routes are session-protected
 - **UI**: thin App Router entrypoints, feature boundaries, markdown chat rendering, voice orb, shared app shell (`/dashboard` + sibling sections), dashboard calendar + ToDo blocks (explicit empty/error states), progression workspace + deadline warning, standalone legacy `/assistant`, standalone `/setup/calendar`
 
@@ -86,13 +87,16 @@ If `--linked` works, the project is ready for migrations, schema changes, and da
 2. **Dashboard**: `/dashboard` shows `Eventi` and `ToDo` side by side when space allows (wrap on smaller widths).
    Calendar empty/error states: `Nessun evento nei prossimi 7 giorni` / `Si è verificato un errore`.
    ToDo empty/error states: `Non ci sono elementi` / `Si è verificato un errore`.
-3. **Progression**: `/progression` shows XP level progress, due actions, weekly targets, goal filters, a lazy XP history sidebar, and a blocking deadline review only when expired goals exist.
-4. **Start**: click the `Jarvis / Personal OS` logo box in the app-shell sidebar.
-5. **Activation**: the assistant enters wake-word mode (yellow border).
+3. **Academy**: `Accademia` expands in the shared sidebar and currently exposes `/academy/reels`, `/academy/courses`, and `/academy/reels/published`.
+   Reel MVP scope: statuses `idea`, `script`, `to_record`, `to_edit`, `ready`, `published`; create from idea only; drawer edit; drag/drop between columns; hard delete confirm; published column shows the latest 3 cards plus `Vedi tutti`.
+   Non-goals for this phase: courses workflow, AI generation pipeline, published full archive, shared workspace permissions.
+4. **Progression**: `/progression` shows XP level progress, due actions, weekly targets, goal filters, a lazy XP history sidebar, and a blocking deadline review only when expired goals exist.
+5. **Start**: click the `Jarvis / Personal OS` logo box in the app-shell sidebar.
+6. **Activation**: the assistant enters wake-word mode (yellow border).
    Say "Jarvis" (or your configured wake word) to connect (cyan border).
-6. **Commands**: ask to create/edit events, tasks, timers, save memories, or search memories.
+7. **Commands**: ask to create/edit events, tasks, timers, save memories, or search memories.
    Tools are called automatically, and the assistant session persists while navigating app-shell routes through one shared runtime provider.
-7. **Stop**: click the same logo box to force `idle`, or end by voice
+8. **Stop**: click the same logo box to force `idle`, or end by voice
    (for example, "bye" or "thanks") to trigger end-conversation behavior.
 
 ## Project Structure
@@ -141,7 +145,8 @@ npm run gen-supabase-types  # Regenerate Supabase TypeScript types
 ## Architecture Workflow
 
 - Pages, layouts, and routes stay thin and import through `app/_features`, `app/_shared`, and `app/_server`.
-- Shared authenticated navigation lives in `app/(app-shell)` and exposes `/dashboard`, `/projects`, `/academy`, `/reflections`, `/learning`, `/progression`, `/news`, and `/settings`.
+- Shared authenticated navigation lives in `app/(app-shell)` and exposes `/dashboard`, `/projects`, `/academy/reels`, `/academy/courses`, `/academy/reels/published`, `/reflections`, `/learning`, `/progression`, `/news`, and `/settings`.
+- The Academy Reel workspace is owned by `app/_features/academy/reels` for domain/API logic and `app/design/templates/academy` + `app/design/organisms/academy` for the board UI.
 - The live assistant session is owned by `app/_features/assistant/runtime`, mounted once in `app/layout.tsx` through `VoiceChatRuntimeProvider`.
 - `useVoiceChat` is now a thin adapter over the runtime snapshot + commands instead of owning the session lifecycle.
 - Calendar/task refresh side effects stay in UI adapters (`AppShellAssistantProvider`, `useAssistantWorkspace`) through runtime `tool executed` subscriptions.
