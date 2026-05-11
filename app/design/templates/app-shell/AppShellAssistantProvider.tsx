@@ -1,7 +1,8 @@
 "use client";
 
-import { createContext, useCallback, useMemo, type ReactNode } from "react";
+import { createContext, useCallback, useEffect, useMemo, type ReactNode } from "react";
 import { useVoiceChat } from "@/app/_features/assistant/hooks/useVoiceChat";
+import { useVoiceChatRuntime } from "@/app/_features/assistant/runtime/useVoiceChatRuntime";
 import type { AssistantSessionState } from "@/app/_features/assistant/lib";
 import {
   isCalendarMutationTool,
@@ -34,6 +35,7 @@ function getLogoBorderClassName(listeningMode: AssistantSessionState): string {
 export function AppShellAssistantProvider({ children }: { children: ReactNode }) {
   const refreshCalendar = useCalendarStore((state) => state.refresh);
   const refreshTasks = useTasksStore((state) => state.refresh);
+  const runtime = useVoiceChatRuntime();
 
   const handleToolExecuted = useCallback(
     (toolName: string, result: unknown) => {
@@ -56,9 +58,13 @@ export function AppShellAssistantProvider({ children }: { children: ReactNode })
     [refreshCalendar, refreshTasks],
   );
 
-  const { listeningMode, startListening, stopListening } = useVoiceChat({
-    onToolExecuted: handleToolExecuted,
-  });
+  useEffect(() => {
+    return runtime.subscribeToolExecuted(({ toolName, result }) => {
+      handleToolExecuted(toolName, result);
+    });
+  }, [handleToolExecuted, runtime]);
+
+  const { listeningMode, startListening, stopListening } = useVoiceChat();
 
   const onLogoToggle = useCallback(() => {
     if (listeningMode === "idle") {

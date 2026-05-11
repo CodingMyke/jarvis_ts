@@ -37,6 +37,8 @@ export interface CurrentChatContext {
   last_activity_at: string;
 }
 
+export type ToolExecutedHandler = (toolName: string, result: unknown) => void;
+
 export interface VoiceChatClientOptions {
   provider: import("../lib/providers/base.provider").VoiceChatProvider;
   config?: VoiceChatConfig;
@@ -63,5 +65,5 @@ export interface VoiceChatClientOptions {
   getIsCurrentChatEmpty?: () => boolean;
   /** Restituisce il contesto della conversazione corrente (id, titolo, date) per iniettarlo nel system prompt. */
   getCurrentChatContext?: () => CurrentChatContext | null;
-  onToolExecuted?: (toolName: string, result: unknown) => void;
+  onToolExecuted?: ToolExecutedHandler;
 }

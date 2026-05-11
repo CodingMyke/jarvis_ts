@@ -14,14 +14,20 @@ const workspaceMocks = vi.hoisted(() => ({
   ensureTimerStoreSubscription: vi.fn(),
   initializeCalendarStore: vi.fn(),
   initializeTasksStore: vi.fn(),
+  runtimeSubscribeToolExecuted: vi.fn(),
   tasksState: {
     refresh: vi.fn(),
   },
   useVoiceChat: vi.fn(),
+  useVoiceChatRuntime: vi.fn(),
 }));
 
 vi.mock("@/app/_features/assistant/hooks/useVoiceChat", () => ({
   useVoiceChat: workspaceMocks.useVoiceChat,
+}));
+
+vi.mock("@/app/_features/assistant/runtime/useVoiceChatRuntime", () => ({
+  useVoiceChatRuntime: workspaceMocks.useVoiceChatRuntime,
 }));
 
 vi.mock("@/app/_features/calendar/lib/calendar-client", () => ({
@@ -56,12 +62,15 @@ describe("useAssistantWorkspace", () => {
     workspaceMocks.ensureTimerStoreSubscription.mockReset();
     workspaceMocks.initializeCalendarStore.mockReset();
     workspaceMocks.initializeTasksStore.mockReset();
+    workspaceMocks.runtimeSubscribeToolExecuted.mockReset();
     workspaceMocks.tasksState.refresh.mockReset();
     workspaceMocks.useVoiceChat.mockReset();
+    workspaceMocks.useVoiceChatRuntime.mockReset();
 
     workspaceMocks.calendarState.refresh.mockResolvedValue(undefined);
     workspaceMocks.tasksState.refresh.mockResolvedValue(undefined);
     workspaceMocks.deleteCalendarEvent.mockResolvedValue({ success: true });
+    workspaceMocks.runtimeSubscribeToolExecuted.mockReturnValue(() => undefined);
 
     workspaceMocks.useVoiceChat.mockReturnValue({
       chatTitle: "Chat corrente",
@@ -72,6 +81,9 @@ describe("useAssistantWorkspace", () => {
       outputAudioLevel: 0.45,
       startListening: vi.fn(),
       stopListening: vi.fn(),
+    });
+    workspaceMocks.useVoiceChatRuntime.mockReturnValue({
+      subscribeToolExecuted: workspaceMocks.runtimeSubscribeToolExecuted,
     });
   });
 
@@ -131,12 +143,12 @@ describe("useAssistantWorkspace", () => {
       workspaceMocks.useVoiceChat.mock.results[1]?.value.stopListening,
     ).toHaveBeenCalledOnce();
 
-    const workspaceOptions = workspaceMocks.useVoiceChat.mock.calls[0]?.[0];
+    const listener = workspaceMocks.runtimeSubscribeToolExecuted.mock.calls[0]?.[0];
 
     act(() => {
-      workspaceOptions?.onToolExecuted?.("createCalendarEvent", { success: true });
-      workspaceOptions?.onToolExecuted?.("createTodo", { success: true });
-      workspaceOptions?.onToolExecuted?.("createTodo", { success: false });
+      listener?.({ toolName: "createCalendarEvent", result: { success: true } });
+      listener?.({ toolName: "createTodo", result: { success: true } });
+      listener?.({ toolName: "createTodo", result: { success: false } });
     });
 
     await act(async () => {

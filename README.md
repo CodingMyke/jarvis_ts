@@ -14,7 +14,8 @@ Authenticated users now land on a shared `/dashboard` shell.
   - **Timer**: start, pause, resume, stop, status
   - **Memories**: episodic and semantic memories (Supabase), create/update/search/delete
   - **Session control**: end conversation, clear chat, disable assistant
-- **Conversation persistence**: Supabase-backed chat storage with rolling assistant history and semantic search; automatic summary-turn compaction is disabled for now (local storage is used as a client-side layer)
+- **Conversation persistence**: Supabase-backed chat storage with rolling assistant history and semantic search; automatic summary-turn compaction is disabled for now
+- **Voice Chat Runtime**: one shared runtime owns wake word, Gemini transport, transcript projection, persistence, reconnect flows, and chat switching/deletion/new-chat orchestration
 - **Progression system**: Supabase-backed goals, recurring actions, server-rendered daily/weekly visibility, XP history, leveling, and deadline review in `/progression`
 - **Authentication**: Google OAuth via Supabase; memory/calendar/tasks routes are session-protected
 - **UI**: thin App Router entrypoints, feature boundaries, markdown chat rendering, voice orb, shared app shell (`/dashboard` + sibling sections), dashboard calendar + ToDo blocks (explicit empty/error states), progression workspace + deadline warning, standalone legacy `/assistant`, standalone `/setup/calendar`
@@ -90,7 +91,7 @@ If `--linked` works, the project is ready for migrations, schema changes, and da
 5. **Activation**: the assistant enters wake-word mode (yellow border).
    Say "Jarvis" (or your configured wake word) to connect (cyan border).
 6. **Commands**: ask to create/edit events, tasks, timers, save memories, or search memories.
-   Tools are called automatically, and the assistant session persists while navigating app-shell routes.
+   Tools are called automatically, and the assistant session persists while navigating app-shell routes through one shared runtime provider.
 7. **Stop**: click the same logo box to force `idle`, or end by voice
    (for example, "bye" or "thanks") to trigger end-conversation behavior.
 
@@ -101,7 +102,7 @@ jarvis_ts/
 ├── app/
 │   ├── api/                     # Thin route handlers
 │   ├── _features/               # Domain-organized feature code
-│   │   ├── assistant/           # Assistant hook/UI/tool schema/config
+│   │   ├── assistant/           # Assistant runtime, UI, tools, config
 │   │   ├── auth/                # Auth hooks and UI
 │   │   ├── calendar/            # Actions, UI, route validators/handlers
 │   │   ├── chats/               # Chat validators/handlers/services
@@ -141,6 +142,9 @@ npm run gen-supabase-types  # Regenerate Supabase TypeScript types
 
 - Pages, layouts, and routes stay thin and import through `app/_features`, `app/_shared`, and `app/_server`.
 - Shared authenticated navigation lives in `app/(app-shell)` and exposes `/dashboard`, `/projects`, `/academy`, `/reflections`, `/learning`, `/progression`, `/news`, and `/settings`.
+- The live assistant session is owned by `app/_features/assistant/runtime`, mounted once in `app/layout.tsx` through `VoiceChatRuntimeProvider`.
+- `useVoiceChat` is now a thin adapter over the runtime snapshot + commands instead of owning the session lifecycle.
+- Calendar/task refresh side effects stay in UI adapters (`AppShellAssistantProvider`, `useAssistantWorkspace`) through runtime `tool executed` subscriptions.
 - The progression flow is owned by `app/_features/progression`, with Supabase RPC-backed XP/check-in mutations, server-composed `/progression` sections for level/goals/today/deadlines, and client-only islands for edits, check-ins, deadline actions, and on-demand XP history.
 - `/assistant` stays available as a legacy standalone protected route and is not exposed in the main shell navigation.
 - `/setup/calendar` stays standalone + protected, discoverable from the `/settings` page (`Integrazioni` section).
