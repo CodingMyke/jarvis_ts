@@ -1,6 +1,17 @@
 import { ReelBoardTemplate } from "@/app/design/templates/academy/ReelBoardTemplate";
-import { createEmptyReelBoard } from "@/app/design/templates/academy/useReelBoardWorkspace";
+import { getAuthContext } from "@/app/_server";
+import { EMPTY_REEL_BOARD, getServerReelBoard } from "@/app/_features/academy";
 
-export default function AcademyReelsPage() {
-  return <ReelBoardTemplate initialBoard={createEmptyReelBoard()} />;
+export default async function AcademyReelsPage() {
+  const auth = await getAuthContext();
+
+  if (!auth) {
+    return <ReelBoardTemplate initialBoard={EMPTY_REEL_BOARD} />;
+  }
+
+  const boardResult = await getServerReelBoard(auth.supabase, auth.userId);
+
+  return (
+    <ReelBoardTemplate initialBoard={boardResult.success ? boardResult.board : EMPTY_REEL_BOARD} />
+  );
 }

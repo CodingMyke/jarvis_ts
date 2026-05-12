@@ -1,7 +1,9 @@
 export type { IconProps } from "./Icon.types";
+export { CloseIcon } from "./CloseIcon";
 export { ChevronDownIcon } from "./ChevronDownIcon";
 export { ChevronUpIcon } from "./ChevronUpIcon";
 export { GearIcon } from "./GearIcon";
 export { MicrophoneIcon } from "./MicrophoneIcon";
+export { SaveIcon } from "./SaveIcon";
 export { StopIcon } from "./StopIcon";
 export { TrashIcon } from "./TrashIcon";

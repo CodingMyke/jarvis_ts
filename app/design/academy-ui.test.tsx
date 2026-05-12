@@ -11,8 +11,10 @@ const academyUiMocks = vi.hoisted(() => ({
   redirect: vi.fn(() => {
     throw new Error("redirected");
   }),
+  getAuthContext: vi.fn(),
   createReel: vi.fn(),
   deleteReel: vi.fn(),
+  getServerReelBoard: vi.fn(),
   updateReel: vi.fn(),
   updateReelStatus: vi.fn(),
 }));
@@ -20,6 +22,15 @@ const academyUiMocks = vi.hoisted(() => ({
 vi.mock("next/navigation", () => ({
   redirect: academyUiMocks.redirect,
 }));
+
+vi.mock("@/app/_server", async () => {
+  const actual = await vi.importActual<typeof import("@/app/_server")>("@/app/_server");
+
+  return {
+    ...actual,
+    getAuthContext: academyUiMocks.getAuthContext,
+  };
+});
 
 vi.mock("@/app/_features/academy/reels", async () => {
   const actual = await vi.importActual<typeof import("@/app/_features/academy/reels")>(
@@ -30,6 +41,7 @@ vi.mock("@/app/_features/academy/reels", async () => {
     ...actual,
     createReel: academyUiMocks.createReel,
     deleteReel: academyUiMocks.deleteReel,
+    getServerReelBoard: academyUiMocks.getServerReelBoard,
     updateReel: academyUiMocks.updateReel,
     updateReelStatus: academyUiMocks.updateReelStatus,
   };
@@ -127,22 +139,48 @@ const boardFixture: ReelBoard = {
 describe("academy design", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    academyUiMocks.getAuthContext.mockResolvedValue(null);
+    academyUiMocks.getServerReelBoard.mockResolvedValue({
+      success: true,
+      board: boardFixture,
+    });
   });
 
-  it("redirects the academy landing page to reels", () => {
+  it("redirects the academy landing page to dashboard", () => {
     expect(() => AcademyPage()).toThrow("redirected");
-    expect(academyUiMocks.redirect).toHaveBeenCalledWith("/academy/reels");
+    expect(academyUiMocks.redirect).toHaveBeenCalledWith("/academy/dashboard");
   });
 
-  it("renders an explicit reel board shell", async () => {
-    const { default: AcademyReelsPage } = await import("@/app/(app-shell)/academy/reels/page");
+  it("renders an explicit dashboard placeholder", async () => {
+    const { default: AcademyDashboardPage } = await import(
+      "@/app/(app-shell)/academy/dashboard/page"
+    );
 
-    render(<AcademyReelsPage />);
+    render(<AcademyDashboardPage />);
+
+    expect(screen.getByRole("heading", { name: "Dashboard" })).toBeInTheDocument();
+    expect(
+      screen.getByText("Placeholder esplicito: la dashboard Academy arriva nel prossimo step."),
+    ).toBeInTheDocument();
+  });
+
+  it("renders the reel board using the server-loaded initial board", async () => {
+    academyUiMocks.getAuthContext.mockResolvedValue({
+      supabase: {} as never,
+      userId: "user-1",
+    });
+    const { default: AcademyReelsPage } = await import("@/app/(app-shell)/academy/reels/page");
+    const page = await AcademyReelsPage();
+
+    render(page);
 
     expect(screen.getByRole("heading", { name: "Reel board" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Reel board" }).className).toContain("text-4xl");
     expect(
       screen.getByText("Plan, refine, move, and publish your reels from one editorial workspace."),
     ).toBeInTheDocument();
+    expect(screen.getAllByText("First draft idea")).toHaveLength(1);
+    expect(academyUiMocks.getServerReelBoard).toHaveBeenCalledWith({}, "user-1");
   });
 
   it("renders an explicit courses placeholder", async () => {
@@ -218,6 +256,15 @@ describe("academy design", () => {
       "/academy/reels/published",
     );
     expect(screen.queryByText("Published four")).not.toBeInTheDocument();
+    expect(
+      within(screen.getByTestId("reel-card-11111111-1111-4111-8111-111111111111")).queryByText("idea"),
+    ).not.toBeInTheDocument();
+    expect(
+      within(screen.getByTestId("reel-card-11111111-1111-4111-8111-111111111111")).queryByRole(
+        "button",
+        { name: "Edit" },
+      ),
+    ).not.toBeInTheDocument();
 
     fireEvent.change(screen.getByPlaceholderText("Write the core idea for the reel"), {
       target: { value: "Created idea" },
@@ -228,18 +275,17 @@ describe("academy design", () => {
     expect(await screen.findByTestId("reel-card-44444444-4444-4444-8444-444444444444"))
       .toBeInTheDocument();
 
-    fireEvent.click(
-      within(screen.getByTestId("reel-card-11111111-1111-4111-8111-111111111111"))
-        .getByRole("button", { name: "Edit" }),
-    );
+    const draftCard = screen.getByTestId("reel-card-11111111-1111-4111-8111-111111111111");
+    fireEvent.click(draftCard);
     fireEvent.change(screen.getByLabelText("Title"), { target: { value: "Updated title" } });
     fireEvent.change(screen.getByLabelText("Body"), { target: { value: "Updated body" } });
     await act(async () => {
       fireEvent.click(screen.getByRole("button", { name: "Save changes" }));
     });
     expect(await screen.findByText("Updated title")).toBeInTheDocument();
+    expect(screen.queryByText("idea")).not.toBeInTheDocument();
+    expect(within(draftCard).queryByRole("button", { name: "Edit" })).not.toBeInTheDocument();
 
-    const draftCard = screen.getByTestId("reel-card-11111111-1111-4111-8111-111111111111");
     fireEvent.dragStart(draftCard);
     await act(async () => {
       fireEvent.drop(screen.getByTestId("reel-column-ready"));
@@ -249,7 +295,7 @@ describe("academy design", () => {
 
     fireEvent.click(
       within(screen.getByTestId("reel-card-11111111-1111-4111-8111-111111111111"))
-        .getByRole("button", { name: "Delete" }),
+        .getByRole("button", { name: "Delete reel" }),
     );
     await act(async () => {
       fireEvent.click(screen.getByRole("button", { name: "Confirm delete" }));

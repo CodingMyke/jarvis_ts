@@ -16,12 +16,16 @@ export function ReelBoardTemplate({ initialBoard }: ReelBoardTemplateProps) {
 
   return (
     <section className="mx-auto flex w-full max-w-7xl flex-col gap-4">
-      <div className="flex flex-col gap-2 rounded-[28px] border border-white/10 bg-white/5 p-6">
-        <p className="text-xs uppercase tracking-[0.2em] text-muted">Academy</p>
-        <h1 className="text-2xl font-semibold text-foreground">Reel board</h1>
-        <p className="text-sm text-muted">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+        <div>
+          <p className="text-xs uppercase tracking-[0.28em] text-muted/80">Academy</p>
+          <h1 className="mt-2 text-4xl font-semibold tracking-tight text-foreground">
+            Reel board
+          </h1>
+          <p className="mt-2 max-w-2xl text-sm text-muted">
           Plan, refine, move, and publish your reels from one editorial workspace.
         </p>
+        </div>
       </div>
 
       {workspace.errorMessage ? (

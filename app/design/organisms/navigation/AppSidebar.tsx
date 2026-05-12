@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Fragment, useEffect, useState } from "react";
+import { ChevronDownIcon, ChevronUpIcon } from "@/app/design/atoms/shared";
 import {
   APP_SHELL_MAIN_NAVIGATION,
   APP_SHELL_ACADEMY_NAVIGATION,
@@ -110,23 +111,21 @@ function NavItem({
 }
 
 function AcademySection({
-  currentPathname,
   isExpanded,
   isActive,
   activeItemKey,
+  onOpen,
   onToggle,
   onNavigate,
 }: {
-  currentPathname: string;
   isExpanded: boolean;
   isActive: boolean;
   activeItemKey: AppShellNavigationItem["key"];
+  onOpen: () => void;
   onToggle: () => void;
   onNavigate?: () => void;
 }) {
   const toggleLabel = isExpanded ? "Chiudi Accademia" : "Apri Accademia";
-  const isAcademyLandingPage = currentPathname === APP_SHELL_ACADEMY_NAVIGATION_ITEM.href;
-
   return (
     <div className="space-y-2">
       <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-2">
@@ -134,9 +133,11 @@ function AcademySection({
           href={APP_SHELL_ACADEMY_NAVIGATION_ITEM.href}
           data-testid="nav-item-academy"
           data-active={isActive}
-          aria-current={isAcademyLandingPage ? "page" : undefined}
           className={getNavItemClasses(isActive, true)}
-          onClick={onNavigate}
+          onClick={() => {
+            onOpen();
+            onNavigate?.();
+          }}
         >
           <span>Accademia</span>
         </Link>
@@ -147,14 +148,16 @@ function AcademySection({
           aria-controls="app-sidebar-academy-children"
           aria-label={toggleLabel}
           className={[
-            "rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-muted transition-colors",
+            "flex items-center justify-center rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-muted transition-colors",
             "hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-accent/20",
           ].join(" ")}
           onClick={onToggle}
         >
-          <span aria-hidden className="text-base leading-none">
-            {isExpanded ? "−" : "+"}
-          </span>
+          {isExpanded ? (
+            <ChevronUpIcon className="h-4 w-4" />
+          ) : (
+            <ChevronDownIcon className="h-4 w-4" />
+          )}
         </button>
       </div>
 
@@ -235,10 +238,10 @@ export function AppSidebar({
               />
               {item.key === "projects" ? (
                 <AcademySection
-                  currentPathname={currentPathname}
                   isExpanded={isAcademyExpanded}
                   isActive={isAcademyRoute}
                   activeItemKey={activeItem.key}
+                  onOpen={() => setIsAcademyExpanded(true)}
                   onToggle={() => setIsAcademyExpanded((currentValue) => !currentValue)}
                   onNavigate={onNavigate}
                 />

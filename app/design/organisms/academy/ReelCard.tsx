@@ -1,6 +1,7 @@
 "use client";
 
-import { Button } from "@/app/design/atoms/shared/Button";
+import { useRef } from "react";
+import { TrashIcon } from "@/app/design/atoms/shared";
 import type { ReelRow } from "@/app/_features/academy/reels";
 
 export interface ReelCardProps {
@@ -18,28 +19,52 @@ export function ReelCard({
   onDragStart,
   onDragEnd,
 }: ReelCardProps) {
+  const suppressEditRef = useRef(false);
+
+  const handleOpenEdit = (): void => {
+    if (suppressEditRef.current) {
+      return;
+    }
+
+    onEdit(reel);
+  };
+
   return (
     <article
       draggable
       data-testid={`reel-card-${reel.id}`}
-      className="rounded-2xl border border-white/10 bg-black/20 p-4"
-      onDragStart={() => onDragStart(reel.id)}
-      onDragEnd={onDragEnd}
+      className="flex items-center gap-3 rounded-2xl border border-white/10 bg-black/20 p-3"
+      onClick={handleOpenEdit}
+      onDragStart={() => {
+        suppressEditRef.current = true;
+        onDragStart(reel.id);
+      }}
+      onDragEnd={() => {
+        onDragEnd();
+        window.setTimeout(() => {
+          suppressEditRef.current = false;
+        }, 0);
+      }}
     >
-      <div className="space-y-2">
-        <p className="text-xs uppercase tracking-[0.2em] text-muted">{reel.status}</p>
-        <h3 className="text-sm font-semibold text-foreground">{reel.title ?? reel.idea}</h3>
-        <p className="text-sm text-muted">{reel.idea}</p>
-      </div>
+      <span className="min-w-0 flex-1 truncate text-sm font-semibold text-foreground">
+        {reel.title ?? reel.idea}
+      </span>
 
-      <div className="mt-4 flex gap-2">
-        <Button type="button" variant="secondary" onClick={() => onEdit(reel)}>
-          Edit
-        </Button>
-        <Button type="button" variant="secondary" onClick={() => onDelete(reel)}>
-          Delete
-        </Button>
-      </div>
+      <button
+        type="button"
+        className={[
+          "ml-auto flex h-9 w-9 shrink-0 items-center justify-center rounded-xl",
+          "border border-white/10 bg-white/5 px-0 text-muted transition-colors",
+          "hover:bg-white/10 hover:text-foreground focus:outline-none focus:ring-2 focus:ring-accent/20",
+        ].join(" ")}
+        onClick={(event) => {
+          event.stopPropagation();
+          onDelete(reel);
+        }}
+      >
+        <span className="sr-only">Delete reel</span>
+        <TrashIcon className="h-4 w-4" />
+      </button>
     </article>
   );
 }

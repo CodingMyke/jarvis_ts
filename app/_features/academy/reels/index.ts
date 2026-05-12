@@ -7,6 +7,7 @@ export {
   updateReelSchema,
   updateReelStatusSchema,
 } from "./lib/reel-board.schemas";
+export { EMPTY_REEL_BOARD } from "./lib/reel-board.types";
 export type {
   CreateReelInput,
   ReelBoard,
@@ -31,3 +32,4 @@ export {
   handleUpdateReel,
   handleUpdateReelStatus,
 } from "./server/reel-board-route.handlers";
+export { getReelBoard as getServerReelBoard } from "./server/reel-board.service";

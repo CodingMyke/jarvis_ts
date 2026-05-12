@@ -2,6 +2,7 @@
 
 import { startTransition, useMemo, useState } from "react";
 import {
+  EMPTY_REEL_BOARD,
   createReel,
   deleteReel,
   updateReel,
@@ -13,18 +14,6 @@ import type {
   ReelStatus,
   UpdateReelInput,
 } from "@/app/_features/academy/reels";
-
-const EMPTY_BOARD: ReelBoard = {
-  columns: {
-    idea: [],
-    script: [],
-    to_record: [],
-    to_edit: [],
-    ready: [],
-    published: [],
-  },
-  count: 0,
-};
 
 function sortColumn(reels: ReelRow[]): ReelRow[] {
   return [...reels].sort((left, right) => right.updated_at.localeCompare(left.updated_at));
@@ -103,11 +92,11 @@ export interface ReelBoardWorkspaceResult {
 }
 
 export function createEmptyReelBoard(): ReelBoard {
-  return EMPTY_BOARD;
+  return EMPTY_REEL_BOARD;
 }
 
 export function useReelBoardWorkspace(initialBoard?: ReelBoard): ReelBoardWorkspaceResult {
-  const [board, setBoard] = useState<ReelBoard>(() => normalizeBoard(initialBoard ?? EMPTY_BOARD));
+  const [board, setBoard] = useState<ReelBoard>(() => normalizeBoard(initialBoard ?? EMPTY_REEL_BOARD));
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [createIdea, setCreateIdea] = useState("");
   const [isCreating, setIsCreating] = useState(false);

@@ -14,6 +14,18 @@ export interface ReelBoard {
   count: number;
 }
 
+export const EMPTY_REEL_BOARD: ReelBoard = {
+  columns: {
+    idea: [],
+    script: [],
+    to_record: [],
+    to_edit: [],
+    ready: [],
+    published: [],
+  },
+  count: 0,
+};
+
 export interface CreateReelInput {
   idea: string;
 }

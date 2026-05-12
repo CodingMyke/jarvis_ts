@@ -1,9 +1,11 @@
 export { Button } from "./Button";
 export {
+  CloseIcon,
   ChevronDownIcon,
   ChevronUpIcon,
   GearIcon,
   MicrophoneIcon,
+  SaveIcon,
   StopIcon,
   TrashIcon,
 } from "./icons";

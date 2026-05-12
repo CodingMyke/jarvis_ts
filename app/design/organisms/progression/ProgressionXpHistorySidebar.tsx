@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { getProgressionXpHistory } from "@/app/_features/progression/lib/progression-client";
 import { Button } from "@/app/design/atoms/shared/Button";
+import { CloseIcon } from "@/app/design/atoms/shared/icons";
 
 interface ProgressionXpHistoryItem {
   id: string;
@@ -137,20 +138,7 @@ export function ProgressionXpHistorySidebar({
           aria-label="Chiudi cronologia XP"
           className="h-7 w-7 !p-0"
         >
-          <svg
-            aria-hidden="true"
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            className="h-5 w-5"
-          >
-            <path d="M6 6l12 12" />
-            <path d="M18 6 6 18" />
-          </svg>
+          <CloseIcon className="h-5 w-5" />
         </Button>
       </div>
 

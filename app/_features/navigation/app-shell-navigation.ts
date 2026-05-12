@@ -2,6 +2,7 @@ export type AppShellSectionKey =
   | "dashboard"
   | "projects"
   | "academy"
+  | "academyDashboard"
   | "academyReels"
   | "academyCourses"
   | "reflections"
@@ -65,6 +66,13 @@ export const APP_SHELL_MAIN_NAVIGATION: readonly AppShellNavigationItem[] = [
 
 export const APP_SHELL_ACADEMY_NAVIGATION = [
   {
+    key: "academyDashboard",
+    href: "/academy/dashboard",
+    label: "Dashboard",
+    title: "Accademia",
+    enabled: true,
+  },
+  {
     key: "academyReels",
     href: "/academy/reels",
     label: "Reel",
@@ -82,7 +90,7 @@ export const APP_SHELL_ACADEMY_NAVIGATION = [
 
 export const APP_SHELL_ACADEMY_NAVIGATION_ITEM: AppShellNavigationItem = {
   key: "academy",
-  href: "/academy",
+  href: "/academy/dashboard",
   label: "Accademia",
   title: "Accademia",
   enabled: true,
@@ -105,9 +113,10 @@ const APP_SHELL_ALL_NAVIGATION: readonly AppShellNavigationItem[] = [
 
 export function isAcademyPathname(pathname: string | null | undefined): boolean {
   const safePathname = pathname && pathname.trim().length > 0 ? pathname : "/dashboard";
+  const academyBasePathname = "/academy";
 
-  return safePathname === APP_SHELL_ACADEMY_NAVIGATION_ITEM.href
-    || safePathname.startsWith(`${APP_SHELL_ACADEMY_NAVIGATION_ITEM.href}/`);
+  return safePathname === academyBasePathname
+    || safePathname.startsWith(`${academyBasePathname}/`);
 }
 
 export function getAppShellNavigationItemFromPath(
