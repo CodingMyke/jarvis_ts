@@ -104,7 +104,7 @@ function CalendarEventCardComponent({
             <div
               className={`fixed inset-0 z-[100] flex items-center justify-center transition-[background-color,backdrop-filter] duration-(--transition-fast) ${
                 isDialogAnimatedIn
-                  ? "bg-black/60 backdrop-blur-sm"
+                  ? "bg-scrim-strong backdrop-blur-sm"
                   : "bg-black/0 backdrop-blur-0"
               }`}
               style={{ willChange: isDialogAnimatedIn ? "backdrop-filter" : "auto" }}
@@ -132,7 +132,7 @@ function CalendarEventCardComponent({
                 </p>
 
                 {deleteError ? (
-                  <p className="mb-4 rounded-app border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-300">
+                  <p className="mb-4 rounded-app border border-line-danger bg-danger-tint px-3 py-2 text-sm text-danger-copy">
                     {deleteError}
                   </p>
                 ) : null}
@@ -142,7 +142,7 @@ function CalendarEventCardComponent({
                     type="button"
                     onClick={closeDeleteDialog}
                     disabled={isDeleting}
-                    className="rounded-app px-4 py-2 text-sm text-muted transition-colors hover:bg-white/10 hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50"
+                    className="rounded-app px-4 py-2 text-sm text-copy-muted transition-colors hover:bg-interactive hover:text-copy disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     Annulla
                   </button>
@@ -173,7 +173,7 @@ function CalendarEventCardComponent({
                       }
                     }}
                     disabled={isDeleting}
-                    className="rounded-app bg-red-500/20 px-4 py-2 text-sm text-red-400 transition-colors hover:bg-red-500/30 disabled:cursor-not-allowed disabled:opacity-50"
+                    className="rounded-app bg-danger-tint px-4 py-2 text-sm text-danger transition-colors hover:bg-danger disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     {isDeleting ? "Eliminazione..." : "Elimina evento"}
                   </button>

@@ -222,7 +222,7 @@ export function ProgressionGoalList({
             aria-pressed={selectedFilter === filter}
             className={`rounded-app border px-3 py-1.5 text-sm transition-colors ${
               selectedFilter === filter
-                ? "border-cyan-300/50 bg-cyan-400/10 text-cyan-100"
+                ? "border-line-accent bg-accent-tint text-accent"
                 : "border-line bg-surface-raised text-copy-muted hover:bg-interactive hover:text-copy"
             }`}
             onClick={() => onSelectFilter(filter)}
@@ -248,7 +248,7 @@ export function ProgressionGoalList({
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
                     <p className="text-lg font-medium text-foreground">{goal.title}</p>
-                    <span className="inline-flex shrink-0 rounded-full bg-emerald-400/10 px-2.5 py-1 text-xs text-emerald-100">
+                    <span className="inline-flex shrink-0 rounded-full bg-success-tint px-2.5 py-1 text-xs text-success">
                       +{goal.completionXp} XP
                     </span>
                   </div>

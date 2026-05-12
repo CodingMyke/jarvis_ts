@@ -16,7 +16,7 @@ export function FloatingChatDeleteDialog() {
   return (
     <div
       className={`fixed inset-0 z-50 flex items-center justify-center transition-[background-color,backdrop-filter] duration-(--transition-fast) ${
-        isDialogAnimatedIn ? "bg-black/60 backdrop-blur-sm" : "bg-black/0 backdrop-blur-0"
+        isDialogAnimatedIn ? "bg-scrim-strong backdrop-blur-sm" : "bg-black/0 backdrop-blur-0"
       }`}
       style={{ willChange: isDialogAnimatedIn ? "backdrop-filter" : "auto" }}
       onClick={closeDeleteDialog}

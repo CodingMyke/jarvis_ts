@@ -32,7 +32,7 @@ export function DashboardTodoPanel() {
         ))}
 
         {completedTodos.length > 0 && pendingTodos.length > 0 ? (
-          <div className="my-2 border-t border-white/10" />
+          <div className="ui-divider my-2 border-t" />
         ) : null}
 
         {completedTodos.map((todo) => (

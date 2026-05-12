@@ -18,7 +18,7 @@ export function Text<T extends ElementType = "p">({
 }: TextProps<T> & Omit<ComponentPropsWithoutRef<T>, keyof TextProps<T>>) {
   const Component = as ?? "p";
   const toneClassName =
-    tone === "muted" ? "ui-text-muted" : tone === "danger" ? "text-red-400" : "text-foreground";
+    tone === "muted" ? "ui-text-muted" : tone === "danger" ? "text-danger" : "text-foreground";
 
   return (
     <Component className={[toneClassName, className].join(" ").trim()} {...props}>

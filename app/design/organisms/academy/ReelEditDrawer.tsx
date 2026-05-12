@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Field, Surface, TextArea } from "@/app/_shared/ui";
 import { Button } from "@/app/design/atoms/shared/Button";
 import { CloseIcon, SaveIcon } from "@/app/design/atoms/shared/icons";
 import type { ReelRow, UpdateReelInput } from "@/app/_features/academy/reels";
@@ -36,8 +37,8 @@ export function ReelEditDrawer({
   }
 
   return (
-    <div className="fixed inset-y-0 right-0 z-50 flex h-dvh w-full max-w-xl rounded-app flex-col overflow-hidden border-l border-line bg-overlay shadow-2xl">
-      <div className="sticky top-0 z-10 flex items-start justify-between gap-4 border-b border-line bg-overlay/95 px-6 py-5 backdrop-blur">
+    <Surface className="fixed inset-y-0 right-0 z-50 flex h-dvh w-full max-w-xl flex-col overflow-hidden border-l shadow-overlay" variant="overlay">
+      <div className="sticky top-0 z-10 flex items-start justify-between gap-4 border-b border-line bg-overlay px-6 py-5 backdrop-blur-xl">
         <div className="min-w-0">
           <p className="text-xs uppercase tracking-[0.2em] text-muted">Edit reel</p>
           <h3
@@ -75,39 +76,39 @@ export function ReelEditDrawer({
         <div className="grid gap-4">
         <label className="space-y-2 text-sm text-muted">
           <span>Idea</span>
-          <textarea
+          <TextArea
             value={draft.idea ?? ""}
             onChange={(event) => setDraft((current) => ({ ...current, idea: event.target.value }))}
-            className="min-h-24 w-full rounded-app border border-line bg-field px-3 py-2 text-foreground outline-none"
+            className="min-h-24 py-2"
           />
         </label>
         <label className="space-y-2 text-sm text-muted">
           <span>Title</span>
-          <input
+          <Field
             value={draft.title ?? ""}
             onChange={(event) => setDraft((current) => ({ ...current, title: event.target.value || null }))}
-            className="w-full rounded-app border border-line bg-field px-3 py-2 text-foreground outline-none"
+            className="py-2"
           />
         </label>
         <label className="space-y-2 text-sm text-muted">
           <span>Caption</span>
-          <textarea
+          <TextArea
             value={draft.caption ?? ""}
             onChange={(event) => setDraft((current) => ({ ...current, caption: event.target.value || null }))}
-            className="min-h-24 w-full rounded-app border border-line bg-field px-3 py-2 text-foreground outline-none"
+            className="min-h-24 py-2"
           />
         </label>
         <label className="space-y-2 text-sm text-muted">
           <span>Body</span>
-          <textarea
+          <TextArea
             value={draft.body ?? ""}
             onChange={(event) => setDraft((current) => ({ ...current, body: event.target.value || null }))}
-            className="min-h-28 w-full rounded-app border border-line bg-field px-3 py-2 text-foreground outline-none"
+            className="py-2"
           />
         </label>
         <label className="space-y-2 text-sm text-muted">
           <span>Hashtags</span>
-          <input
+          <Field
             value={(draft.hashtags ?? []).join(", ")}
             onChange={(event) => {
               const hashtags = event.target.value
@@ -116,19 +117,19 @@ export function ReelEditDrawer({
                 .filter(Boolean);
               setDraft((current) => ({ ...current, hashtags }));
             }}
-            className="w-full rounded-app border border-line bg-field px-3 py-2 text-foreground outline-none"
+            className="py-2"
           />
         </label>
         <label className="space-y-2 text-sm text-muted">
           <span>Notes</span>
-          <textarea
+          <TextArea
             value={draft.notes ?? ""}
             onChange={(event) => setDraft((current) => ({ ...current, notes: event.target.value || null }))}
-            className="min-h-20 w-full rounded-app border border-line bg-field px-3 py-2 text-foreground outline-none"
+            className="min-h-20 py-2"
           />
         </label>
         </div>
       </div>
-    </div>
+    </Surface>
   );
 }

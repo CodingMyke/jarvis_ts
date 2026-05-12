@@ -66,8 +66,8 @@ export function ProgressionDeadlineReviewDialog({
 
   return (
     <div className="mx-auto flex w-full max-w-3xl items-center justify-center py-8">
-      <div className="w-full rounded-app border border-amber-300/20 bg-[#16130f] p-6 shadow-[0_24px_80px_rgba(0,0,0,0.45)]">
-        <p className="text-xs uppercase tracking-[0.24em] text-amber-200/80">Revisione urgente</p>
+      <div className="w-full rounded-app border border-line-warning bg-warning-surface p-6 shadow-overlay">
+        <p className="text-xs uppercase tracking-[0.24em] text-warning-copy">Revisione urgente</p>
         <h1 className="mt-3 text-3xl font-semibold tracking-tight text-foreground">
           Scadenza da risolvere
         </h1>
@@ -79,7 +79,7 @@ export function ProgressionDeadlineReviewDialog({
           <p className="mt-2 text-sm text-muted">{goal.description}</p>
         ) : null}
         {errorMessage ? (
-          <p className="mt-4 text-sm text-red-100">{errorMessage}</p>
+          <p className="mt-4 text-sm text-danger-copy">{errorMessage}</p>
         ) : null}
 
         <div className="mt-6 grid gap-3 md:grid-cols-3">

@@ -22,7 +22,7 @@ export function TodoPanel() {
 
   return (
     <div
-      className="glass absolute right-6 z-10 w-[380px] border border-[var(--color-border-subtle)] px-4 py-3 shadow-lg"
+      className="glass absolute right-6 z-10 w-[380px] rounded-app border border-line bg-overlay px-4 py-3 shadow-overlay"
       style={{ top: topOffset }}
     >
       <TodoListHeader
@@ -46,7 +46,7 @@ export function TodoPanel() {
           ))}
 
           {completedTodos.length > 0 && pendingTodos.length > 0 ? (
-            <div className="my-2 border-t border-white/10" />
+            <div className="ui-divider my-2 border-t" />
           ) : null}
 
           {completedTodos.map((todo) => (

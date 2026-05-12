@@ -108,7 +108,7 @@ export function ProgressionXpHistorySidebar({
   return (
     <aside
       data-testid="progression-xp-history"
-      className="fixed inset-y-0 right-0 z-40 w-full max-w-md rounded-app border-l border-line bg-overlay p-4 shadow-[-24px_0_60px_rgba(0,0,0,0.4)]"
+      className="fixed inset-y-0 right-0 z-40 w-full max-w-md rounded-app border-l border-line bg-overlay p-4 shadow-drawer"
     >
       <div className="flex items-center justify-between gap-4 border-b border-line pb-2">
         <div className="flex items-center gap-2">
@@ -157,8 +157,8 @@ export function ProgressionXpHistorySidebar({
               <span
                 className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-medium ${
                   entry.xpAmount < 0
-                    ? "bg-red-500/15 text-red-100"
-                    : "bg-cyan-400/10 text-cyan-100"
+                    ? "bg-danger-tint text-danger-copy"
+                    : "bg-accent-tint text-accent"
                 }`}
               >
                 {entry.xpAmount < 0 ? "-" : "+"}{Math.abs(entry.xpAmount)} XP

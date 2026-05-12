@@ -28,8 +28,8 @@ export function ProgressionLevelPanel({
             {totalXp}
           </p>
         </div>
-        <div className="rounded-full border border-emerald-400/30 bg-emerald-400/10 px-3 py-1">
-          <span className="text-sm font-medium text-emerald-200">Livello {level}</span>
+        <div className="rounded-full border border-success bg-success-tint px-3 py-1">
+          <span className="text-sm font-medium text-success">Livello {level}</span>
         </div>
       </div>
 

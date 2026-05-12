@@ -14,8 +14,8 @@ export function ProgressionTemplate({ initialGoals }: ProgressionTemplateProps) 
   return (
     <>
       {workspace.sectionError ? (
-        <div className="mb-4 border border-red-400/20 bg-red-500/5 p-4">
-          <p className="text-sm text-red-100">{workspace.sectionError}</p>
+        <div className="mb-4 rounded-app border border-line-danger bg-danger-surface p-4">
+          <p className="text-sm text-danger-copy">{workspace.sectionError}</p>
         </div>
       ) : null}
 

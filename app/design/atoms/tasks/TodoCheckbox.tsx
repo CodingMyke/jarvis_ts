@@ -16,10 +16,10 @@ export function TodoCheckbox({
       type="button"
       onClick={onClick}
       disabled={disabled}
-      className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded border-2 transition-colors disabled:cursor-not-allowed disabled:opacity-60 ${
+      className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-app border-2 transition-colors disabled:cursor-not-allowed disabled:opacity-60 ${
         checked
           ? "border-accent bg-accent/20"
-          : "border-white/20 bg-transparent hover:border-white/40"
+          : "border-line-strong bg-transparent hover:border-line-accent"
       }`}
       aria-label={ariaLabel ?? (checked ? "Segna come non completato" : "Segna come completato")}
     >

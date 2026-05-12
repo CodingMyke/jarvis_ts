@@ -23,8 +23,8 @@ export function ReelDeleteDialog({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
-      <div className="w-full max-w-md border border-white/15 bg-[#11131a] p-6">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-scrim p-4 backdrop-blur-sm">
+      <div className="w-full max-w-md rounded-app border border-line-soft bg-overlay p-6">
         <h3 className="text-xl font-semibold text-foreground">Delete reel</h3>
         <p className="mt-2 text-sm text-muted">
           Confirm permanent deletion for <strong>{reel.title ?? reel.idea}</strong>.

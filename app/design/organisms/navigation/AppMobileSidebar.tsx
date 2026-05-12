@@ -40,7 +40,7 @@ export function AppMobileSidebar({
       <button
         type="button"
         className={[
-          "absolute inset-0 bg-black/50 transition-opacity duration-(--transition-fast)",
+          "absolute inset-0 bg-scrim-soft transition-opacity duration-(--transition-fast)",
           isOpen ? "opacity-100" : "opacity-0",
         ].join(" ")}
         aria-label="Chiudi navigazione"
