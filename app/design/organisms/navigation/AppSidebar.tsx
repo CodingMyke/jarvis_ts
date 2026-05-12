@@ -20,29 +20,37 @@ export interface AppSidebarProps {
   variant?: SidebarVariant;
 }
 
-function getNavItemClasses(isActive: boolean, isEnabled: boolean): string {
+function getNavItemClasses(
+  isActive: boolean,
+  isEnabled: boolean,
+  isNested = false,
+): string {
   const baseClasses = [
-    "flex w-full items-center justify-between rounded-xl border px-3 py-2 text-sm transition-colors",
+    "flex w-full items-center justify-between border-b px-4 py-2.5 text-sm transition-colors",
     "focus:outline-none focus:ring-2 focus:ring-accent/20",
   ];
+
+  if (isNested) {
+    baseClasses.push("border-l pl-3");
+  }
 
   if (isActive) {
     return [
       ...baseClasses,
-      "border-accent/40 bg-accent/15 text-foreground",
+      "border-white/10 text-[0.95rem] font-semibold text-foreground",
     ].join(" ");
   }
 
   if (isEnabled) {
     return [
       ...baseClasses,
-      "border-white/10 bg-white/5 text-muted hover:bg-white/10 hover:text-foreground",
+      "border-white/10 text-muted hover:text-foreground",
     ].join(" ");
   }
 
   return [
     ...baseClasses,
-    "cursor-not-allowed border-white/10 bg-white/5 text-muted/80",
+    "cursor-not-allowed border-white/10 text-muted/80",
   ].join(" ");
 }
 
@@ -56,14 +64,21 @@ function NavItem({
   onNavigate,
   showWarning = false,
   testId,
+  isNested = false,
+  hideBottomBorder = false,
 }: {
   item: AppShellNavigationItem;
   isActive: boolean;
   onNavigate?: () => void;
   showWarning?: boolean;
   testId?: string;
+  isNested?: boolean;
+  hideBottomBorder?: boolean;
 }) {
-  const navItemClassName = getNavItemClasses(isActive, item.enabled);
+  const navItemClassName = [
+    getNavItemClasses(isActive, item.enabled, isNested),
+    hideBottomBorder ? "border-b-0" : "",
+  ].join(" ").trim();
   const navItemTestId = testId ?? getNavItemTestId(item.key);
   const warningBadge = showWarning ? (
     <span
@@ -124,7 +139,7 @@ function AcademySection({
 }) {
   const toggleLabel = isExpanded ? "Chiudi Accademia" : "Apri Accademia";
   return (
-    <div className="space-y-2">
+    <div>
       <button
         type="button"
         data-testid="nav-item-academy"
@@ -149,7 +164,7 @@ function AcademySection({
       </button>
 
       {isExpanded ? (
-        <div id="app-sidebar-academy-children" className="space-y-2 pl-3">
+        <div id="app-sidebar-academy-children" className="pl-4">
           {APP_SHELL_ACADEMY_NAVIGATION.map((item) => (
             <NavItem
               key={item.key}
@@ -157,6 +172,7 @@ function AcademySection({
               isActive={activeItemKey === item.key}
               onNavigate={onNavigate}
               testId={getNavItemTestId(item.key)}
+              isNested
             />
           ))}
         </div>
@@ -213,8 +229,8 @@ export function AppSidebar({
         </button>
       </div>
 
-      <nav className="min-h-0 flex-1 overflow-y-auto p-4">
-        <div className="space-y-2">
+      <nav className="min-h-0 flex-1 overflow-y-auto">
+        <div>
           {APP_SHELL_MAIN_NAVIGATION.map((item) => (
             <Fragment key={item.key}>
               <NavItem
@@ -237,11 +253,12 @@ export function AppSidebar({
         </div>
       </nav>
 
-      <div className="border-t border-white/10 p-4">
+      <div className="border-t border-white/10">
         <NavItem
           item={APP_SHELL_SETTINGS_NAVIGATION}
           isActive={activeItem.key === APP_SHELL_SETTINGS_NAVIGATION.key}
           onNavigate={onNavigate}
+          hideBottomBorder
         />
       </div>
     </aside>
