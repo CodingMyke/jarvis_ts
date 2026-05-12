@@ -108,9 +108,9 @@ export function ProgressionXpHistorySidebar({
   return (
     <aside
       data-testid="progression-xp-history"
-      className="fixed inset-y-0 right-0 z-40 w-full max-w-md border-l border-white/10 bg-[#0f1218] p-4 shadow-[-24px_0_60px_rgba(0,0,0,0.4)]"
+      className="fixed inset-y-0 right-0 z-40 w-full max-w-md rounded-app border-l border-line bg-overlay p-4 shadow-[-24px_0_60px_rgba(0,0,0,0.4)]"
     >
-      <div className="flex items-center justify-between gap-4 border-b border-white/10 pb-2">
+      <div className="flex items-center justify-between gap-4 border-b border-line pb-2">
         <div className="flex items-center gap-2">
           <h2 className="text-xl font-semibold text-foreground">Cronologia XP</h2>
           {status === "loading" ? (
@@ -148,7 +148,7 @@ export function ProgressionXpHistorySidebar({
         {history.map((entry) => (
           <article
             key={entry.id}
-            className="rounded-xl border border-white/8 bg-black/20 px-3 py-2.5"
+            className="rounded-app border border-line bg-field px-3 py-2.5"
           >
             <div className="flex items-start justify-between gap-3">
               <p className="text-sm font-medium leading-5 text-foreground">

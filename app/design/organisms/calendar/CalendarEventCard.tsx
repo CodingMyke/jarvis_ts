@@ -65,7 +65,7 @@ function CalendarEventCardComponent({
     <div
       ref={containerRef}
       data-event-id={event.id}
-      className={`event-item-container cursor-pointer select-none rounded-xl transition-[transform,opacity,background-color,border-color,box-shadow,backdrop-filter,max-width,padding] duration-(--transition-medium) ease-(--easing-smooth) ${
+      className={`event-item-container cursor-pointer select-none rounded-app transition-[transform,opacity,background-color,border-color,box-shadow,backdrop-filter,max-width,padding] duration-(--transition-medium) ease-(--easing-smooth) ${
         isExpanded ? "event-expanded relative z-10 max-w-104 p-4" : "max-w-full p-0"
       }`}
       onMouseDown={handleMouseDown}
@@ -115,7 +115,7 @@ function CalendarEventCardComponent({
               }}
             >
               <div
-                className={`mx-4 w-full max-w-sm rounded-2xl border border-white/20 bg-black/80 p-6 shadow-2xl backdrop-blur-xl transition-[transform,opacity] duration-(--transition-fast) ${
+                className={`mx-4 w-full max-w-sm rounded-app border border-line bg-overlay p-6 shadow-overlay backdrop-blur-xl transition-[transform,opacity] duration-(--transition-fast) ${
                   isDialogAnimatedIn ? "scale-100 opacity-100" : "scale-95 opacity-0"
                 }`}
                 style={{ willChange: isDialogAnimatedIn ? "transform, opacity" : "auto" }}
@@ -132,7 +132,7 @@ function CalendarEventCardComponent({
                 </p>
 
                 {deleteError ? (
-                  <p className="mb-4 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-300">
+                  <p className="mb-4 rounded-app border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-300">
                     {deleteError}
                   </p>
                 ) : null}
@@ -142,7 +142,7 @@ function CalendarEventCardComponent({
                     type="button"
                     onClick={closeDeleteDialog}
                     disabled={isDeleting}
-                    className="rounded-lg px-4 py-2 text-sm text-muted transition-colors hover:bg-white/10 hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50"
+                    className="rounded-app px-4 py-2 text-sm text-muted transition-colors hover:bg-white/10 hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     Annulla
                   </button>
@@ -173,7 +173,7 @@ function CalendarEventCardComponent({
                       }
                     }}
                     disabled={isDeleting}
-                    className="rounded-lg bg-red-500/20 px-4 py-2 text-sm text-red-400 transition-colors hover:bg-red-500/30 disabled:cursor-not-allowed disabled:opacity-50"
+                    className="rounded-app bg-red-500/20 px-4 py-2 text-sm text-red-400 transition-colors hover:bg-red-500/30 disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     {isDeleting ? "Eliminazione..." : "Elimina evento"}
                   </button>

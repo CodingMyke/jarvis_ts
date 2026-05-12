@@ -20,7 +20,7 @@ export function ProgressionLevelPanel({
     : 0;
 
   return (
-    <section className="rounded-[28px] border border-white/10 bg-white/[0.04] p-5">
+    <section className="rounded-app border border-line bg-surface p-5">
       <div className="flex items-start justify-between gap-4">
         <div>
           <p className="text-xs uppercase tracking-[0.24em] text-muted/80">XP totali</p>

@@ -1,4 +1,6 @@
 @import "tailwindcss";
+@import "./_shared/ui/tokens/theme.css";
+@import "./_shared/ui/tokens/utilities.css";
 
 /* Registra custom properties per transizioni colore */
 @property --orb-color-core {
@@ -20,46 +22,7 @@
 }
 
 :root {
-  /* Background */
-  --background: #050510;
-  --background-secondary: rgba(255, 255, 255, 0.03);
-  
-  /* Foreground */
-  --foreground: #e0e0e0;
-  --foreground-muted: rgba(255, 255, 255, 0.5);
-  
-  /* Accent colors */
-  --accent-primary: #00f0ff;
-  --accent-secondary: #0066ff;
-  --accent-glow: rgba(0, 240, 255, 0.4);
-  
-  /* Glass effect */
-  --glass-bg: rgba(255, 255, 255, 0.05);
-  --glass-border: rgba(255, 255, 255, 0.1);
-  
-  /* Orb colors */
-  --orb-core: #00f0ff;
-  --orb-mid: #0066ff;
-  --orb-outer: #1a0033;
-  
-  /* Transition durations */
-  --transition-slow: 1000ms;
-  --transition-medium: 500ms;
-  --transition-fast: 300ms;
-  --transition-instant: 80ms;
-  
-  /* Transition easings */
-  --easing-smooth: cubic-bezier(0.22, 1, 0.36, 1);
-  --easing-standard: cubic-bezier(0.4, 0, 0.2, 1);
   --easing-press: cubic-bezier(0.4, 0, 1, 1);
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --color-accent: var(--accent-primary);
-  --color-accent-secondary: var(--accent-secondary);
-  --color-muted: var(--foreground-muted);
 }
 
 body {

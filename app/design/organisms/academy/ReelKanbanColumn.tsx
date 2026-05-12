@@ -32,7 +32,7 @@ export function ReelKanbanColumn({
   return (
     <section
       data-testid={`reel-column-${status}`}
-      className="min-h-56 rounded-[28px] border border-white/10 bg-white/5 p-4"
+      className="min-h-56 rounded-app border border-line bg-surface-raised p-4"
       onDragOver={(event) => event.preventDefault()}
       onDrop={() => {
         if (draggedReelId) {

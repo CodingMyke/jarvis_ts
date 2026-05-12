@@ -66,7 +66,7 @@ export function ProgressionDeadlineReviewDialog({
 
   return (
     <div className="mx-auto flex w-full max-w-3xl items-center justify-center py-8">
-      <div className="w-full rounded-[32px] border border-amber-300/20 bg-[#16130f] p-6 shadow-[0_24px_80px_rgba(0,0,0,0.45)]">
+      <div className="w-full rounded-app border border-amber-300/20 bg-[#16130f] p-6 shadow-[0_24px_80px_rgba(0,0,0,0.45)]">
         <p className="text-xs uppercase tracking-[0.24em] text-amber-200/80">Revisione urgente</p>
         <h1 className="mt-3 text-3xl font-semibold tracking-tight text-foreground">
           Scadenza da risolvere
@@ -108,7 +108,7 @@ export function ProgressionDeadlineReviewDialog({
                 type="date"
                 value={newDeadline}
                 onChange={(event) => setNewDeadline(event.target.value)}
-                className="min-w-0 flex-1 rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-sm text-foreground outline-none"
+                className="min-w-0 flex-1 rounded-app border border-line bg-field px-3 py-2 text-sm text-foreground outline-none"
               />
               <Button
                 type="button"

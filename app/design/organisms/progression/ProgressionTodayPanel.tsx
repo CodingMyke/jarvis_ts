@@ -61,7 +61,7 @@ function ProgressionActionList({
       {items.map((item) => (
         <article
           key={item.id}
-          className="rounded-2xl border border-white/8 bg-black/20 px-3 py-2.5"
+          className="rounded-app border border-line bg-field px-3 py-2.5"
         >
           <div className="flex items-start gap-3">
             <TodoCheckbox
@@ -214,14 +214,14 @@ export function ProgressionTodayPanel({
   return (
     <section className="space-y-4">
       {errorMessage ? (
-        <div className="rounded-2xl border border-red-400/20 bg-red-500/5 p-4">
+        <div className="rounded-app border border-red-400/20 bg-red-500/5 p-4">
           <p className="text-sm text-red-100">{errorMessage}</p>
         </div>
       ) : null}
 
       <div
         data-testid="progression-today-panel"
-        className="rounded-[28px] border border-white/10 bg-white/[0.04] p-5"
+        className="rounded-app border border-line bg-surface p-5"
       >
         <div className="mb-4 flex items-center justify-between gap-3">
           <div>
@@ -242,7 +242,7 @@ export function ProgressionTodayPanel({
 
       <div
         data-testid="progression-weekly-panel"
-        className="rounded-[28px] border border-white/10 bg-white/[0.04] p-5"
+        className="rounded-app border border-line bg-surface p-5"
       >
         <div className="mb-4">
           <h2 className="text-xl font-semibold text-foreground">Disponibili questa settimana</h2>

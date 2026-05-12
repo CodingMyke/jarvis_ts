@@ -33,7 +33,7 @@ export function ReelCard({
     <article
       draggable
       data-testid={`reel-card-${reel.id}`}
-      className="flex items-center gap-2.5 rounded-2xl border border-white/10 bg-black/20 px-3 py-2.5"
+      className="flex items-center gap-2.5 rounded-app border border-line bg-field px-3 py-2.5"
       onClick={handleOpenEdit}
       onDragStart={() => {
         suppressEditRef.current = true;
@@ -56,9 +56,9 @@ export function ReelCard({
       <button
         type="button"
         className={[
-          "ml-auto flex h-8 w-8 shrink-0 items-center justify-center rounded-xl",
-          "border border-white/10 bg-white/5 px-0 text-muted transition-colors",
-          "hover:bg-white/10 hover:text-foreground focus:outline-none focus:ring-2 focus:ring-accent/20",
+          "ml-auto flex h-8 w-8 shrink-0 items-center justify-center",
+          "rounded-app border border-line bg-surface px-0 text-copy-muted transition-colors",
+          "hover:bg-interactive hover:text-copy focus:outline-none focus:ring-2 focus:ring-accent/20",
         ].join(" ")}
         onClick={(event) => {
           event.stopPropagation();

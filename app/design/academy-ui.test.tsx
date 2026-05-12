@@ -47,6 +47,10 @@ vi.mock("@/app/_features/academy/reels", async () => {
   };
 });
 
+function expectNoLegacyRoundedUtility(element: HTMLElement) {
+  expect(element.className).not.toMatch(/(^|\s)rounded-(?!app\b|round\b)[^\s]+(?=\s|$)/);
+}
+
 const boardFixture: ReelBoard = {
   columns: {
     idea: [
@@ -179,6 +183,9 @@ describe("academy design", () => {
     expect(
       screen.getByText("Plan, refine, move, and publish your reels from one editorial workspace."),
     ).toBeInTheDocument();
+    expectNoLegacyRoundedUtility(
+      screen.getByRole("heading", { name: "Reel board" }).closest("section") as HTMLElement,
+    );
     expect(screen.getAllByText("First draft idea")).toHaveLength(1);
     expect(academyUiMocks.getServerReelBoard).toHaveBeenCalledWith({}, "user-1");
   });
@@ -251,6 +258,8 @@ describe("academy design", () => {
     render(<ReelBoardTemplate initialBoard={boardFixture} />);
 
     expect(screen.getByRole("heading", { name: "Reel board" })).toBeInTheDocument();
+    expectNoLegacyRoundedUtility(screen.getByTestId("reel-column-idea"));
+    expectNoLegacyRoundedUtility(screen.getByPlaceholderText("Write the core idea for the reel"));
     expect(screen.getByRole("link", { name: "Vedi tutti" })).toHaveAttribute(
       "href",
       "/academy/reels/published",
@@ -278,6 +287,8 @@ describe("academy design", () => {
 
     const draftCard = screen.getByTestId("reel-card-11111111-1111-4111-8111-111111111111");
     fireEvent.click(draftCard);
+    expectNoLegacyRoundedUtility(screen.getByLabelText("Title"));
+    expectNoLegacyRoundedUtility(screen.getByRole("button", { name: "Save changes" }));
     fireEvent.change(screen.getByLabelText("Title"), { target: { value: "Updated title" } });
     fireEvent.change(screen.getByLabelText("Body"), { target: { value: "Updated body" } });
     await act(async () => {
@@ -298,6 +309,7 @@ describe("academy design", () => {
       within(screen.getByTestId("reel-card-11111111-1111-4111-8111-111111111111"))
         .getByRole("button", { name: "Delete reel" }),
     );
+    expectNoLegacyRoundedUtility(screen.getByRole("button", { name: "Confirm delete" }));
     await act(async () => {
       fireEvent.click(screen.getByRole("button", { name: "Confirm delete" }));
     });

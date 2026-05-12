@@ -46,7 +46,7 @@ export function AssistantWorkspaceTemplate({
   return (
     <div className="fixed inset-0 overflow-hidden bg-background p-6">
       {!!errorMessage && (
-        <div className="absolute left-0 right-0 top-0 z-20 rounded-b-lg border-b border-red-500/50 bg-red-950/95 px-4 py-3 text-center text-sm text-red-300 shadow-md backdrop-blur-sm">
+        <div className="absolute left-0 right-0 top-0 z-20 rounded-app border-b border-red-500/50 bg-red-950/95 px-4 py-3 text-center text-sm text-red-300 shadow-md backdrop-blur-sm">
           {errorMessage}
         </div>
       )}

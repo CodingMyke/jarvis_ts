@@ -52,6 +52,10 @@ vi.mock("@/app/_features/tasks/state/tasks.store", () => ({
   ) => selector(dashboardUiMocks.tasksState),
 }));
 
+function expectNoLegacyRoundedUtility(element: HTMLElement) {
+  expect(element.className).not.toMatch(/(^|\s)rounded-(?!app\b|round\b)[^\s]+(?=\s|$)/);
+}
+
 describe("dashboard design", () => {
   beforeEach(() => {
     dashboardUiMocks.calendarWorkspace = {
@@ -88,6 +92,9 @@ describe("dashboard design", () => {
     );
 
     expect(screen.getByRole("heading", { name: "Eventi" })).toBeInTheDocument();
+    expectNoLegacyRoundedUtility(
+      screen.getByRole("heading", { name: "Eventi" }).closest("section") as HTMLElement,
+    );
     expect(screen.getByTestId("dashboard-calendar-panel")).toBeInTheDocument();
     expect(screen.queryByText("Si è verificato un errore")).not.toBeInTheDocument();
     expect(screen.queryByText("Nessun evento nei prossimi 7 giorni")).not.toBeInTheDocument();
@@ -150,6 +157,9 @@ describe("dashboard design", () => {
     );
 
     expect(screen.getByRole("heading", { name: "ToDo" })).toBeInTheDocument();
+    expectNoLegacyRoundedUtility(
+      screen.getByRole("heading", { name: "ToDo" }).closest("section") as HTMLElement,
+    );
     expect(screen.getByText("Preparare la demo")).toBeInTheDocument();
     expect(screen.queryByText("Cose da fare")).not.toBeInTheDocument();
     expect(screen.queryByText("Si è verificato un errore")).not.toBeInTheDocument();

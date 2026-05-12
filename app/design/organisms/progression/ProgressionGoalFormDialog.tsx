@@ -79,7 +79,7 @@ const ACTION_GRID_COLUMNS =
   "md:grid-cols-[minmax(0,1.45fr)_minmax(0,0.8fr)_minmax(0,0.55fr)_minmax(0,0.45fr)_auto]";
 
 const ACTION_FIELD_CLASS_NAME =
-  "min-h-11 rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-sm "
+  "min-h-11 rounded-app border border-line bg-field px-3 py-2 text-sm "
   + "text-foreground outline-none";
 
 const ACTION_HEADER_CLASS_NAME =
@@ -172,7 +172,7 @@ function DialogStateView({
       onClick={onClose}
     >
       <div
-        className="w-full max-w-xl rounded-[28px] border border-white/15 bg-[#11131a] p-6"
+      className="w-full max-w-xl rounded-app border border-white/15 bg-[#11131a] p-6"
         onClick={(event) => event.stopPropagation()}
       >
         <h3 className="text-xl font-semibold text-foreground">{title}</h3>
@@ -221,7 +221,7 @@ function ProgressionGoalFormDialogBody({
       onClick={onClose}
     >
       <div
-        className="w-full max-w-3xl rounded-[28px] border border-white/15 bg-[#11131a] p-6"
+      className="w-full max-w-3xl rounded-app border border-white/15 bg-[#11131a] p-6"
         onClick={(event) => event.stopPropagation()}
       >
         <div className="flex items-start justify-between gap-4">
@@ -243,7 +243,7 @@ function ProgressionGoalFormDialogBody({
               onChange={(event) => {
                 setDraft((current) => ({ ...current, title: event.target.value }));
               }}
-              className="w-full rounded-2xl border border-white/10 bg-black/20 px-3 py-2 text-foreground outline-none"
+              className="w-full rounded-app border border-line bg-field px-3 py-2 text-foreground outline-none"
             />
           </label>
           <label className="space-y-2 text-sm text-muted">
@@ -255,7 +255,7 @@ function ProgressionGoalFormDialogBody({
                 setDraft((current) => ({ ...current, deadline: event.target.value }));
               }}
               style={{ colorScheme: "dark" }}
-              className="w-full rounded-2xl border border-white/10 bg-black/20 px-3 py-2 text-foreground outline-none"
+              className="w-full rounded-app border border-line bg-field px-3 py-2 text-foreground outline-none"
             />
           </label>
           <label className="space-y-2 text-sm text-muted md:col-span-2">
@@ -266,7 +266,7 @@ function ProgressionGoalFormDialogBody({
                 setDraft((current) => ({ ...current, description: event.target.value }));
               }}
               rows={3}
-              className="w-full rounded-2xl border border-white/10 bg-black/20 px-3 py-2 text-foreground outline-none"
+              className="w-full rounded-app border border-line bg-field px-3 py-2 text-foreground outline-none"
             />
           </label>
           <label className="space-y-2 text-sm text-muted">
@@ -281,7 +281,7 @@ function ProgressionGoalFormDialogBody({
                   completionXp: Number(event.target.value || 0),
                 }));
               }}
-              className="w-full rounded-2xl border border-white/10 bg-black/20 px-3 py-2 text-foreground outline-none"
+              className="w-full rounded-app border border-line bg-field px-3 py-2 text-foreground outline-none"
             />
           </label>
         </div>
@@ -293,7 +293,7 @@ function ProgressionGoalFormDialogBody({
           </p>
         ) : null}
 
-        <div className="mt-6 rounded-2xl border border-white/10 bg-black/20 p-4">
+        <div className="mt-6 rounded-app border border-line bg-field p-4">
           <div className="flex items-center justify-between gap-3">
             <div>
               <p className="text-sm font-medium text-foreground">Azioni ricorrenti</p>
@@ -376,7 +376,7 @@ function ProgressionGoalFormDialogBody({
                     }}
                     className={ACTION_FIELD_CLASS_NAME}
                   />
-                  <label className="flex min-h-11 items-center justify-center rounded-xl border border-white/10 bg-black/20">
+                  <label className="flex min-h-11 items-center justify-center rounded-app border border-line bg-field">
                     <input
                       type="checkbox"
                       checked={action.active}

@@ -1,7 +1,7 @@
 import { HistoryClockIcon } from "@/app/design/atoms/shared/icons/HistoryClockIcon";
 import { getAppShellNavigationItemFromPath } from "@/app/_features/navigation/app-shell-navigation";
 import { useAppShellProgression } from "@/app/design/templates/app-shell/useAppShellProgression";
-import { Button } from "../../atoms/shared";
+import { IconButton } from "@/app/_shared/ui";
 
 export interface AppTopbarProps {
   currentPathname: string;
@@ -19,11 +19,11 @@ export function AppTopbar({
   return (
     <header
       data-testid="app-shell-topbar"
-      className="sticky top-0 z-30 flex h-14 items-center gap-3 border-b border-white/10 bg-background/90 px-4 backdrop-blur-md"
+      className="sticky top-0 z-30 flex h-14 items-center gap-3 border-b border-line bg-app/90 px-4 backdrop-blur-md"
     >
       <button
         type="button"
-        className="mr-3 inline-flex h-9 w-9 items-center justify-center rounded-lg border border-white/10 bg-white/5 text-muted transition-colors hover:bg-white/10 hover:text-foreground focus:outline-none focus:ring-2 focus:ring-accent/20 md:hidden"
+        className="mr-3 inline-flex h-9 w-9 items-center justify-center rounded-app border border-line bg-surface text-copy-muted transition-colors hover:bg-interactive hover:text-copy focus:outline-none focus:ring-2 focus:ring-accent/20 md:hidden"
         onClick={onOpenMobileSidebar}
         aria-label="Apri navigazione"
       >
@@ -32,19 +32,18 @@ export function AppTopbar({
         </span>
       </button>
 
-      <p className="text-sm font-medium uppercase tracking-[0.12em] text-muted">
+      <p className="text-sm font-medium uppercase tracking-[0.12em] text-copy-muted">
         {currentItem.title}
       </p>
 
       {showProgressionHistory ? (
-        <Button
+        <IconButton
+          className="ml-auto h-7 w-7"
+          icon={<HistoryClockIcon className="h-5 w-5" />}
+          label="Cronologia XP"
+          onClick={openProgressionHistory ?? undefined}
           variant="secondary"
-          className="ml-auto h-7 w-7 !p-1"
-          aria-label="Cronologia XP"
-          onClick={openProgressionHistory}
-        >
-          <HistoryClockIcon className="h-5 w-5" />
-        </Button>
+        />
       ) : null}
     </header>
   );

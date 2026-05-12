@@ -36,8 +36,8 @@ export function ReelEditDrawer({
   }
 
   return (
-    <div className="fixed inset-y-0 right-0 z-50 flex h-dvh w-full max-w-xl flex-col overflow-hidden border-l border-white/10 bg-[#11131a] shadow-2xl">
-      <div className="sticky top-0 z-10 flex items-start justify-between gap-4 border-b border-white/10 bg-[#11131a]/95 px-6 py-5 backdrop-blur">
+    <div className="fixed inset-y-0 right-0 z-50 flex h-dvh w-full max-w-xl rounded-app flex-col overflow-hidden border-l border-line bg-overlay shadow-2xl">
+      <div className="sticky top-0 z-10 flex items-start justify-between gap-4 border-b border-line bg-overlay/95 px-6 py-5 backdrop-blur">
         <div className="min-w-0">
           <p className="text-xs uppercase tracking-[0.2em] text-muted">Edit reel</p>
           <h3
@@ -50,7 +50,7 @@ export function ReelEditDrawer({
         <div className="flex items-center gap-2">
           <Button
             type="button"
-            className="h-10 w-10 shrink-0 rounded-full p-0"
+            className="h-10 w-10 shrink-0 p-0"
             onClick={() => void onSave(draft)}
             disabled={busy}
             aria-label="Save changes"
@@ -61,7 +61,7 @@ export function ReelEditDrawer({
           <Button
             type="button"
             variant="secondary"
-            className="h-10 w-10 shrink-0 rounded-full p-0"
+            className="h-10 w-10 shrink-0 p-0"
             onClick={onClose}
             aria-label="Close drawer"
             title="Close drawer"
@@ -78,7 +78,7 @@ export function ReelEditDrawer({
           <textarea
             value={draft.idea ?? ""}
             onChange={(event) => setDraft((current) => ({ ...current, idea: event.target.value }))}
-            className="min-h-24 w-full rounded-2xl border border-white/10 bg-black/20 px-3 py-2 text-foreground outline-none"
+            className="min-h-24 w-full rounded-app border border-line bg-field px-3 py-2 text-foreground outline-none"
           />
         </label>
         <label className="space-y-2 text-sm text-muted">
@@ -86,7 +86,7 @@ export function ReelEditDrawer({
           <input
             value={draft.title ?? ""}
             onChange={(event) => setDraft((current) => ({ ...current, title: event.target.value || null }))}
-            className="w-full rounded-2xl border border-white/10 bg-black/20 px-3 py-2 text-foreground outline-none"
+            className="w-full rounded-app border border-line bg-field px-3 py-2 text-foreground outline-none"
           />
         </label>
         <label className="space-y-2 text-sm text-muted">
@@ -94,7 +94,7 @@ export function ReelEditDrawer({
           <textarea
             value={draft.caption ?? ""}
             onChange={(event) => setDraft((current) => ({ ...current, caption: event.target.value || null }))}
-            className="min-h-24 w-full rounded-2xl border border-white/10 bg-black/20 px-3 py-2 text-foreground outline-none"
+            className="min-h-24 w-full rounded-app border border-line bg-field px-3 py-2 text-foreground outline-none"
           />
         </label>
         <label className="space-y-2 text-sm text-muted">
@@ -102,7 +102,7 @@ export function ReelEditDrawer({
           <textarea
             value={draft.body ?? ""}
             onChange={(event) => setDraft((current) => ({ ...current, body: event.target.value || null }))}
-            className="min-h-28 w-full rounded-2xl border border-white/10 bg-black/20 px-3 py-2 text-foreground outline-none"
+            className="min-h-28 w-full rounded-app border border-line bg-field px-3 py-2 text-foreground outline-none"
           />
         </label>
         <label className="space-y-2 text-sm text-muted">
@@ -116,7 +116,7 @@ export function ReelEditDrawer({
                 .filter(Boolean);
               setDraft((current) => ({ ...current, hashtags }));
             }}
-            className="w-full rounded-2xl border border-white/10 bg-black/20 px-3 py-2 text-foreground outline-none"
+            className="w-full rounded-app border border-line bg-field px-3 py-2 text-foreground outline-none"
           />
         </label>
         <label className="space-y-2 text-sm text-muted">
@@ -124,7 +124,7 @@ export function ReelEditDrawer({
           <textarea
             value={draft.notes ?? ""}
             onChange={(event) => setDraft((current) => ({ ...current, notes: event.target.value || null }))}
-            className="min-h-20 w-full rounded-2xl border border-white/10 bg-black/20 px-3 py-2 text-foreground outline-none"
+            className="min-h-20 w-full rounded-app border border-line bg-field px-3 py-2 text-foreground outline-none"
           />
         </label>
         </div>

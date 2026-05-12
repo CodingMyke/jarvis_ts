@@ -114,7 +114,7 @@ jarvis_ts/
 │   │   ├── progression/         # Goals, check-ins, XP, deadlines
 │   │   ├── tasks/               # Actions, local sync, validators/handlers
 │   │   └── timer/               # Timer provider
-│   ├── _shared/                 # Shared UI primitives and types
+│   ├── _shared/                 # Shared UI system, primitives, and types
 │   ├── _server/                 # Server helpers (http/auth/ai/supabase)
 │   ├── (app-shell)/             # Shared authenticated shell routes
 │   ├── assistant/               # Assistant page
@@ -145,6 +145,8 @@ npm run gen-supabase-types  # Regenerate Supabase TypeScript types
 ## Architecture Workflow
 
 - Pages, layouts, and routes stay thin and import through `app/_features`, `app/_shared`, and `app/_server`.
+- The shared UI system now lives in `app/_shared/ui`, with semantic tokens in `app/_shared/ui/tokens` and reusable atoms/molecules/organisms exported from the same boundary.
+- `app/design` stays a composition layer for templates, page assemblies, and feature-facing UI composition on top of `app/_shared/ui`; it is no longer the source of truth for shared primitives.
 - Shared authenticated navigation lives in `app/(app-shell)` and exposes `/dashboard`, `/projects`, `/academy/reels`, `/academy/courses`, `/academy/reels/published`, `/reflections`, `/learning`, `/progression`, `/news`, and `/settings`.
 - The Academy Reel workspace is owned by `app/_features/academy/reels` for domain/API logic and `app/design/templates/academy` + `app/design/organisms/academy` for the board UI.
 - The live assistant session is owned by `app/_features/assistant/runtime`, mounted once in `app/layout.tsx` through `VoiceChatRuntimeProvider`.

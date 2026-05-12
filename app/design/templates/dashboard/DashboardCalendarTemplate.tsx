@@ -2,6 +2,7 @@
 
 import type { UIDayEvents } from "@/app/_features/calendar";
 import { CalendarPanel } from "@/app/design/organisms/calendar/CalendarPanel";
+import { AppPanel, EmptyState, SectionHeader } from "@/app/_shared/ui";
 import { useDashboardCalendarWorkspace } from "./useDashboardCalendarWorkspace";
 
 interface DashboardCalendarTemplateProps {
@@ -24,15 +25,16 @@ export function DashboardCalendarTemplate({
   const hasEvents = days.some((day) => day.events.length > 0);
 
   return (
-    <section className="w-full space-y-3 rounded-2xl border border-white/10 bg-white/5 p-4">
-      <h2 className="text-lg font-semibold tracking-tight text-foreground">Eventi</h2>
+    <AppPanel as="section" className="w-full space-y-3 p-4">
+      <SectionHeader title="Eventi" />
       {hasEvents ? (
         <CalendarPanel onDeleteEvent={onDeleteEvent} />
       ) : (
-        <p className="text-sm text-muted">
-          {hasLoadError ? "Si è verificato un errore" : "Nessun evento nei prossimi 7 giorni"}
-        </p>
+        <EmptyState
+          description={hasLoadError ? "Si è verificato un errore" : "Nessun evento nei prossimi 7 giorni"}
+          variant={hasLoadError ? "error" : "default"}
+        />
       )}
-    </section>
+    </AppPanel>
   );
 }

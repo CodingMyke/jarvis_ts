@@ -25,7 +25,7 @@ export function TimerPanel() {
   }
 
   return (
-    <div className="glass absolute right-6 top-6 z-10 rounded-lg px-4 py-3 shadow-lg">
+    <div className="glass absolute right-6 top-6 z-10 border border-[var(--color-border-subtle)] px-4 py-3 shadow-lg">
       <div className="flex items-center gap-4">
         <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-accent/10">
           <svg

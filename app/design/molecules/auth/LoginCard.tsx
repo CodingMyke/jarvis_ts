@@ -1,4 +1,5 @@
 import { AuthButton } from "@/app/design/molecules/auth/AuthButton";
+import { AppPanel, Text } from "@/app/_shared/ui";
 
 interface LoginCardProps {
   error?: string | null;
@@ -10,21 +11,17 @@ export function LoginCard({
   redirectToAfterLogin = "/dashboard",
 }: LoginCardProps) {
   return (
-    <div className="w-full max-w-md rounded-[28px] border border-white/10 bg-white/5 p-6 shadow-[0_24px_80px_rgba(0,0,0,0.25)] backdrop-blur-xl">
+    <AppPanel className="w-full max-w-md" variant="overlay">
       <div className="space-y-3 text-center">
-        <p className="text-sm uppercase tracking-[0.3em] text-accent/80">Voice Workspace</p>
-        <p className="text-sm text-muted">
+        <p className="ui-section-label">Voice Workspace</p>
+        <Text className="text-sm" tone="muted">
           Accedi con Google per usare chat, calendario, task e timer nello stesso flusso.
-        </p>
+        </Text>
       </div>
       <div className="mt-6 flex flex-col items-center gap-4">
         <AuthButton redirectToAfterLogin={redirectToAfterLogin} />
-        {error ? (
-          <p className="max-w-sm text-center text-sm text-red-400" role="alert">
-            {error}
-          </p>
-        ) : null}
+        {error ? <Text className="max-w-sm text-center text-sm" role="alert" tone="danger">{error}</Text> : null}
       </div>
-    </div>
+    </AppPanel>
   );
 }

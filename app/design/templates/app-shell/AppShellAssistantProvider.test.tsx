@@ -71,7 +71,7 @@ describe("AppShellAssistantProvider", () => {
     });
 
     expect(result.current.listeningMode).toBe("idle");
-    expect(result.current.logoBorderClassName).toBe("border-white/10");
+    expect(result.current.logoBorderClassName).toBe("border-line");
 
     act(() => {
       result.current.onLogoToggle();

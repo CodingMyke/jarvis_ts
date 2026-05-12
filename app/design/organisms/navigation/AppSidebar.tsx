@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Fragment, useEffect, useState } from "react";
 import { ChevronDownIcon, ChevronUpIcon } from "@/app/design/atoms/shared";
+import { Badge, SidebarSection } from "@/app/_shared/ui";
 import {
   APP_SHELL_MAIN_NAVIGATION,
   APP_SHELL_ACADEMY_NAVIGATION,
@@ -37,20 +38,20 @@ function getNavItemClasses(
   if (isActive) {
     return [
       ...baseClasses,
-      "border-white/10 text-[0.95rem] font-semibold text-foreground",
+      "border-line text-[0.95rem] font-semibold text-copy shadow-focus",
     ].join(" ");
   }
 
   if (isEnabled) {
     return [
       ...baseClasses,
-      "border-white/10 text-muted hover:text-foreground",
+      "border-line text-copy-muted hover:text-copy",
     ].join(" ");
   }
 
   return [
     ...baseClasses,
-    "cursor-not-allowed border-white/10 text-muted/80",
+    "cursor-not-allowed border-line text-copy-muted/80",
   ].join(" ");
 }
 
@@ -88,9 +89,7 @@ function NavItem({
     />
   ) : null;
   const disabledBadge = item.enabled ? null : (
-    <span className="rounded-full border border-white/15 bg-white/5 px-2 py-0.5 text-xs text-muted">
-      Presto
-    </span>
+    <Badge>Presto</Badge>
   );
   const badge = warningBadge ?? disabledBadge;
 
@@ -198,8 +197,8 @@ export function AppSidebar({
   }, [isAcademyRoute]);
 
   const sidebarClassName = isDesktop
-    ? "hidden h-dvh w-56 flex-col border-r border-white/10 bg-background/95 md:flex"
-    : "flex h-full w-72 flex-col border-r border-white/10 bg-background";
+    ? "hidden h-dvh w-56 flex-col border-r border-line bg-app/95 md:flex"
+    : "flex h-full w-72 flex-col border-r border-line bg-app";
 
   const logoAriaLabel =
     listeningMode === "idle"
@@ -212,22 +211,22 @@ export function AppSidebar({
       className={sidebarClassName}
       aria-label="Navigazione principale"
     >
-      <div className="border-b border-white/10 p-4">
+      <SidebarSection>
         <button
           type="button"
           data-testid="app-sidebar-logo-toggle"
           className={[
-            "block w-full rounded-xl border bg-white/5 px-3 py-3 text-left transition-colors",
-            "hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-accent/20",
+            "block w-full rounded-app border bg-surface px-3 py-3 text-left transition-colors",
+            "hover:bg-interactive focus:outline-none focus:ring-2 focus:ring-accent/20",
             logoBorderClassName,
           ].join(" ")}
           onClick={onLogoToggle}
           aria-label={logoAriaLabel}
         >
-          <p className="text-lg font-semibold text-foreground">Jarvis</p>
-          <p className="text-xs uppercase tracking-[0.2em] text-muted">Personal OS</p>
+          <p className="text-lg font-semibold text-copy">Jarvis</p>
+          <p className="text-xs uppercase tracking-[0.2em] text-copy-muted">Personal OS</p>
         </button>
-      </div>
+      </SidebarSection>
 
       <nav className="min-h-0 flex-1 overflow-y-auto">
         <div>
@@ -253,7 +252,7 @@ export function AppSidebar({
         </div>
       </nav>
 
-      <div className="border-t border-white/10">
+      <div className="border-t border-line">
         <NavItem
           item={APP_SHELL_SETTINGS_NAVIGATION}
           isActive={activeItem.key === APP_SHELL_SETTINGS_NAVIGATION.key}

@@ -22,7 +22,7 @@ export function TodoPanel() {
 
   return (
     <div
-      className="glass absolute right-6 z-10 w-[380px] rounded-lg px-4 py-3 shadow-lg"
+      className="glass absolute right-6 z-10 w-[380px] border border-[var(--color-border-subtle)] px-4 py-3 shadow-lg"
       style={{ top: topOffset }}
     >
       <TodoListHeader
