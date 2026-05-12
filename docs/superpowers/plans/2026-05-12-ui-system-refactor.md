@@ -182,7 +182,7 @@ npm run test -- app/design/app-shell-ui.test.tsx
 ```
 Expected: FAIL because the new tokenized shape rules are not implemented yet.
 
-- [ ] **Step 5: Commit the planning inventory**
+- [x] **Step 5: Commit the planning inventory**
 
 ```bash
 git add docs/superpowers/specs/ui-system-guidelines.md app/globals.css app/design/app-shell-ui.test.tsx
@@ -241,7 +241,7 @@ npm run test -- app/design/auth-ui.test.tsx
 ```
 Expected: PASS.
 
-- [ ] **Step 6: Commit token foundation**
+- [x] **Step 6: Commit token foundation**
 
 ```bash
 git add app/_shared/ui/tokens/theme.css app/_shared/ui/tokens/utilities.css app/globals.css app/layout.tsx app/design/auth-ui.test.tsx
@@ -303,7 +303,7 @@ npm run test -- app/design/auth-ui.test.tsx app/design/tasks-timer-ui.test.tsx
 ```
 Expected: PASS.
 
-- [ ] **Step 6: Commit shared atoms**
+- [x] **Step 6: Commit shared atoms**
 
 ```bash
 git add app/_shared/ui/index.ts app/_shared/ui/atoms app/design/atoms/shared/Button.tsx app/design/atoms/shared/index.ts app/design/auth-ui.test.tsx app/design/tasks-timer-ui.test.tsx
@@ -366,7 +366,7 @@ npm run test -- app/design/auth-ui.test.tsx app/design/dashboard-ui.test.tsx
 ```
 Expected: PASS.
 
-- [ ] **Step 6: Commit shared grouping layer**
+- [x] **Step 6: Commit shared grouping layer**
 
 ```bash
 git add app/_shared/ui/molecules app/_shared/ui/organisms app/design/molecules/auth/LoginCard.tsx app/design/molecules/auth/AuthButton.tsx app/design/molecules/auth/SettingsSectionHeader.tsx app/design/auth-ui.test.tsx app/design/dashboard-ui.test.tsx
@@ -415,7 +415,7 @@ npm run test -- app/design/app-shell-ui.test.tsx
 ```
 Expected: PASS.
 
-- [ ] **Step 5: Commit app-shell migration**
+- [x] **Step 5: Commit app-shell migration**
 
 ```bash
 git add app/design/organisms/navigation/AppSidebar.tsx app/design/organisms/navigation/AppMobileSidebar.tsx app/design/organisms/navigation/AppTopbar.tsx app/design/templates/app-shell/AppShellTemplate.tsx app/design/app-shell-ui.test.tsx
@@ -469,7 +469,7 @@ npm run test -- app/design/auth-ui.test.tsx app/design/dashboard-ui.test.tsx
 ```
 Expected: PASS.
 
-- [ ] **Step 5: Commit auth/dashboard/settings migration**
+- [x] **Step 5: Commit auth/dashboard/settings migration**
 
 ```bash
 git add app/design/templates/auth/LoginTemplate.tsx app/design/organisms/auth/LoginPanel.tsx app/design/organisms/auth/SettingsPanel.tsx app/design/templates/dashboard/DashboardCalendarTemplate.tsx app/design/templates/dashboard/DashboardTodoTemplate.tsx app/design/templates/settings/SettingsTemplate.tsx app/design/auth-ui.test.tsx app/design/dashboard-ui.test.tsx
@@ -527,7 +527,7 @@ npm run test -- app/design/calendar-ui.test.tsx app/design/tasks-timer-ui.test.t
 ```
 Expected: PASS.
 
-- [ ] **Step 5: Commit calendar/tasks/timer migration**
+- [x] **Step 5: Commit calendar/tasks/timer migration**
 
 ```bash
 git add app/design/organisms/calendar/CalendarPanel.tsx app/design/organisms/calendar/CalendarDayGroup.tsx app/design/organisms/calendar/CalendarEventCard.tsx app/design/molecules/calendar/EventDeleteActions.tsx app/design/molecules/calendar/EventItemDetails.tsx app/design/molecules/calendar/EventItemHeader.tsx app/design/organisms/tasks/TodoPanel.tsx app/design/organisms/tasks/DashboardTodoPanel.tsx app/design/molecules/tasks/TodoListHeader.tsx app/design/molecules/tasks/TodoItem.tsx app/design/organisms/timer/TimerPanel.tsx app/design/molecules/timer/TimerControls.tsx app/design/molecules/timer/TimerReadout.tsx app/design/calendar-ui.test.tsx app/design/tasks-timer-ui.test.tsx
@@ -579,7 +579,7 @@ npm run test -- app/design/assistant-ui.test.tsx
 ```
 Expected: PASS.
 
-- [ ] **Step 5: Commit assistant migration**
+- [x] **Step 5: Commit assistant migration**
 
 ```bash
 git add app/design/templates/assistant/AssistantWorkspaceTemplate.tsx app/design/organisms/assistant/FloatingChat.tsx app/design/organisms/assistant/AssistantActionsLink.tsx app/design/organisms/assistant/AssistantStatusPanel.tsx app/design/molecules/assistant/FloatingChatHeader.tsx app/design/molecules/assistant/FloatingChatDeleteDialog.tsx app/design/molecules/assistant/ChatBubble.tsx app/design/molecules/assistant/AssistantStatusBlock.tsx app/design/assistant-ui.test.tsx
@@ -643,7 +643,7 @@ npm run test -- app/design/progression-ui.test.tsx app/design/academy-ui.test.ts
 ```
 Expected: PASS.
 
-- [ ] **Step 5: Commit progression and academy migration**
+- [x] **Step 5: Commit progression and academy migration**
 
 ```bash
 git add app/design/templates/progression/ProgressionTemplate.tsx app/design/templates/progression/ProgressionPage.tsx app/design/organisms/progression/ProgressionGoalFormDialog.tsx app/design/organisms/progression/ProgressionDeadlineReviewDialog.tsx app/design/organisms/progression/ProgressionGoalList.tsx app/design/organisms/progression/ProgressionTodayPanel.tsx app/design/organisms/progression/ProgressionXpHistorySidebar.tsx app/design/organisms/progression/ProgressionLevelSection.tsx app/design/organisms/progression/ProgressionGoalsSection.tsx app/design/organisms/progression/ProgressionTodaySection.tsx app/design/organisms/progression/ProgressionDeadlineSection.tsx app/design/templates/academy/ReelBoardTemplate.tsx app/design/organisms/academy/ReelKanbanBoard.tsx app/design/organisms/academy/ReelKanbanColumn.tsx app/design/organisms/academy/ReelCard.tsx app/design/organisms/academy/ReelQuickCreate.tsx app/design/organisms/academy/ReelEditDrawer.tsx app/design/organisms/academy/ReelDeleteDialog.tsx app/design/progression-ui.test.tsx app/design/academy-ui.test.tsx
@@ -664,21 +664,21 @@ git commit -m "refactor: migrate progression and academy ui"
 - Modify: `app/(app-shell)/academy/reels/page.tsx`
 - Modify: `app/(app-shell)/progression/page.tsx`
 
-- [ ] **Step 1: Identify remaining legacy primitive imports**
+- [x] **Step 1: Identify remaining legacy primitive imports**
 
 Search for:
 - direct imports from `app/design/atoms/*`
 - duplicated panel/button implementations
 - wrapper-only components that now collapse into shared surfaces
 
-- [ ] **Step 2: Update public exports and page imports**
+- [x] **Step 2: Update public exports and page imports**
 
 Ensure:
 - shared primitives export from `app/_shared/ui`
 - `app/design` exports only composition-level pieces
 - route entrypoints remain thin
 
-- [ ] **Step 3: Run focused smoke tests**
+- [x] **Step 3: Run focused smoke tests**
 
 Run:
 ```bash
@@ -686,7 +686,7 @@ npm run test -- app/design/app-shell-ui.test.tsx app/design/auth-ui.test.tsx app
 ```
 Expected: PASS.
 
-- [ ] **Step 4: Commit import normalization**
+- [x] **Step 4: Commit import normalization**
 
 ```bash
 git add app/design/index.ts app/page.tsx app/(app-shell)/layout.tsx app/(app-shell)/dashboard/page.tsx app/(app-shell)/settings/page.tsx app/assistant/page.tsx app/(app-shell)/academy/reels/page.tsx app/(app-shell)/progression/page.tsx
@@ -718,7 +718,7 @@ Explain:
 - when not to add a token
 - how to decide whether a raw value is acceptable
 
-- [ ] **Step 3: Commit docs**
+- [x] **Step 3: Commit docs**
 
 ```bash
 git add README.md docs/superpowers/specs/ui-system-guidelines.md app/_shared/ui/tokens/README.md
@@ -756,7 +756,7 @@ npm run typecheck
 ```
 Expected: PASS.
 
-- [ ] **Step 4: Run browser verification for key flows**
+- [x] **Step 4: Run browser verification for key flows**
 
 Verify manually in browser:
 - login page
@@ -772,7 +772,7 @@ Expected:
 - no accidental loss of functional grouping
 - no rounded decorative borders except explicit exceptions
 
-- [ ] **Step 5: Final cleanup commit**
+- [x] **Step 5: Final cleanup commit**
 
 ```bash
 git add app README.md docs/superpowers/specs/ui-system-guidelines.md
