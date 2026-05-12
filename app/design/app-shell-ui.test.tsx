@@ -195,46 +195,32 @@ describe("app shell design", () => {
     const { rerender } = render(<AppSidebar currentPathname="/academy/reels" />);
 
     const desktopSidebar = screen.getByTestId("app-sidebar-desktop");
-    const academyLink = within(desktopSidebar).getByTestId("nav-item-academy");
-    const academyToggle = within(desktopSidebar).getByRole("button", { name: "Chiudi Accademia" });
+    const academyToggle = within(desktopSidebar).getByTestId("nav-item-academy");
 
-    expect(academyLink).toHaveAttribute("href", "/academy/dashboard");
-    expect(academyLink).not.toHaveAttribute("aria-current");
-    expect(academyLink).not.toHaveAttribute("aria-disabled");
     expect(academyToggle).toHaveAttribute("aria-expanded", "true");
     expect(academyToggle).toHaveAttribute("aria-controls", "app-sidebar-academy-children");
-    expect(academyToggle).not.toHaveAttribute("aria-current");
+    expect(academyToggle).toHaveAttribute("data-active", "true");
 
     rerender(<AppSidebar currentPathname="/academy/dashboard" />);
 
     const rerenderedSidebar = screen.getByTestId("app-sidebar-desktop");
-    expect(within(rerenderedSidebar).getByTestId("nav-item-academy")).toHaveAttribute(
-      "href",
-      "/academy/dashboard",
-    );
     expect(within(rerenderedSidebar).getByTestId("nav-item-academy")).toHaveAttribute(
       "data-active",
       "true",
     );
   });
 
-  it("uses the chevron as toggle only and keeps row navigation separate", () => {
+  it("uses a single academy control to toggle the sublist", () => {
     const onNavigate = vi.fn();
 
     render(<AppSidebar currentPathname="/dashboard" onNavigate={onNavigate} />);
 
     const desktopSidebar = screen.getByTestId("app-sidebar-desktop");
-    const academyLink = within(desktopSidebar).getByTestId("nav-item-academy");
-    const academyToggle = within(desktopSidebar).getByRole("button", { name: "Apri Accademia" });
+    const academyToggle = within(desktopSidebar).getByTestId("nav-item-academy");
 
     fireEvent.click(academyToggle);
 
-    expect(onNavigate).not.toHaveBeenCalled();
     expect(academyToggle).toHaveAttribute("aria-expanded", "true");
-    expect(academyLink).toHaveAttribute("href", "/academy/dashboard");
-
-    fireEvent.click(academyLink);
-
     expect(onNavigate).toHaveBeenCalledOnce();
   });
 

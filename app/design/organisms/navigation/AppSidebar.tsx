@@ -4,7 +4,6 @@ import { ChevronDownIcon, ChevronUpIcon } from "@/app/design/atoms/shared";
 import {
   APP_SHELL_MAIN_NAVIGATION,
   APP_SHELL_ACADEMY_NAVIGATION,
-  APP_SHELL_ACADEMY_NAVIGATION_ITEM,
   APP_SHELL_SETTINGS_NAVIGATION,
   type AppShellNavigationItem,
   getAppShellNavigationItemFromPath,
@@ -114,52 +113,40 @@ function AcademySection({
   isExpanded,
   isActive,
   activeItemKey,
-  onOpen,
   onToggle,
   onNavigate,
 }: {
   isExpanded: boolean;
   isActive: boolean;
   activeItemKey: AppShellNavigationItem["key"];
-  onOpen: () => void;
   onToggle: () => void;
   onNavigate?: () => void;
 }) {
   const toggleLabel = isExpanded ? "Chiudi Accademia" : "Apri Accademia";
   return (
     <div className="space-y-2">
-      <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-2">
-        <Link
-          href={APP_SHELL_ACADEMY_NAVIGATION_ITEM.href}
-          data-testid="nav-item-academy"
-          data-active={isActive}
-          className={getNavItemClasses(isActive, true)}
-          onClick={() => {
-            onOpen();
-            onNavigate?.();
-          }}
-        >
-          <span>Accademia</span>
-        </Link>
-
-        <button
-          type="button"
-          aria-expanded={isExpanded}
-          aria-controls="app-sidebar-academy-children"
-          aria-label={toggleLabel}
-          className={[
-            "flex items-center justify-center rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-muted transition-colors",
-            "hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-accent/20",
-          ].join(" ")}
-          onClick={onToggle}
-        >
+      <button
+        type="button"
+        data-testid="nav-item-academy"
+        data-active={isActive}
+        aria-expanded={isExpanded}
+        aria-controls="app-sidebar-academy-children"
+        aria-label={toggleLabel}
+        className={getNavItemClasses(isActive, true)}
+        onClick={() => {
+          onToggle();
+          onNavigate?.();
+        }}
+      >
+        <span>Accademia</span>
+        <span aria-hidden="true">
           {isExpanded ? (
             <ChevronUpIcon className="h-4 w-4" />
           ) : (
             <ChevronDownIcon className="h-4 w-4" />
           )}
-        </button>
-      </div>
+        </span>
+      </button>
 
       {isExpanded ? (
         <div id="app-sidebar-academy-children" className="space-y-2 pl-3">
@@ -241,7 +228,6 @@ export function AppSidebar({
                   isExpanded={isAcademyExpanded}
                   isActive={isAcademyRoute}
                   activeItemKey={activeItem.key}
-                  onOpen={() => setIsAcademyExpanded(true)}
                   onToggle={() => setIsAcademyExpanded((currentValue) => !currentValue)}
                   onNavigate={onNavigate}
                 />

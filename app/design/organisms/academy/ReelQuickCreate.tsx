@@ -28,7 +28,7 @@ export function ReelQuickCreate({
           value={value}
           onChange={(event) => onChange(event.target.value)}
           placeholder="Write the core idea for the reel"
-          className="w-full rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-foreground outline-none"
+          className="w-full rounded-2xl border border-white/10 bg-black/20 px-4 py-2.5 text-foreground outline-none"
         />
       </label>
       <div className="flex items-end">
