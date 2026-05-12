@@ -20,7 +20,7 @@ export function ProgressionLevelPanel({
     : 0;
 
   return (
-    <section className="rounded-[28px] border border-white/10 bg-white/[0.04] p-5">
+    <section className="rounded-app border border-line bg-surface p-5">
       <div className="flex items-start justify-between gap-4">
         <div>
           <p className="text-xs uppercase tracking-[0.24em] text-muted/80">XP totali</p>
@@ -28,8 +28,8 @@ export function ProgressionLevelPanel({
             {totalXp}
           </p>
         </div>
-        <div className="rounded-full border border-emerald-400/30 bg-emerald-400/10 px-3 py-1">
-          <span className="text-sm font-medium text-emerald-200">Livello {level}</span>
+        <div className="rounded-full border border-success bg-success-tint px-3 py-1">
+          <span className="text-sm font-medium text-success">Livello {level}</span>
         </div>
       </div>
 

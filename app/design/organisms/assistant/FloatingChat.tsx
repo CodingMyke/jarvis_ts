@@ -34,10 +34,10 @@ function FloatingChatBody({
         onMouseLeave={handleMouseLeave}
       >
         <div
-          className={`relative flex h-full flex-col overflow-hidden rounded-2xl border transition-[border-color,background-color,opacity] duration-(--transition-medium) ease-(--easing-smooth) ${
+          className={`relative flex h-full flex-col overflow-hidden rounded-app border transition-[border-color,background-color,opacity,box-shadow] duration-(--transition-medium) ease-(--easing-smooth) ${
             isExpanded
-              ? "border-white/20 bg-black/40 backdrop-blur-xl"
-              : "border-transparent bg-transparent backdrop-blur-0"
+              ? "border-line bg-overlay shadow-overlay backdrop-blur-xl"
+              : "border-transparent bg-transparent shadow-none backdrop-blur-0"
           }`}
           style={{ willChange: isExpanded ? "backdrop-filter" : "auto" }}
         >

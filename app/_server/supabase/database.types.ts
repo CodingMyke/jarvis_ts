@@ -14,6 +14,54 @@ export type Database = {
   }
   public: {
     Tables: {
+      academy_reels: {
+        Row: {
+          body: string | null
+          caption: string | null
+          created_at: string
+          hashtags: string[]
+          idea: string
+          id: string
+          notes: string | null
+          published_at: string | null
+          scheduled_at: string | null
+          status: string
+          title: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          body?: string | null
+          caption?: string | null
+          created_at?: string
+          hashtags?: string[]
+          idea: string
+          id?: string
+          notes?: string | null
+          published_at?: string | null
+          scheduled_at?: string | null
+          status?: string
+          title?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          body?: string | null
+          caption?: string | null
+          created_at?: string
+          hashtags?: string[]
+          idea?: string
+          id?: string
+          notes?: string | null
+          published_at?: string | null
+          scheduled_at?: string | null
+          status?: string
+          title?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       chats: {
         Row: {
           assistant_history: Json

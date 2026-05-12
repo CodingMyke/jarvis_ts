@@ -105,6 +105,10 @@ vi.mock("@/app/design/organisms/progression/ProgressionGoalsSection", () => ({
   },
 }));
 
+function expectNoLegacyRoundedUtility(element: HTMLElement) {
+  expect(element.className).not.toMatch(/(^|\s)rounded-(?!app\b|round\b)[^\s]+(?=\s|$)/);
+}
+
 const initialGoals = [
   {
     id: "goal-in-progress",
@@ -276,6 +280,9 @@ describe("progression page UI", () => {
       />,
     );
 
+    expectNoLegacyRoundedUtility(screen.getByTestId("progression-today-panel"));
+    expectNoLegacyRoundedUtility(screen.getByTestId("progression-weekly-panel"));
+
     fireEvent.click(screen.getByRole("button", { name: "Completa Daily polish" }));
     fireEvent.click(screen.getByRole("button", { name: "Annulla Evening review" }));
 
@@ -288,6 +295,10 @@ describe("progression page UI", () => {
 
   it("keeps goal filters client-side and routes goal actions through split APIs", async () => {
     render(<ProgressionTemplate initialGoals={initialGoals} />);
+
+    expectNoLegacyRoundedUtility(
+      screen.getByRole("heading", { name: "Obiettivi" }).closest("section") as HTMLElement,
+    );
 
     const inProgressFilter = screen.getByRole("button", { name: "In corso" });
     expect(inProgressFilter).toHaveAttribute("aria-pressed", "true");
@@ -387,6 +398,8 @@ describe("progression page UI", () => {
         }}
       />,
     );
+
+    expectNoLegacyRoundedUtility(screen.getByDisplayValue("2026-04-29"));
 
     fireEvent.click(screen.getByRole("button", { name: "Segna completato" }));
 
@@ -494,6 +507,9 @@ describe("progression page UI", () => {
         onSubmit={onSubmit}
       />,
     );
+
+    expectNoLegacyRoundedUtility(screen.getByRole("button", { name: "Aggiungi azione" }));
+    expectNoLegacyRoundedUtility(screen.getByPlaceholderText("Titolo azione"));
 
     expect(screen.getAllByText("Titolo")).toHaveLength(2);
     expect(screen.getByText("Ricorrenza")).toBeInTheDocument();

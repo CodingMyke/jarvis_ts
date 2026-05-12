@@ -1,9 +1,11 @@
 export { Button } from "./atoms/shared/Button";
 export {
+  CloseIcon,
   ChevronDownIcon,
   ChevronUpIcon,
   GearIcon,
   MicrophoneIcon,
+  SaveIcon,
   StopIcon,
   TrashIcon,
 } from "./atoms/shared/icons";

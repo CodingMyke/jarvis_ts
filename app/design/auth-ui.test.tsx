@@ -46,6 +46,15 @@ vi.mock("@/app/_features/auth/hooks/useAuth", () => ({
   useAuth: authUiMocks.useAuth,
 }));
 
+function expectNoLegacyRoundedUtility(element: HTMLElement) {
+  expect(element.className).not.toMatch(/(^|\s)rounded-(?!app\b|round\b)[^\s]+(?=\s|$)/);
+}
+
+function expectSemanticAppRadius(element: HTMLElement) {
+  expect(element.className).toContain("rounded-app");
+  expectNoLegacyRoundedUtility(element);
+}
+
 describe("auth design", () => {
   beforeEach(() => {
     authUiMocks.searchParams = new URLSearchParams();
@@ -105,6 +114,7 @@ describe("auth design", () => {
     expect(screen.getByText("Jarvis")).toBeInTheDocument();
     expect(screen.getByText("Voice Workspace")).toBeInTheDocument();
     expect(screen.getByText("Sessione scaduta")).toBeInTheDocument();
+    expectNoLegacyRoundedUtility(screen.getByText("Voice Workspace").closest("div") as HTMLElement);
     fireEvent.click(screen.getByRole("button", { name: "Accedi con Google" }));
     expect(signInWithGoogle).toHaveBeenCalledWith("/assistant");
   });
@@ -159,6 +169,8 @@ describe("auth design", () => {
       "href",
       "/setup/calendar",
     );
+    expectNoLegacyRoundedUtility(screen.getByText("Account Google").closest("section") as HTMLElement);
+    expectNoLegacyRoundedUtility(screen.getByText("Integrazioni").closest("section") as HTMLElement);
 
     fireEvent.click(screen.getByRole("button", { name: "Esci" }));
     expect(signOut).toHaveBeenCalledOnce();
@@ -179,6 +191,11 @@ describe("auth design", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Primario" }));
     expect(onClick).toHaveBeenCalledOnce();
+    expectSemanticAppRadius(screen.getByRole("button", { name: "Primario" }));
+    expectSemanticAppRadius(screen.getByRole("button", { name: "Secondario" }));
+    expectSemanticAppRadius(screen.getByRole("button", { name: "Recording" }));
+    expect(screen.getByRole("button", { name: "Secondario" }).className).toContain("bg-surface");
+    expect(screen.getByRole("button", { name: "Secondario" }).className).toContain("border-line");
     expect(screen.getByRole("button", { name: "Recording" })).toBeInTheDocument();
   });
 });

@@ -36,6 +36,10 @@ vi.mock("@/app/_features/timer/state/timer.store", () => ({
   ) => selector(tasksTimerMocks.timerState),
 }));
 
+function expectNoLegacyRoundedUtility(element: HTMLElement) {
+  expect(element.className).not.toMatch(/(^|\s)rounded-(?!app\b|round\b)[^\s]+(?=\s|$)/);
+}
+
 describe("tasks and timer design", () => {
   beforeEach(() => {
     vi.useFakeTimers();
@@ -91,12 +95,13 @@ describe("tasks and timer design", () => {
   });
 
   it("renders todos, toggles completion state and deletes items", () => {
-    render(<TodoPanel />);
+    const { container } = render(<TodoPanel />);
 
     expect(screen.getByText("Cose da fare")).toBeInTheDocument();
     expect(screen.getByText("Preparare la demo")).toBeInTheDocument();
     expect(screen.getByText("Inviare il report")).toBeInTheDocument();
     expect(screen.getByText("1 da fare • 1 completato")).toBeInTheDocument();
+    expectNoLegacyRoundedUtility(container.firstElementChild as HTMLElement);
 
     fireEvent.click(screen.getByLabelText("Segna come completato"));
     expect(tasksTimerMocks.tasksState.update).toHaveBeenCalledWith("todo-1", {
@@ -206,13 +211,14 @@ describe("tasks and timer design", () => {
   });
 
   it("renders the timer panel and delegates pause/resume/stop actions", () => {
-    const { rerender } = render(<TimerPanel />);
+    const { container, rerender } = render(<TimerPanel />);
 
     act(() => {
       vi.advanceTimersByTime(16);
     });
 
     expect(screen.getByText(/\d{2}:\d{2}:\d{2}/)).toBeInTheDocument();
+    expectNoLegacyRoundedUtility(container.firstElementChild as HTMLElement);
     expect(screen.getByRole("button", { name: "Metti in pausa timer" })).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Metti in pausa timer" }));

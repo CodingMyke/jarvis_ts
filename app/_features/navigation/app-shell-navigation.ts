@@ -2,6 +2,9 @@ export type AppShellSectionKey =
   | "dashboard"
   | "projects"
   | "academy"
+  | "academyDashboard"
+  | "academyReels"
+  | "academyCourses"
   | "reflections"
   | "learning"
   | "progression"
@@ -29,13 +32,6 @@ export const APP_SHELL_MAIN_NAVIGATION: readonly AppShellNavigationItem[] = [
     href: "/projects",
     label: "Progetti",
     title: "Progetti",
-    enabled: false,
-  },
-  {
-    key: "academy",
-    href: "/academy",
-    label: "Accademia",
-    title: "Accademia",
     enabled: false,
   },
   {
@@ -68,6 +64,38 @@ export const APP_SHELL_MAIN_NAVIGATION: readonly AppShellNavigationItem[] = [
   },
 ] as const;
 
+export const APP_SHELL_ACADEMY_NAVIGATION = [
+  {
+    key: "academyDashboard",
+    href: "/academy/dashboard",
+    label: "Dashboard",
+    title: "Accademia",
+    enabled: true,
+  },
+  {
+    key: "academyReels",
+    href: "/academy/reels",
+    label: "Reel",
+    title: "Accademia",
+    enabled: true,
+  },
+  {
+    key: "academyCourses",
+    href: "/academy/courses",
+    label: "Corsi",
+    title: "Accademia",
+    enabled: true,
+  },
+] as const satisfies readonly AppShellNavigationItem[];
+
+export const APP_SHELL_ACADEMY_NAVIGATION_ITEM: AppShellNavigationItem = {
+  key: "academy",
+  href: "/academy/dashboard",
+  label: "Accademia",
+  title: "Accademia",
+  enabled: true,
+};
+
 export const APP_SHELL_SETTINGS_NAVIGATION: AppShellNavigationItem = {
   key: "settings",
   href: "/settings",
@@ -78,8 +106,18 @@ export const APP_SHELL_SETTINGS_NAVIGATION: AppShellNavigationItem = {
 
 const APP_SHELL_ALL_NAVIGATION: readonly AppShellNavigationItem[] = [
   ...APP_SHELL_MAIN_NAVIGATION,
+  ...APP_SHELL_ACADEMY_NAVIGATION,
+  APP_SHELL_ACADEMY_NAVIGATION_ITEM,
   APP_SHELL_SETTINGS_NAVIGATION,
 ];
+
+export function isAcademyPathname(pathname: string | null | undefined): boolean {
+  const safePathname = pathname && pathname.trim().length > 0 ? pathname : "/dashboard";
+  const academyBasePathname = "/academy";
+
+  return safePathname === academyBasePathname
+    || safePathname.startsWith(`${academyBasePathname}/`);
+}
 
 export function getAppShellNavigationItemFromPath(
   pathname: string | null | undefined,

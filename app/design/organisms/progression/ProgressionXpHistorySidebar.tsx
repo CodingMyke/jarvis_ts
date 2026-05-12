@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { getProgressionXpHistory } from "@/app/_features/progression/lib/progression-client";
 import { Button } from "@/app/design/atoms/shared/Button";
+import { CloseIcon } from "@/app/design/atoms/shared/icons";
 
 interface ProgressionXpHistoryItem {
   id: string;
@@ -107,9 +108,9 @@ export function ProgressionXpHistorySidebar({
   return (
     <aside
       data-testid="progression-xp-history"
-      className="fixed inset-y-0 right-0 z-40 w-full max-w-md border-l border-white/10 bg-[#0f1218] p-4 shadow-[-24px_0_60px_rgba(0,0,0,0.4)]"
+      className="fixed inset-y-0 right-0 z-40 w-full max-w-md rounded-app border-l border-line bg-overlay p-4 shadow-drawer"
     >
-      <div className="flex items-center justify-between gap-4 border-b border-white/10 pb-2">
+      <div className="flex items-center justify-between gap-4 border-b border-line pb-2">
         <div className="flex items-center gap-2">
           <h2 className="text-xl font-semibold text-foreground">Cronologia XP</h2>
           {status === "loading" ? (
@@ -137,20 +138,7 @@ export function ProgressionXpHistorySidebar({
           aria-label="Chiudi cronologia XP"
           className="h-7 w-7 !p-0"
         >
-          <svg
-            aria-hidden="true"
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            className="h-5 w-5"
-          >
-            <path d="M6 6l12 12" />
-            <path d="M18 6 6 18" />
-          </svg>
+          <CloseIcon className="h-5 w-5" />
         </Button>
       </div>
 
@@ -160,7 +148,7 @@ export function ProgressionXpHistorySidebar({
         {history.map((entry) => (
           <article
             key={entry.id}
-            className="rounded-xl border border-white/8 bg-black/20 px-3 py-2.5"
+            className="rounded-app border border-line bg-field px-3 py-2.5"
           >
             <div className="flex items-start justify-between gap-3">
               <p className="text-sm font-medium leading-5 text-foreground">
@@ -169,8 +157,8 @@ export function ProgressionXpHistorySidebar({
               <span
                 className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-medium ${
                   entry.xpAmount < 0
-                    ? "bg-red-500/15 text-red-100"
-                    : "bg-cyan-400/10 text-cyan-100"
+                    ? "bg-danger-tint text-danger-copy"
+                    : "bg-accent-tint text-accent"
                 }`}
               >
                 {entry.xpAmount < 0 ? "-" : "+"}{Math.abs(entry.xpAmount)} XP

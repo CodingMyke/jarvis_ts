@@ -31,12 +31,12 @@ function CalendarPanelContent({
     >
       <div
         ref={contentRef}
-        className="max-w-sm space-y-4 pr-2 transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]"
+        className="max-w-sm space-y-4 pr-2 transition-transform duration-(--transition-medium) ease-(--easing-smooth)"
         style={{ transform: `translateY(-${scrollOffset}px)` }}
       >
         {days.map((day, index) => (
           <div key={day.dateISO}>
-            {index > 0 ? <div className="mb-4 border-t border-white/10" /> : null}
+            {index > 0 ? <div className="ui-divider mb-4 border-t" /> : null}
             <CalendarDayGroup day={day} onDeleteEvent={onDeleteEvent} />
           </div>
         ))}

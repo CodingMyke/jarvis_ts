@@ -29,7 +29,7 @@ function getLogoBorderClassName(listeningMode: AssistantSessionState): string {
     return "border-cyan-400/80";
   }
 
-  return "border-white/10";
+  return "border-line";
 }
 
 export function AppShellAssistantProvider({ children }: { children: ReactNode }) {

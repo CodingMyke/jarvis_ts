@@ -2,6 +2,7 @@
 
 import type { Todo } from "@/app/_features/tasks";
 import { DashboardTodoPanel } from "@/app/design/organisms/tasks/DashboardTodoPanel";
+import { AppPanel, EmptyState, SectionHeader } from "@/app/_shared/ui";
 import { useDashboardTasksWorkspace } from "./useDashboardTasksWorkspace";
 
 interface DashboardTodoTemplateProps {
@@ -24,15 +25,16 @@ export function DashboardTodoTemplate({
   const hasTodos = todos.length > 0;
 
   return (
-    <section className="w-full space-y-3 rounded-2xl border border-white/10 bg-white/5 p-4">
-      <h2 className="text-lg font-semibold tracking-tight text-foreground">ToDo</h2>
+    <AppPanel as="section" className="w-full space-y-3 p-4">
+      <SectionHeader title="ToDo" />
       {hasTodos ? (
         <DashboardTodoPanel />
       ) : (
-        <p className="text-sm text-muted">
-          {hasLoadError ? "Si è verificato un errore" : "Non ci sono elementi"}
-        </p>
+        <EmptyState
+          description={hasLoadError ? "Si è verificato un errore" : "Non ci sono elementi"}
+          variant={hasLoadError ? "error" : "default"}
+        />
       )}
-    </section>
+    </AppPanel>
   );
 }

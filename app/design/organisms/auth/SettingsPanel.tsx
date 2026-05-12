@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Button } from "@/app/design/atoms/shared";
 import { SettingsSectionHeader } from "@/app/design/molecules/auth/SettingsSectionHeader";
 import { useAuth } from "@/app/_features/auth/hooks/useAuth";
+import { AppPanel } from "@/app/_shared/ui";
 
 export function SettingsPanel() {
   const { user, isLoading, signOut } = useAuth();
@@ -39,7 +40,7 @@ export function SettingsPanel() {
 
   return (
     <div className="mx-auto max-w-md space-y-8 p-6">
-      <section className="rounded-[28px] border border-white/10 bg-white/5 p-6 backdrop-blur-xl">
+      <AppPanel as="section" variant="overlay">
         <SettingsSectionHeader
           title="Account Google"
           description="Identità usata per autenticazione e integrazioni."
@@ -63,20 +64,20 @@ export function SettingsPanel() {
             ) : null}
           </div>
         </div>
-      </section>
+      </AppPanel>
 
-      <section className="rounded-[28px] border border-white/10 bg-white/5 p-6 backdrop-blur-xl">
+      <AppPanel as="section" variant="overlay">
         <SettingsSectionHeader
           title="Integrazioni"
           description="Collega i servizi esterni usati dall'assistente."
         />
         <Link
           href="/setup/calendar"
-          className="inline-flex rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm text-muted transition-colors hover:bg-white/10 hover:text-foreground focus:outline-none focus:ring-2 focus:ring-accent/20"
+          className="ui-button ui-button-secondary ui-focus-ring min-h-10 px-4 py-2 text-sm"
         >
           Configura calendario
         </Link>
-      </section>
+      </AppPanel>
 
       <div className="flex flex-col gap-3">
         <Button variant="secondary" onClick={() => signOut()} type="button">

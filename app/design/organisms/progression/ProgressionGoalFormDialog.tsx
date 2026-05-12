@@ -1,6 +1,7 @@
 "use client";
 
 import { Fragment, useState } from "react";
+import { Field, Surface, TextArea } from "@/app/_shared/ui";
 import { Button } from "@/app/design/atoms/shared/Button";
 import { TrashIcon } from "@/app/design/atoms/shared/icons/TrashIcon";
 import type { ProgressionGoalFilter } from "./ProgressionGoalList";
@@ -79,11 +80,10 @@ const ACTION_GRID_COLUMNS =
   "md:grid-cols-[minmax(0,1.45fr)_minmax(0,0.8fr)_minmax(0,0.55fr)_minmax(0,0.45fr)_auto]";
 
 const ACTION_FIELD_CLASS_NAME =
-  "min-h-11 rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-sm "
-  + "text-foreground outline-none";
+  "min-h-11 text-sm";
 
 const ACTION_HEADER_CLASS_NAME =
-  "sticky top-0 z-10 col-span-full grid gap-3 bg-[#11131a] px-3 py-2 text-[11px] "
+  "sticky top-0 z-10 col-span-full grid gap-3 bg-overlay px-3 py-2 text-[11px] "
   + "font-semibold uppercase tracking-[0.22em] text-muted";
 
 const DEFAULT_DRAFT: ProgressionGoalDraft = {
@@ -168,11 +168,12 @@ function DialogStateView({
 }) {
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-scrim p-4 backdrop-blur-sm"
       onClick={onClose}
     >
-      <div
-        className="w-full max-w-xl rounded-[28px] border border-white/15 bg-[#11131a] p-6"
+      <Surface
+        className="w-full max-w-xl p-6"
+        variant="overlay"
         onClick={(event) => event.stopPropagation()}
       >
         <h3 className="text-xl font-semibold text-foreground">{title}</h3>
@@ -187,7 +188,7 @@ function DialogStateView({
             Chiudi
           </Button>
         </div>
-      </div>
+      </Surface>
     </div>
   );
 }
@@ -217,11 +218,12 @@ function ProgressionGoalFormDialogBody({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-scrim p-4 backdrop-blur-sm"
       onClick={onClose}
     >
-      <div
-        className="w-full max-w-3xl rounded-[28px] border border-white/15 bg-[#11131a] p-6"
+      <Surface
+        className="w-full max-w-3xl p-6"
+        variant="overlay"
         onClick={(event) => event.stopPropagation()}
       >
         <div className="flex items-start justify-between gap-4">
@@ -238,40 +240,40 @@ function ProgressionGoalFormDialogBody({
         <div className="mt-5 grid gap-4 md:grid-cols-2">
           <label className="space-y-2 text-sm text-muted">
             <span>Titolo</span>
-            <input
+            <Field
               value={draft.title}
               onChange={(event) => {
                 setDraft((current) => ({ ...current, title: event.target.value }));
               }}
-              className="w-full rounded-2xl border border-white/10 bg-black/20 px-3 py-2 text-foreground outline-none"
+              className="py-2"
             />
           </label>
           <label className="space-y-2 text-sm text-muted">
             <span>Scadenza</span>
-            <input
+            <Field
               type="date"
               value={draft.deadline}
               onChange={(event) => {
                 setDraft((current) => ({ ...current, deadline: event.target.value }));
               }}
               style={{ colorScheme: "dark" }}
-              className="w-full rounded-2xl border border-white/10 bg-black/20 px-3 py-2 text-foreground outline-none"
+              className="py-2"
             />
           </label>
           <label className="space-y-2 text-sm text-muted md:col-span-2">
             <span>Descrizione</span>
-            <textarea
+            <TextArea
               value={draft.description}
               onChange={(event) => {
                 setDraft((current) => ({ ...current, description: event.target.value }));
               }}
               rows={3}
-              className="w-full rounded-2xl border border-white/10 bg-black/20 px-3 py-2 text-foreground outline-none"
+              className="min-h-0 py-2"
             />
           </label>
           <label className="space-y-2 text-sm text-muted">
             <span>XP completamento</span>
-            <input
+            <Field
               type="number"
               min={0}
               value={draft.completionXp}
@@ -281,19 +283,19 @@ function ProgressionGoalFormDialogBody({
                   completionXp: Number(event.target.value || 0),
                 }));
               }}
-              className="w-full rounded-2xl border border-white/10 bg-black/20 px-3 py-2 text-foreground outline-none"
+              className="py-2"
             />
           </label>
         </div>
 
         {draft.deadline && draft.completionXp > 0 ? (
-          <p className="mt-4 text-sm font-medium text-red-300">
+          <p className="mt-4 text-sm font-medium text-danger-copy">
             Se fallisci questo obiettivo perderai{" "}
             {getFailurePenaltyXp(draft.completionXp)} XP.
           </p>
         ) : null}
 
-        <div className="mt-6 rounded-2xl border border-white/10 bg-black/20 p-4">
+        <div className="mt-6 rounded-app border border-line bg-field p-4">
           <div className="flex items-center justify-between gap-3">
             <div>
               <p className="text-sm font-medium text-foreground">Azioni ricorrenti</p>
@@ -329,7 +331,7 @@ function ProgressionGoalFormDialogBody({
               </div>
               {draft.actions.map((action) => (
                 <Fragment key={action.id}>
-                  <input
+                  <Field
                     value={action.title}
                     placeholder="Titolo azione"
                     onChange={(event) => {
@@ -354,13 +356,16 @@ function ProgressionGoalFormDialogBody({
                         ),
                       }));
                     }}
-                    className={ACTION_FIELD_CLASS_NAME}
+                    className={[
+                      "min-h-11 rounded-app border border-line bg-field px-3 py-2 text-sm text-foreground",
+                      "focus:border-line-accent focus:outline-none",
+                    ].join(" ")}
                   >
                     <option value="daily">Giornaliera</option>
                     <option value="specific_weekdays">Giorni specifici</option>
                     <option value="weekly_count">Conteggio sett.</option>
                   </select>
-                  <input
+                  <Field
                     type="number"
                     min={0}
                     value={action.xpPerCheckin}
@@ -376,7 +381,7 @@ function ProgressionGoalFormDialogBody({
                     }}
                     className={ACTION_FIELD_CLASS_NAME}
                   />
-                  <label className="flex min-h-11 items-center justify-center rounded-xl border border-white/10 bg-black/20">
+                  <label className="flex min-h-11 items-center justify-center rounded-app border border-line bg-field">
                     <input
                       type="checkbox"
                       checked={action.active}
@@ -395,7 +400,7 @@ function ProgressionGoalFormDialogBody({
                   <Button
                     type="button"
                     variant="secondary"
-                    className="!p-1 text-red-300 hover:bg-red-500/10 hover:text-red-100"
+                    className="!p-1 text-danger-copy hover:bg-danger-tint hover:text-danger"
                     aria-label={action.hasHistory
                       ? "Non eliminabile: ha già uno storico."
                       : `Rimuovi azione ${action.title || "senza titolo"}`}
@@ -440,7 +445,7 @@ function ProgressionGoalFormDialogBody({
             </Button>
           )}
         </div>
-      </div>
+      </Surface>
     </div>
   );
 }

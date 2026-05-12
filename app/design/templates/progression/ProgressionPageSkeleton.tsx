@@ -7,9 +7,9 @@ export function ProgressionPageSkeleton() {
   return (
     <section className="space-y-6">
       <div className="space-y-2">
-        <div className="h-4 w-28 animate-pulse rounded bg-white/10" />
-        <div className="h-10 w-56 animate-pulse rounded bg-white/10" />
-        <div className="h-4 w-full max-w-2xl animate-pulse rounded bg-white/10" />
+        <div className="h-4 w-28 animate-pulse rounded-app bg-surface-raised" />
+        <div className="h-10 w-56 animate-pulse rounded-app bg-surface-raised" />
+        <div className="h-4 w-full max-w-2xl animate-pulse rounded-app bg-surface-raised" />
       </div>
 
       <ProgressionDeadlineSkeleton />
