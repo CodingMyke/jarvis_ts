@@ -33,7 +33,7 @@ export function ReelCard({
     <article
       draggable
       data-testid={`reel-card-${reel.id}`}
-      className="flex items-center gap-3 rounded-2xl border border-white/10 bg-black/20 p-3"
+      className="flex items-center gap-2.5 rounded-2xl border border-white/10 bg-black/20 px-3 py-2.5"
       onClick={handleOpenEdit}
       onDragStart={() => {
         suppressEditRef.current = true;
@@ -46,14 +46,17 @@ export function ReelCard({
         }, 0);
       }}
     >
-      <span className="min-w-0 flex-1 truncate text-sm font-semibold text-foreground">
+      <span
+        title={reel.title ?? reel.idea}
+        className="min-w-0 flex-1 truncate text-sm font-semibold leading-tight text-foreground"
+      >
         {reel.title ?? reel.idea}
       </span>
 
       <button
         type="button"
         className={[
-          "ml-auto flex h-9 w-9 shrink-0 items-center justify-center rounded-xl",
+          "ml-auto flex h-8 w-8 shrink-0 items-center justify-center rounded-xl",
           "border border-white/10 bg-white/5 px-0 text-muted transition-colors",
           "hover:bg-white/10 hover:text-foreground focus:outline-none focus:ring-2 focus:ring-accent/20",
         ].join(" ")}
@@ -63,7 +66,7 @@ export function ReelCard({
         }}
       >
         <span className="sr-only">Delete reel</span>
-        <TrashIcon className="h-4 w-4" />
+        <TrashIcon className="h-3.5 w-3.5" />
       </button>
     </article>
   );

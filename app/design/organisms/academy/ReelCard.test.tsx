@@ -44,6 +44,7 @@ describe("ReelCard", () => {
     expect(card.children).toHaveLength(2);
     expect(card.firstElementChild?.tagName).toBe("SPAN");
     expect(within(card).getByText("First draft idea")).toBeInTheDocument();
+    expect(within(card).getByTitle("First draft idea")).toBeInTheDocument();
   });
 
   it("does not open edit when a drag interaction just finished", () => {

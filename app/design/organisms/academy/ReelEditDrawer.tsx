@@ -40,7 +40,12 @@ export function ReelEditDrawer({
       <div className="sticky top-0 z-10 flex items-start justify-between gap-4 border-b border-white/10 bg-[#11131a]/95 px-6 py-5 backdrop-blur">
         <div className="min-w-0">
           <p className="text-xs uppercase tracking-[0.2em] text-muted">Edit reel</p>
-          <h3 className="text-xl font-semibold text-foreground">{reel.title ?? reel.idea}</h3>
+          <h3
+            title={reel.title ?? "No title"}
+            className="line-clamp-2 text-xl font-semibold text-foreground"
+          >
+            {reel.title ?? "No title"}
+          </h3>
         </div>
         <div className="flex items-center gap-2">
           <Button
@@ -70,10 +75,10 @@ export function ReelEditDrawer({
         <div className="grid gap-4">
         <label className="space-y-2 text-sm text-muted">
           <span>Idea</span>
-          <input
+          <textarea
             value={draft.idea ?? ""}
             onChange={(event) => setDraft((current) => ({ ...current, idea: event.target.value }))}
-            className="w-full rounded-2xl border border-white/10 bg-black/20 px-3 py-2 text-foreground outline-none"
+            className="min-h-24 w-full rounded-2xl border border-white/10 bg-black/20 px-3 py-2 text-foreground outline-none"
           />
         </label>
         <label className="space-y-2 text-sm text-muted">

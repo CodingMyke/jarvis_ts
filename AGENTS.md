@@ -105,6 +105,7 @@ The app supports wake word activation, live voice chat, tool calling
 - When shadcn/ui provides the needed building block, install it if missing and use it instead of creating a component from scratch.
 - Create custom components from zero only when neither existing internal components nor shadcn/ui blocks can satisfy the requirement.
 - Always maximize reuse of existing components, functions, and methods to keep the codebase DRY.
+- Keep layout structure minimal: avoid extra wrappers, nested containers, and decorative shells unless they are required for grouping, behavior, spacing, scrolling, or a clearly requested visual boundary.
 
 ### Naming Conventions
 

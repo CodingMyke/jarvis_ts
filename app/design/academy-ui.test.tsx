@@ -266,11 +266,12 @@ describe("academy design", () => {
       ),
     ).not.toBeInTheDocument();
 
-    fireEvent.change(screen.getByPlaceholderText("Write the core idea for the reel"), {
+    const quickCreateInput = screen.getByPlaceholderText("Write the core idea for the reel");
+    fireEvent.change(quickCreateInput, {
       target: { value: "Created idea" },
     });
     await act(async () => {
-      fireEvent.click(screen.getByRole("button", { name: "Create reel" }));
+      fireEvent.submit(quickCreateInput.closest("form") as HTMLFormElement);
     });
     expect(await screen.findByTestId("reel-card-44444444-4444-4444-8444-444444444444"))
       .toBeInTheDocument();
