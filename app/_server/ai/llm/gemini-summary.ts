@@ -1,6 +1,6 @@
 /**
- * Servizio LLM (Gemini) per generazione summary e titolo chat.
- * Usato solo server-side (API routes).
+ * Gemini helpers for chat search metadata and titles.
+ * Used only server-side (API routes).
  */
 
 import { GoogleGenAI } from "@google/genai";
@@ -30,34 +30,8 @@ function turnsToPromptText(turns: ConversationTurn[]): string {
 }
 
 /**
- * Genera un riassunto testuale di N turni di conversazione (per compattazione).
- */
-export async function generateSummaryFromTurns(
-  turns: ConversationTurn[]
-): Promise<string> {
-  if (turns.length === 0) return "";
-
-  const apiKey = getApiKey();
-  const ai = new GoogleGenAI({ apiKey });
-  const conversationText = turnsToPromptText(turns);
-
-  const response = await ai.models.generateContent({
-    model: GEMINI_TEXT_MODEL,
-    contents: `Sei un assistente che riassume conversazioni. Produci un unico paragrafo di riassunto in italiano, conciso ma informativo, che conservi i fatti e le decisioni rilevanti. Non aggiungere prefissi tipo "Riassunto:".\n\nConversazione:\n\n${conversationText}`,
-    config: {
-      maxOutputTokens: 1024,
-      temperature: 0.3,
-    },
-  });
-
-  const text = response.text?.trim() ?? "";
-  return text;
-}
-
-/**
- * Genera il testo per summary_text (colonna chat): descrizione di cosa tratta l'intera chat.
- * Serve per ricerca semantica / switch chat. Non è il riassunto di compattazione (quello
- * serve solo ad accorciare assistant_history e dare contesto al modello).
+ * Generates the text stored in summary_text (chat-level metadata).
+ * Used for semantic search and chat switching.
  */
 export async function generateChatSummaryForSearch(
   assistantHistory: ConversationTurn[]

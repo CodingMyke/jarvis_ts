@@ -34,8 +34,8 @@ describe("ConversationStorage", () => {
     vi.unstubAllGlobals();
   });
 
-  it("maps messages into turns and decides when summarization is required", () => {
-    const storage = new ConversationStorage({ summarizeThreshold: 2 });
+  it("maps messages into turns and counts user messages", () => {
+    const storage = new ConversationStorage();
     const messages = [
       { id: "1", text: "Ciao", isUser: true },
       { id: "2", text: "Sto pensando", isUser: false, thinking: "..." },
@@ -48,7 +48,6 @@ describe("ConversationStorage", () => {
       { role: "user", parts: [{ text: "Ancora io" }] },
     ]);
     expect(storage.countUserMessages(messages)).toBe(2);
-    expect(storage.needsSummarization(messages)).toBe(true);
   });
 
   it("saves conversations, reuses ids and handles invalid persisted JSON", () => {
@@ -69,16 +68,14 @@ describe("ConversationStorage", () => {
       createdAt: 1000,
       updatedAt: 1000,
       turns: [{ role: "user", parts: [{ text: "Ciao" }] }],
-      isSummarized: false,
     });
 
-    storage.saveTurns([{ role: "model", parts: [{ text: "Riassunto" }] }], true);
+    storage.saveTurns([{ role: "model", parts: [{ text: "Messaggio" }] }]);
     expect(storage.load()).toEqual({
       id: "conv_1000",
       createdAt: 1000,
       updatedAt: 2000,
-      turns: [{ role: "model", parts: [{ text: "Riassunto" }] }],
-      isSummarized: true,
+      turns: [{ role: "model", parts: [{ text: "Messaggio" }] }],
     });
 
     localStorage.setItem("chat-key", "{");
@@ -93,9 +90,7 @@ describe("ConversationStorage", () => {
 
     expect(storage.load()).toBeNull();
     expect(() => storage.save([{ id: "1", text: "Ciao", isUser: true }])).not.toThrow();
-    expect(() =>
-      storage.saveTurns([{ role: "user", parts: [{ text: "Ciao" }] }]),
-    ).not.toThrow();
+    expect(() => storage.saveTurns([{ role: "user", parts: [{ text: "Ciao" }] }])).not.toThrow();
     expect(() => storage.clear()).not.toThrow();
   });
 });

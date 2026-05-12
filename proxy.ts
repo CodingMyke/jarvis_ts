@@ -30,8 +30,20 @@ function createProxyClient(request: NextRequest) {
   return { supabase, response: supabaseResponse };
 }
 
-const ASSISTANT_PATHS = ["/assistant", "/setup", "/settings"];
+const PROTECTED_PATHS = [
+  "/assistant",
+  "/dashboard",
+  "/projects",
+  "/academy",
+  "/reflections",
+  "/learning",
+  "/progression",
+  "/news",
+  "/settings",
+  "/setup",
+];
 const LOGIN_PATH = "/";
+const DEFAULT_AUTHENTICATED_PATH = "/dashboard";
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -45,7 +57,7 @@ export async function proxy(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const isProtectedPath = ASSISTANT_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`));
+  const isProtectedPath = PROTECTED_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`));
   const isLoginPath = pathname === LOGIN_PATH;
   const isAuthCallback = pathname.startsWith("/auth/");
 
@@ -55,14 +67,16 @@ export async function proxy(request: NextRequest) {
 
   if (isProtectedPath && !user) {
     const loginUrl = new URL(LOGIN_PATH, request.url);
+    const originalPath = `${pathname}${request.nextUrl.search}`;
+    loginUrl.searchParams.set("next", originalPath);
     const redirectRes = NextResponse.redirect(loginUrl);
     response.cookies.getAll().forEach((c) => redirectRes.cookies.set(c.name, c.value, c));
     return redirectRes;
   }
 
   if (isLoginPath && user) {
-    const assistantUrl = new URL("/assistant", request.url);
-    const redirectRes = NextResponse.redirect(assistantUrl);
+    const dashboardUrl = new URL(DEFAULT_AUTHENTICATED_PATH, request.url);
+    const redirectRes = NextResponse.redirect(dashboardUrl);
     response.cookies.getAll().forEach((c) => redirectRes.cookies.set(c.name, c.value, c));
     return redirectRes;
   }

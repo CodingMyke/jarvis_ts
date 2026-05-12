@@ -1,12 +1,10 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database, Json } from "@/app/_server/supabase/database.types";
 import {
-  createSummaryTurn,
   SUMMARY_WINDOW_SIZE,
   type ConversationTurn,
 } from "@/app/_features/assistant";
 import {
-  generateSummaryFromTurns,
   generateChatSummaryForSearch,
   generateChatTitle,
 } from "@/app/_server/ai/llm";
@@ -194,11 +192,9 @@ export async function searchChatsSemantic(
 }
 
 /**
- * Compattazione: assistant_history deve avere sempre <= SUMMARY_WINDOW_SIZE turni.
- * Se ce ne sono di più, si riassume la parte vecchia in un turno; il totale
- * (1 riassunto + ultimi SUMMARY_WINDOW_SIZE - 1 messaggi) è sempre <= 30.
- * Il riassunto serve solo a far capire all'assistente di cosa si parlava;
- * NON è il summary_text della colonna chat (quello è generato separatamente).
+ * Retention: assistant_history must stay at or below SUMMARY_WINDOW_SIZE turns.
+ * If it grows beyond the window, trim the oldest turns and keep the newest
+ * turns unchanged. No summary turn is generated here.
  */
 async function runCompaction(
   assistantHistory: ConversationTurn[]
@@ -207,13 +203,7 @@ async function runCompaction(
     return assistantHistory;
   }
 
-  const keepCount = SUMMARY_WINDOW_SIZE - 1;
-  const toCompact = assistantHistory.slice(0, assistantHistory.length - keepCount);
-  const tail = assistantHistory.slice(-keepCount);
-
-  const compactionSummary = await generateSummaryFromTurns(toCompact);
-  const summaryTurn = createSummaryTurn(compactionSummary || "(Nessun riassunto)");
-  return [summaryTurn, ...tail];
+  return assistantHistory.slice(-SUMMARY_WINDOW_SIZE);
 }
 
 /**

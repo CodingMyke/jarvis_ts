@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, type RefObject } from "react";
+import { useCallback, useEffect, type RefObject } from "react";
 import { JARVIS_CONFIG } from "@/app/_features/assistant/lib/jarvis.config";
 import {
   isCalendarMutationTool,
@@ -8,6 +8,7 @@ import {
   isTaskMutationTool,
 } from "@/app/_features/assistant/lib/tool-effects";
 import { useVoiceChat } from "@/app/_features/assistant/hooks/useVoiceChat";
+import { useVoiceChatRuntime } from "@/app/_features/assistant/runtime/useVoiceChatRuntime";
 import type { DeleteCalendarEventHandler, UIDayEvents } from "@/app/_features/calendar";
 import { deleteCalendarEvent } from "@/app/_features/calendar/lib/calendar-client";
 import { useCalendarStore } from "@/app/_features/calendar/state/calendar.store";
@@ -52,6 +53,7 @@ export function useAssistantWorkspace({
     (state) => state.applyEventMutationResult,
   );
   const refreshTasks = useTasksStore((state) => state.refresh);
+  const runtime = useVoiceChatRuntime();
 
   const handleToolExecuted = useCallback(
     (toolName: string, result: unknown) => {
@@ -74,6 +76,12 @@ export function useAssistantWorkspace({
     [refreshCalendar, refreshTasks],
   );
 
+  useEffect(() => {
+    return runtime.subscribeToolExecuted(({ toolName, result }) => {
+      handleToolExecuted(toolName, result);
+    });
+  }, [handleToolExecuted, runtime]);
+
   const {
     error,
     listeningMode,
@@ -83,7 +91,7 @@ export function useAssistantWorkspace({
     deleteChat,
     outputAudioLevel,
     chatTitle,
-  } = useVoiceChat({ onToolExecuted: handleToolExecuted });
+  } = useVoiceChat();
 
   const orbState = useAssistantOrbState(listeningMode);
   const { date, dateRef, day, dayRef, time, timeRef } = useAssistantDateTime();
