@@ -54,13 +54,13 @@ function createSupabaseMock() {
 }
 
 describe("reel generation repository", () => {
-  it("queries pending jobs scoped by user and time", async () => {
+  it("queries pending jobs by queue status and time", async () => {
     const { supabase, calls } = createSupabaseMock();
 
-    await listPendingJobs(supabase, "user-1", { now: "2026-05-13T10:00:00.000Z", limit: 10 });
+    await listPendingJobs(supabase, { now: "2026-05-13T10:00:00.000Z", limit: 10 });
 
     expect(calls[0]).toMatchObject({ table: "academy_reel_generation_queue_jobs", method: "select" });
-    expect(calls.some((c) => c.method === "eq" && c.args[0] === "user_id")).toBe(true);
+    expect(calls.some((c) => c.method === "eq" && c.args[0] === "user_id")).toBe(false);
     expect(calls.some((c) => c.method === "eq" && c.args[0] === "status" && c.args[1] === "queued")).toBe(true);
     expect(calls.some((c) => c.method === "lte" && c.args[0] === "run_at")).toBe(true);
     expect(calls.some((c) => c.method === "order" && c.args[0] === "run_at")).toBe(true);
@@ -76,4 +76,3 @@ describe("reel generation repository", () => {
     expect(calls.some((c) => c.table === "academy_reel_generation_run_logs" && c.method === "insert")).toBe(true);
   });
 });
-

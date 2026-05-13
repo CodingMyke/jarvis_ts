@@ -17,6 +17,12 @@ interface SettingsSuccess {
   settings: ReelAutomationSettings;
 }
 
+const DEFAULT_REEL_AUTOMATION_SETTINGS: ReelAutomationSettings = {
+  enabled: false,
+  runTimes: [],
+  editorialContext: null,
+};
+
 function getErrorMessage(error: { message?: string } | null, fallback: string): string {
   return error?.message ?? fallback;
 }
@@ -27,7 +33,7 @@ function toSettings(config: unknown): ReelAutomationSettings {
     return parsed.data;
   }
 
-  return { enabled: false, runTimes: [], editorialContext: null };
+  return DEFAULT_REEL_AUTOMATION_SETTINGS;
 }
 
 export async function getReelAutomationSettings(
@@ -46,9 +52,8 @@ export async function getReelAutomationSettings(
 
   if (!data) {
     return {
-      success: false,
-      error: "NOT_FOUND",
-      message: "Settings not found",
+      success: true,
+      settings: DEFAULT_REEL_AUTOMATION_SETTINGS,
     };
   }
 
@@ -88,4 +93,3 @@ export async function updateReelAutomationSettings(
     settings: toSettings((data as { config?: unknown }).config),
   };
 }
-

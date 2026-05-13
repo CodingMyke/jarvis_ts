@@ -59,7 +59,6 @@ Authenticated users now land on a shared `/dashboard` shell.
    NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
    NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY=your_supabase_publishable_key
    SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
-   REELS_WORKER_USER_ID=your_user_uuid_for_worker_scope
    ```
    For Calendar and Tasks setup, see:
    - `app/_features/calendar/server/GOOGLE_CALENDAR_SETUP.md`

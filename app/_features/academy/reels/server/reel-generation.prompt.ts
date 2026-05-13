@@ -18,8 +18,9 @@ export function buildReelGenerationPrompt(input: {
     : "";
 
   return [
-    "You are generating missing fields for an Instagram reel draft.",
+    "You are generating missing fields for an Instagram reel draft. Keep all fields related to the others",
     "Return only the requested fields. Keep output concise and ready to paste.",
+    "The body is the text that I will say in the video.",
     "Rules:",
     "- Keep all fields as plain text.",
     "- For hashtags, return a single string with hashtags separated by spaces (e.g. \"#a #b\").",
@@ -34,6 +35,7 @@ export function buildReelGenerationPrompt(input: {
     `Caption: ${formatNullableText(reel.caption)}`,
     `Body: ${formatNullableText(reel.body)}`,
     `Hashtags: ${formatNullableText(reel.hashtags)}`,
+    `Notes: ${formatNullableText(reel.notes)}`,
   ]
     .filter((line) => line !== "")
     .join("\n");

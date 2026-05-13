@@ -122,34 +122,38 @@ describe("app shell design", () => {
     expect(projectsItem).toHaveAttribute("data-active", "true");
   });
 
-  it("expands the academy section on desktop to reveal dashboard, reels, and courses", () => {
+  it("expands the academy section on desktop to reveal dashboard, reels, courses, and automation", () => {
     render(<AppSidebar currentPathname="/dashboard" />);
 
     const desktopSidebar = screen.getByTestId("app-sidebar-desktop");
     expect(within(desktopSidebar).queryByTestId("nav-item-academy-dashboard")).not.toBeInTheDocument();
     expect(within(desktopSidebar).queryByText("Reel")).not.toBeInTheDocument();
     expect(within(desktopSidebar).queryByText("Corsi")).not.toBeInTheDocument();
+    expect(within(desktopSidebar).queryByText("Automazione")).not.toBeInTheDocument();
 
     fireEvent.click(within(desktopSidebar).getByRole("button", { name: "Apri Accademia" }));
 
     expect(within(desktopSidebar).getByTestId("nav-item-academy-dashboard")).toBeInTheDocument();
     expect(within(desktopSidebar).getByText("Reel")).toBeInTheDocument();
     expect(within(desktopSidebar).getByText("Corsi")).toBeInTheDocument();
+    expect(within(desktopSidebar).getByText("Automazione")).toBeInTheDocument();
   });
 
-  it("expands the academy section on mobile to reveal dashboard, reels, and courses", () => {
+  it("expands the academy section on mobile to reveal dashboard, reels, courses, and automation", () => {
     render(<AppSidebar currentPathname="/dashboard" variant="mobile" />);
 
     const mobileSidebar = screen.getByTestId("app-sidebar-mobile");
     expect(within(mobileSidebar).queryByTestId("nav-item-academy-dashboard")).not.toBeInTheDocument();
     expect(within(mobileSidebar).queryByText("Reel")).not.toBeInTheDocument();
     expect(within(mobileSidebar).queryByText("Corsi")).not.toBeInTheDocument();
+    expect(within(mobileSidebar).queryByText("Automazione")).not.toBeInTheDocument();
 
     fireEvent.click(within(mobileSidebar).getByRole("button", { name: "Apri Accademia" }));
 
     expect(within(mobileSidebar).getByTestId("nav-item-academy-dashboard")).toBeInTheDocument();
     expect(within(mobileSidebar).getByText("Reel")).toBeInTheDocument();
     expect(within(mobileSidebar).getByText("Corsi")).toBeInTheDocument();
+    expect(within(mobileSidebar).getByText("Automazione")).toBeInTheDocument();
   });
 
   it("marks academy subroutes active and keeps the academy title in the topbar", () => {
@@ -194,6 +198,18 @@ describe("app shell design", () => {
 
     const publishedDesktopSidebar = screen.getByTestId("app-sidebar-desktop");
     expect(within(publishedDesktopSidebar).getByTestId("nav-item-academy-reels")).toHaveAttribute(
+      "aria-current",
+      "page",
+    );
+    expect(screen.getByTestId("app-shell-topbar")).toHaveTextContent("Accademia");
+
+    appShellMocks.pathname = "/academy/automation";
+
+    rerender(<AppShellTemplate><div>Academy content</div></AppShellTemplate>);
+
+    const automationDesktopSidebar = screen.getByTestId("app-sidebar-desktop");
+    expect(within(automationDesktopSidebar).getByText("Automazione")).toBeInTheDocument();
+    expect(within(automationDesktopSidebar).getByTestId("nav-item-academy-automation")).toHaveAttribute(
       "aria-current",
       "page",
     );

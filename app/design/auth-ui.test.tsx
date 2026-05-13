@@ -189,7 +189,6 @@ describe("auth design", () => {
 
     expect(screen.getByText("Account Google")).toBeInTheDocument();
     expect(screen.getByText("Integrazioni")).toBeInTheDocument();
-    expect(await screen.findByText("Reel automation")).toBeInTheDocument();
     expect(screen.getByText("Jarvis User")).toBeInTheDocument();
     expect(screen.getByTitle("jarvis@example.com")).toBeInTheDocument();
     expect(screen.getByAltText("Avatar")).toHaveAttribute(
@@ -202,10 +201,7 @@ describe("auth design", () => {
     );
     expectNoLegacyRoundedUtility(screen.getByText("Account Google").closest("section") as HTMLElement);
     expectNoLegacyRoundedUtility(screen.getByText("Integrazioni").closest("section") as HTMLElement);
-    expectNoLegacyRoundedUtility(screen.getByText("Reel automation").closest("section") as HTMLElement);
-    expect(screen.getByLabelText("Enable reel automation")).toBeInTheDocument();
-    expect(screen.getByText("Run times (HH:mm, comma-separated)")).toBeInTheDocument();
-    expect(screen.getByText("Editorial context")).toBeInTheDocument();
+    expect(screen.queryByText("Reel automation")).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Esci" }));
     expect(signOut).toHaveBeenCalledOnce();

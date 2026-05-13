@@ -60,5 +60,22 @@ describe("reel settings service", () => {
     );
     expect(updateResult).toMatchObject({ success: true, settings: { enabled: true, runTimes: ["08:00"] } });
   });
-});
 
+  it("returns default settings when no row exists yet", async () => {
+    repositoryMocks.getGenerationSettingsByUser.mockResolvedValue({
+      data: null,
+      error: null,
+    });
+
+    const result = await getReelAutomationSettings(supabase, userId);
+
+    expect(result).toEqual({
+      success: true,
+      settings: {
+        enabled: false,
+        runTimes: [],
+        editorialContext: null,
+      },
+    });
+  });
+});

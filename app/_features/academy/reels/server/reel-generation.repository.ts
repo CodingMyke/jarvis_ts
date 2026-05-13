@@ -32,17 +32,70 @@ export async function upsertGenerationSettings(
 
 export async function listPendingJobs(
   supabase: ReelSupabaseClient,
-  userId: string,
   options: { now: string; limit: number },
 ) {
   return supabase
     .from("academy_reel_generation_queue_jobs")
     .select("*")
-    .eq("user_id", userId)
     .eq("status", "queued")
     .lte("run_at", options.now)
     .order("run_at", { ascending: true })
     .limit(options.limit);
+}
+
+export async function listGenerationSettingsRows(supabase: ReelSupabaseClient) {
+  return supabase
+    .from("academy_reel_generation_settings")
+    .select("user_id, config");
+}
+
+export async function listIdeaReelIdsByUser(supabase: ReelSupabaseClient, userId: string) {
+  return supabase
+    .from("academy_reels")
+    .select("id")
+    .eq("user_id", userId)
+    .eq("status", "idea");
+}
+
+export async function listActiveQueueReelIdsByUser(supabase: ReelSupabaseClient, userId: string) {
+  return supabase
+    .from("academy_reel_generation_queue_jobs")
+    .select("reel_id")
+    .eq("user_id", userId)
+    .in("status", ["queued", "processing"]);
+}
+
+export async function countJobsByUserAndRunAt(
+  supabase: ReelSupabaseClient,
+  userId: string,
+  runAtIso: string,
+) {
+  return supabase
+    .from("academy_reel_generation_queue_jobs")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", userId)
+    .eq("run_at", runAtIso);
+}
+
+export async function insertScheduledGenerationJobs(
+  supabase: ReelSupabaseClient,
+  input: Array<{ userId: string; reelId: string; runAt: string }>,
+) {
+  if (input.length === 0) {
+    return { data: [], error: null };
+  }
+
+  return supabase
+    .from("academy_reel_generation_queue_jobs")
+    .insert(
+      input.map((job) => ({
+        user_id: job.userId,
+        reel_id: job.reelId,
+        status: "queued",
+        run_at: job.runAt,
+      })),
+    )
+    .select("id");
 }
 
 export async function insertManualGenerationJob(

@@ -3,20 +3,11 @@ import { processNextReelGenerationJob } from "../app/_features/academy/reels/ser
 
 const POLL_INTERVAL_MS = 15_000;
 
-function getWorkerUserId(): string {
-  const userId = process.env.REELS_WORKER_USER_ID;
-  if (!userId) {
-    throw new Error("REELS_WORKER_USER_ID is required");
-  }
-  return userId;
-}
-
 async function runLoop() {
-  const userId = getWorkerUserId();
   const supabase = createServiceRoleSupabaseClient();
 
   while (true) {
-    const result = await processNextReelGenerationJob(supabase, userId);
+    const result = await processNextReelGenerationJob(supabase);
 
     if (result.error) {
       console.error("[reels-worker] job failed:", result.error);
