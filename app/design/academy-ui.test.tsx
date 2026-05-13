@@ -17,6 +17,8 @@ const academyUiMocks = vi.hoisted(() => ({
   getServerReelBoard: vi.fn(),
   updateReel: vi.fn(),
   updateReelStatus: vi.fn(),
+  generateReelFields: vi.fn(),
+  generateReelField: vi.fn(),
 }));
 
 vi.mock("next/navigation", () => ({
@@ -44,6 +46,8 @@ vi.mock("@/app/_features/academy/reels", async () => {
     getServerReelBoard: academyUiMocks.getServerReelBoard,
     updateReel: academyUiMocks.updateReel,
     updateReelStatus: academyUiMocks.updateReelStatus,
+    generateReelFields: academyUiMocks.generateReelFields,
+    generateReelField: academyUiMocks.generateReelField,
   };
 });
 
@@ -62,7 +66,8 @@ const boardFixture: ReelBoard = {
         title: null,
         caption: null,
         body: null,
-        hashtags: [],
+        hashtags: null,
+        generation_status: "not_generated",
         notes: null,
         scheduled_at: null,
         published_at: null,
@@ -83,7 +88,8 @@ const boardFixture: ReelBoard = {
         title: "Published one",
         caption: null,
         body: null,
-        hashtags: [],
+        hashtags: null,
+        generation_status: "not_generated",
         notes: null,
         scheduled_at: null,
         published_at: "2026-05-10T10:00:00.000Z",
@@ -98,7 +104,8 @@ const boardFixture: ReelBoard = {
         title: "Published two",
         caption: null,
         body: null,
-        hashtags: [],
+        hashtags: null,
+        generation_status: "not_generated",
         notes: null,
         scheduled_at: null,
         published_at: "2026-05-09T10:00:00.000Z",
@@ -113,7 +120,8 @@ const boardFixture: ReelBoard = {
         title: "Published three",
         caption: null,
         body: null,
-        hashtags: [],
+        hashtags: null,
+        generation_status: "not_generated",
         notes: null,
         scheduled_at: null,
         published_at: "2026-05-08T10:00:00.000Z",
@@ -128,7 +136,8 @@ const boardFixture: ReelBoard = {
         title: "Published four",
         caption: null,
         body: null,
-        hashtags: [],
+        hashtags: null,
+        generation_status: "not_generated",
         notes: null,
         scheduled_at: null,
         published_at: "2026-05-07T10:00:00.000Z",
@@ -223,7 +232,8 @@ describe("academy design", () => {
         title: null,
         caption: null,
         body: null,
-        hashtags: [],
+        hashtags: null,
+        generation_status: "not_generated",
         notes: null,
         scheduled_at: null,
         published_at: null,
@@ -254,6 +264,8 @@ describe("academy design", () => {
       success: true,
       reelId: "11111111-1111-4111-8111-111111111111",
     });
+    academyUiMocks.generateReelFields.mockResolvedValue({ success: true });
+    academyUiMocks.generateReelField.mockResolvedValue({ success: true });
 
     render(<ReelBoardTemplate initialBoard={boardFixture} />);
 
@@ -291,6 +303,16 @@ describe("academy design", () => {
     expectNoLegacyRoundedUtility(screen.getByRole("button", { name: "Save changes" }));
     fireEvent.change(screen.getByLabelText("Title"), { target: { value: "Updated title" } });
     fireEvent.change(screen.getByLabelText("Body"), { target: { value: "Updated body" } });
+    expect(screen.getByRole("button", { name: "Generate all" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Generate title" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Generate caption" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Generate body" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Generate hashtags" })).toBeInTheDocument();
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Generate title" }));
+    });
+    expect(academyUiMocks.updateReel).toHaveBeenCalled();
+    expect(academyUiMocks.generateReelField).toHaveBeenCalled();
     await act(async () => {
       fireEvent.click(screen.getByRole("button", { name: "Save changes" }));
     });

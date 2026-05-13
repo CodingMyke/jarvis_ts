@@ -18,6 +18,7 @@ Authenticated users now land on a shared `/dashboard` shell.
 - **Voice Chat Runtime**: one shared runtime owns wake word, Gemini transport, transcript projection, persistence, reconnect flows, and chat switching/deletion/new-chat orchestration
 - **Progression system**: Supabase-backed goals, recurring actions, server-rendered daily/weekly visibility, XP history, leveling, and deadline review in `/progression`
 - **Academy reels board**: owner-scoped editorial Kanban in `/academy/reels` with quick idea capture, drawer editing, drag/drop status changes, hard delete confirmation, and a published-column cap with placeholder archive routes
+- **Academy reel AI generation v1**: manual field/global generation, per-user automation settings, DB-backed queue + run logs, and local worker execution
 - **Authentication**: Google OAuth via Supabase; memory/calendar/tasks routes are session-protected
 - **UI**: thin App Router entrypoints, feature boundaries, markdown chat rendering, voice orb, shared app shell (`/dashboard` + sibling sections), dashboard calendar + ToDo blocks (explicit empty/error states), progression workspace + deadline warning, standalone legacy `/assistant`, standalone `/setup/calendar`
 
@@ -54,8 +55,11 @@ Authenticated users now land on a shared `/dashboard` shell.
 3. Configure environment variables in `.env.local`:
    ```env
    NEXT_PUBLIC_GEMINI_API_KEY=your_gemini_api_key
+   OPENAI_API_KEY=your_openai_api_key
    NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
    NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY=your_supabase_publishable_key
+   SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
+   REELS_WORKER_USER_ID=your_user_uuid_for_worker_scope
    ```
    For Calendar and Tasks setup, see:
    - `app/_features/calendar/server/GOOGLE_CALENDAR_SETUP.md`
@@ -88,8 +92,7 @@ If `--linked` works, the project is ready for migrations, schema changes, and da
    Calendar empty/error states: `Nessun evento nei prossimi 7 giorni` / `Si è verificato un errore`.
    ToDo empty/error states: `Non ci sono elementi` / `Si è verificato un errore`.
 3. **Academy**: `Accademia` expands in the shared sidebar and currently exposes `/academy/reels`, `/academy/courses`, and `/academy/reels/published`.
-   Reel MVP scope: statuses `idea`, `script`, `to_record`, `to_edit`, `ready`, `published`; create from idea only; drawer edit; drag/drop between columns; hard delete confirm; published column shows the latest 3 cards plus `Vedi tutti`.
-   Non-goals for this phase: courses workflow, AI generation pipeline, published full archive, shared workspace permissions.
+   Reel scope: statuses `idea`, `script`, `to_record`, `to_edit`, `ready`, `published`; drawer edit; manual AI generation (global/field) from drawer; settings in `/settings` for automation run times + editorial context.
 4. **Progression**: `/progression` shows XP level progress, due actions, weekly targets, goal filters, a lazy XP history sidebar, and a blocking deadline review only when expired goals exist.
 5. **Start**: click the `Jarvis / Personal OS` logo box in the app-shell sidebar.
 6. **Activation**: the assistant enters wake-word mode (yellow border).
@@ -140,6 +143,7 @@ npm run test                # Vitest unit tests
 npm run test:watch          # Vitest watch mode
 npm run test:coverage       # Vitest coverage report
 npm run gen-supabase-types  # Regenerate Supabase TypeScript types
+npm run reels:worker        # Run local reel generation worker
 ```
 
 ## Architecture Workflow

@@ -5,6 +5,8 @@ import {
   EMPTY_REEL_BOARD,
   createReel,
   deleteReel,
+  generateReelField,
+  generateReelFields,
   updateReel,
   updateReelStatus,
 } from "@/app/_features/academy/reels";
@@ -74,6 +76,7 @@ export interface ReelBoardWorkspaceResult {
   setCreateIdea: (value: string) => void;
   isCreating: boolean;
   isSaving: boolean;
+  isGenerating: boolean;
   editingReel: ReelRow | null;
   deletingReel: ReelRow | null;
   draggedReelId: string | null;
@@ -81,6 +84,13 @@ export interface ReelBoardWorkspaceResult {
   openEditReel: (reel: ReelRow) => void;
   closeEditReel: () => void;
   saveEditReel: (input: UpdateReelInput) => Promise<void>;
+  queueGlobalGeneration: (input: UpdateReelInput) => Promise<void>;
+  queueFieldGeneration: (
+    field: "title" | "caption" | "body" | "hashtags",
+    input: UpdateReelInput,
+  ) => Promise<void>;
+  isGlobalGenerationDisabled: (reel: ReelRow) => boolean;
+  isGenerationDisabled: (reel: ReelRow) => boolean;
   requestDeleteReel: (reel: ReelRow) => void;
   cancelDeleteReel: () => void;
   confirmDeleteReel: () => Promise<void>;
@@ -101,6 +111,7 @@ export function useReelBoardWorkspace(initialBoard?: ReelBoard): ReelBoardWorksp
   const [createIdea, setCreateIdea] = useState("");
   const [isCreating, setIsCreating] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
   const [editingReel, setEditingReel] = useState<ReelRow | null>(null);
   const [deletingReel, setDeletingReel] = useState<ReelRow | null>(null);
   const [draggedReelId, setDraggedReelId] = useState<string | null>(null);
@@ -150,6 +161,69 @@ export function useReelBoardWorkspace(initialBoard?: ReelBoard): ReelBoardWorksp
     setEditingReel(null);
     startTransition(() => {
       setBoard((currentBoard) => replaceReel(currentBoard, result.reel));
+    });
+  }
+
+  async function queueGlobalGeneration(input: UpdateReelInput) {
+    if (!editingReel) {
+      return;
+    }
+
+    setIsGenerating(true);
+    setErrorMessage(null);
+
+    const saved = await updateReel(editingReel.id, input);
+    if (!saved.success) {
+      setIsGenerating(false);
+      setErrorMessage(saved.errorMessage);
+      return;
+    }
+
+    const queued = await generateReelFields(editingReel.id);
+    setIsGenerating(false);
+
+    if (!queued.success) {
+      setErrorMessage(queued.errorMessage);
+      return;
+    }
+
+    startTransition(() => {
+      const nextReel = { ...saved.reel, generation_status: "processing" as const };
+      setBoard((currentBoard) => replaceReel(currentBoard, nextReel));
+      setEditingReel(nextReel);
+    });
+  }
+
+  async function queueFieldGeneration(
+    field: "title" | "caption" | "body" | "hashtags",
+    input: UpdateReelInput,
+  ) {
+    if (!editingReel) {
+      return;
+    }
+
+    setIsGenerating(true);
+    setErrorMessage(null);
+
+    const saved = await updateReel(editingReel.id, input);
+    if (!saved.success) {
+      setIsGenerating(false);
+      setErrorMessage(saved.errorMessage);
+      return;
+    }
+
+    const queued = await generateReelField(editingReel.id, field);
+    setIsGenerating(false);
+
+    if (!queued.success) {
+      setErrorMessage(queued.errorMessage);
+      return;
+    }
+
+    startTransition(() => {
+      const nextReel = { ...saved.reel, generation_status: "processing" as const };
+      setBoard((currentBoard) => replaceReel(currentBoard, nextReel));
+      setEditingReel(nextReel);
     });
   }
 
@@ -210,6 +284,23 @@ export function useReelBoardWorkspace(initialBoard?: ReelBoard): ReelBoardWorksp
     });
   }
 
+  function isReelFieldComplete(value: string | null | undefined): boolean {
+    return Boolean(value && value.trim().length > 0);
+  }
+
+  function isGlobalGenerationDisabled(reel: ReelRow): boolean {
+    return (
+      isReelFieldComplete(reel.title)
+      && isReelFieldComplete(reel.caption)
+      && isReelFieldComplete(reel.body)
+      && isReelFieldComplete(reel.hashtags)
+    );
+  }
+
+  function isGenerationDisabled(reel: ReelRow): boolean {
+    return reel.generation_status === "processing";
+  }
+
   return {
     board,
     errorMessage,
@@ -217,6 +308,7 @@ export function useReelBoardWorkspace(initialBoard?: ReelBoard): ReelBoardWorksp
     setCreateIdea,
     isCreating,
     isSaving,
+    isGenerating,
     editingReel,
     deletingReel,
     draggedReelId,
@@ -227,6 +319,10 @@ export function useReelBoardWorkspace(initialBoard?: ReelBoard): ReelBoardWorksp
     },
     closeEditReel: () => setEditingReel(null),
     saveEditReel,
+    queueGlobalGeneration,
+    queueFieldGeneration,
+    isGlobalGenerationDisabled,
+    isGenerationDisabled,
     requestDeleteReel: (reel) => {
       setDeletingReel(reel);
       setErrorMessage(null);

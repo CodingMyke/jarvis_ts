@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { Button } from "@/app/design/atoms/shared";
 import { SettingsSectionHeader } from "@/app/design/molecules/auth/SettingsSectionHeader";
+import { ReelAutomationSettingsPanel } from "@/app/design/organisms/settings/ReelAutomationSettingsPanel";
 import { useAuth } from "@/app/_features/auth/hooks/useAuth";
 import { AppPanel } from "@/app/_shared/ui";
 
@@ -77,6 +78,10 @@ export function SettingsPanel() {
         >
           Configura calendario
         </Link>
+      </AppPanel>
+
+      <AppPanel as="section" variant="overlay">
+        <ReelAutomationSettingsPanel />
       </AppPanel>
 
       <div className="flex flex-col gap-3">

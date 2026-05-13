@@ -4,9 +4,11 @@ import { resolve } from "node:path";
 import { REEL_BOARD_STATUSES } from "../lib/reel-board.constants";
 import {
   createReelSchema,
+  generationStatusSchema,
   reelStatusSchema,
   updateReelSchema,
 } from "../lib/reel-board.schemas";
+import { REEL_GENERATION_STATUSES } from "../lib/reel-board.constants";
 
 const repositoryMocks = vi.hoisted(() => ({
   listReelsByUser: vi.fn(),
@@ -48,6 +50,16 @@ describe("reel board service", () => {
     expect(reelStatusSchema.parse("ready")).toBe("ready");
   });
 
+  it("exposes the exact allowed generation statuses", () => {
+    expect(REEL_GENERATION_STATUSES).toEqual([
+      "not_generated",
+      "processing",
+      "completed",
+      "failed",
+    ]);
+    expect(generationStatusSchema.parse("processing")).toBe("processing");
+  });
+
   it("requires a trimmed non-empty idea on create", () => {
     expect(createReelSchema.safeParse({ idea: "   " }).success).toBe(false);
     expect(createReelSchema.parse({ idea: "  Hook  " })).toEqual({ idea: "Hook" });
@@ -59,7 +71,7 @@ describe("reel board service", () => {
         title: "Title",
         caption: "Caption",
         body: "Body",
-        hashtags: ["#a", "#b"],
+        hashtags: "#a #b",
         idea: "Idea",
         notes: "Notes",
         scheduled_at: "2026-05-11T09:00:00.000Z",
@@ -69,7 +81,7 @@ describe("reel board service", () => {
       title: "Title",
       caption: "Caption",
       body: "Body",
-      hashtags: ["#a", "#b"],
+      hashtags: "#a #b",
       idea: "Idea",
       notes: "Notes",
     });

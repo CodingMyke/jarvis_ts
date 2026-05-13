@@ -5,6 +5,7 @@ import { Field, Surface, TextArea } from "@/app/_shared/ui";
 import { Button } from "@/app/design/atoms/shared/Button";
 import { CloseIcon, SaveIcon } from "@/app/design/atoms/shared/icons";
 import type { ReelRow, UpdateReelInput } from "@/app/_features/academy/reels";
+import { ReelGenerationButton } from "./ReelGenerationButton";
 
 export interface ReelEditDrawerProps {
   reel: ReelRow | null;
@@ -12,6 +13,14 @@ export interface ReelEditDrawerProps {
   busy?: boolean;
   onClose: () => void;
   onSave: (input: UpdateReelInput) => Promise<void>;
+  onGenerateGlobal?: (input: UpdateReelInput) => Promise<void>;
+  onGenerateField?: (
+    field: "title" | "caption" | "body" | "hashtags",
+    input: UpdateReelInput,
+  ) => Promise<void>;
+  generationDisabled?: boolean;
+  generationBusy?: boolean;
+  globalGenerationDisabled?: boolean;
 }
 
 export function ReelEditDrawer({
@@ -20,13 +29,18 @@ export function ReelEditDrawer({
   busy = false,
   onClose,
   onSave,
+  onGenerateGlobal,
+  onGenerateField,
+  generationDisabled = false,
+  generationBusy = false,
+  globalGenerationDisabled = false,
 }: ReelEditDrawerProps) {
   const [draft, setDraft] = useState<UpdateReelInput>(() => ({
     idea: reel?.idea,
     title: reel?.title ?? null,
     caption: reel?.caption ?? null,
     body: reel?.body ?? null,
-    hashtags: reel?.hashtags ?? [],
+    hashtags: reel?.hashtags ?? null,
     notes: reel?.notes ?? null,
     scheduled_at: reel?.scheduled_at ?? null,
     published_at: reel?.published_at ?? null,
@@ -72,6 +86,61 @@ export function ReelEditDrawer({
         </div>
       </div>
 
+      <div className="border-b border-line px-6 py-3">
+        <div className="flex flex-wrap gap-2">
+          <ReelGenerationButton
+            label="Generate all"
+            busy={generationBusy}
+            disabled={generationDisabled || globalGenerationDisabled || !onGenerateGlobal}
+            onClick={() => {
+              if (onGenerateGlobal) {
+                void onGenerateGlobal(draft);
+              }
+            }}
+          />
+          <ReelGenerationButton
+            label="Generate title"
+            busy={generationBusy}
+            disabled={generationDisabled || !onGenerateField}
+            onClick={() => {
+              if (onGenerateField) {
+                void onGenerateField("title", draft);
+              }
+            }}
+          />
+          <ReelGenerationButton
+            label="Generate caption"
+            busy={generationBusy}
+            disabled={generationDisabled || !onGenerateField}
+            onClick={() => {
+              if (onGenerateField) {
+                void onGenerateField("caption", draft);
+              }
+            }}
+          />
+          <ReelGenerationButton
+            label="Generate body"
+            busy={generationBusy}
+            disabled={generationDisabled || !onGenerateField}
+            onClick={() => {
+              if (onGenerateField) {
+                void onGenerateField("body", draft);
+              }
+            }}
+          />
+          <ReelGenerationButton
+            label="Generate hashtags"
+            busy={generationBusy}
+            disabled={generationDisabled || !onGenerateField}
+            onClick={() => {
+              if (onGenerateField) {
+                void onGenerateField("hashtags", draft);
+              }
+            }}
+          />
+        </div>
+      </div>
+
       <div className="flex-1 overflow-y-auto px-6 py-6">
         <div className="grid gap-4">
         <label className="space-y-2 text-sm text-muted">
@@ -109,13 +178,9 @@ export function ReelEditDrawer({
         <label className="space-y-2 text-sm text-muted">
           <span>Hashtags</span>
           <Field
-            value={(draft.hashtags ?? []).join(", ")}
+            value={draft.hashtags ?? ""}
             onChange={(event) => {
-              const hashtags = event.target.value
-                .split(",")
-                .map((value) => value.trim())
-                .filter(Boolean);
-              setDraft((current) => ({ ...current, hashtags }));
+              setDraft((current) => ({ ...current, hashtags: event.target.value || null }));
             }}
             className="py-2"
           />

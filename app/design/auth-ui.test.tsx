@@ -11,6 +11,8 @@ import { SettingsTemplate } from "@/app/design/templates/settings/SettingsTempla
 const authUiMocks = vi.hoisted(() => ({
   searchParams: new URLSearchParams(),
   useAuth: vi.fn(),
+  getReelAutomationSettings: vi.fn(),
+  updateReelAutomationSettings: vi.fn(),
 }));
 
 vi.mock("next/link", () => ({
@@ -46,6 +48,18 @@ vi.mock("@/app/_features/auth/hooks/useAuth", () => ({
   useAuth: authUiMocks.useAuth,
 }));
 
+vi.mock("@/app/_features/academy/reels", async () => {
+  const actual = await vi.importActual<typeof import("@/app/_features/academy/reels")>(
+    "@/app/_features/academy/reels",
+  );
+
+  return {
+    ...actual,
+    getReelAutomationSettings: authUiMocks.getReelAutomationSettings,
+    updateReelAutomationSettings: authUiMocks.updateReelAutomationSettings,
+  };
+});
+
 function expectNoLegacyRoundedUtility(element: HTMLElement) {
   expect(element.className).not.toMatch(/(^|\s)rounded-(?!app\b|round\b)[^\s]+(?=\s|$)/);
 }
@@ -59,6 +73,22 @@ describe("auth design", () => {
   beforeEach(() => {
     authUiMocks.searchParams = new URLSearchParams();
     authUiMocks.useAuth.mockReset();
+    authUiMocks.getReelAutomationSettings.mockResolvedValue({
+      success: true,
+      settings: {
+        enabled: true,
+        runTimes: ["09:00", "17:00"],
+        editorialContext: "Current campaign context",
+      },
+    });
+    authUiMocks.updateReelAutomationSettings.mockResolvedValue({
+      success: true,
+      settings: {
+        enabled: true,
+        runTimes: ["09:00", "17:00"],
+        editorialContext: "Current campaign context",
+      },
+    });
   });
 
   it("renders buttons for loading, signed-in and signed-out auth states", () => {
@@ -119,7 +149,7 @@ describe("auth design", () => {
     expect(signInWithGoogle).toHaveBeenCalledWith("/assistant");
   });
 
-  it("renders settings for loading, missing users and authenticated users", () => {
+  it("renders settings for loading, missing users and authenticated users", async () => {
     authUiMocks.useAuth.mockReturnValueOnce({
       isLoading: true,
       user: null,
@@ -159,6 +189,7 @@ describe("auth design", () => {
 
     expect(screen.getByText("Account Google")).toBeInTheDocument();
     expect(screen.getByText("Integrazioni")).toBeInTheDocument();
+    expect(await screen.findByText("Reel automation")).toBeInTheDocument();
     expect(screen.getByText("Jarvis User")).toBeInTheDocument();
     expect(screen.getByTitle("jarvis@example.com")).toBeInTheDocument();
     expect(screen.getByAltText("Avatar")).toHaveAttribute(
@@ -171,6 +202,10 @@ describe("auth design", () => {
     );
     expectNoLegacyRoundedUtility(screen.getByText("Account Google").closest("section") as HTMLElement);
     expectNoLegacyRoundedUtility(screen.getByText("Integrazioni").closest("section") as HTMLElement);
+    expectNoLegacyRoundedUtility(screen.getByText("Reel automation").closest("section") as HTMLElement);
+    expect(screen.getByLabelText("Enable reel automation")).toBeInTheDocument();
+    expect(screen.getByText("Run times (HH:mm, comma-separated)")).toBeInTheDocument();
+    expect(screen.getByText("Editorial context")).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Esci" }));
     expect(signOut).toHaveBeenCalledOnce();

@@ -48,8 +48,17 @@ export function ReelBoardTemplate({ initialBoard }: ReelBoardTemplateProps) {
         reel={workspace.editingReel}
         open={workspace.editingReel !== null}
         busy={workspace.isSaving}
+        generationBusy={workspace.isGenerating}
+        generationDisabled={
+          workspace.editingReel ? workspace.isGenerationDisabled(workspace.editingReel) : false
+        }
+        globalGenerationDisabled={
+          workspace.editingReel ? workspace.isGlobalGenerationDisabled(workspace.editingReel) : true
+        }
         onClose={workspace.closeEditReel}
         onSave={workspace.saveEditReel}
+        onGenerateGlobal={workspace.queueGlobalGeneration}
+        onGenerateField={workspace.queueFieldGeneration}
       />
 
       <ReelDeleteDialog
