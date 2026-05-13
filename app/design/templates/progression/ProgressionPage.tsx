@@ -8,21 +8,16 @@ import { ProgressionLevelSection } from "@/app/design/organisms/progression/Prog
 import { ProgressionLevelSkeleton } from "@/app/design/organisms/progression/ProgressionLevelSkeleton";
 import { ProgressionTodaySection } from "@/app/design/organisms/progression/ProgressionTodaySection";
 import { ProgressionTodaySkeleton } from "@/app/design/organisms/progression/ProgressionTodaySkeleton";
+import { AppPageHeader } from "@/app/design/templates/shared/AppPageHeader";
 
 export function ProgressionPage() {
   return (
     <section className="space-y-6">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-        <div>
-          <p className="text-xs uppercase tracking-[0.28em] text-muted/80">Project system</p>
-          <h1 className="mt-2 text-4xl font-semibold tracking-tight text-foreground">
-            Progressione
-          </h1>
-          <p className="mt-2 max-w-2xl text-sm text-muted">
-            Mantieni chiari gli obiettivi, premi i check-in utili e chiudi subito le scadenze
-            che bloccano il flusso.
-          </p>
-        </div>
+        <AppPageHeader
+          title="Progressione"
+          subtitle="Mantieni chiari gli obiettivi, premi i check-in utili e chiudi subito le scadenze che bloccano il flusso."
+        />
       </div>
 
       <Suspense fallback={<ProgressionDeadlineSkeleton />}>

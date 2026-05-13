@@ -1,13 +1,12 @@
+import { AcademyPageHeader } from "@/app/design/templates/academy/AcademyPageHeader";
+
 export default function AcademyPublishedReelsPage() {
   return (
-    <section className="mx-auto w-full max-w-4xl rounded-2xl border border-white/10 bg-white/5 p-6">
-      <div className="space-y-2">
-        <p className="text-xs uppercase tracking-[0.2em] text-muted">Academy</p>
-        <h1 className="text-2xl font-semibold text-foreground">Reel pubblicati</h1>
-        <p className="text-sm text-muted">
-          Placeholder esplicito: l&apos;archivio pubblicati arriva nel prossimo step.
-        </p>
-      </div>
+    <section className="mx-auto flex w-full max-w-4xl flex-col gap-4">
+      <AcademyPageHeader
+        title="Reel pubblicati"
+        subtitle="Placeholder esplicito: l&apos;archivio pubblicati arriva nel prossimo step."
+      />
     </section>
   );
 }

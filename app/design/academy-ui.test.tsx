@@ -175,6 +175,7 @@ describe("academy design", () => {
     expect(
       screen.getByText("Placeholder esplicito: la dashboard Academy arriva nel prossimo step."),
     ).toBeInTheDocument();
+    expect(screen.queryByText("Academy")).not.toBeInTheDocument();
   });
 
   it("renders the reel board using the server-loaded initial board", async () => {
@@ -192,6 +193,7 @@ describe("academy design", () => {
     expect(
       screen.getByText("Plan, refine, move, and publish your reels from one editorial workspace."),
     ).toBeInTheDocument();
+    expect(screen.queryByText("Academy")).not.toBeInTheDocument();
     expectNoLegacyRoundedUtility(
       screen.getByRole("heading", { name: "Reel board" }).closest("section") as HTMLElement,
     );
@@ -207,6 +209,7 @@ describe("academy design", () => {
     expect(screen.getByRole("heading", { name: "Corsi" })).toBeInTheDocument();
     expect(screen.getByText("Placeholder esplicito: i corsi arrivano nel prossimo step."))
       .toBeInTheDocument();
+    expect(screen.queryByText("Academy")).not.toBeInTheDocument();
   });
 
   it("renders an explicit published reels placeholder", async () => {
@@ -219,6 +222,7 @@ describe("academy design", () => {
     expect(screen.getByRole("heading", { name: "Reel pubblicati" })).toBeInTheDocument();
     expect(screen.getByText("Placeholder esplicito: l'archivio pubblicati arriva nel prossimo step."))
       .toBeInTheDocument();
+    expect(screen.queryByText("Academy")).not.toBeInTheDocument();
   });
 
   it("creates, edits, moves, deletes reels, and caps published cards to three", async () => {
