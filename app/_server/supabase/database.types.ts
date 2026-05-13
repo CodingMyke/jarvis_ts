@@ -19,7 +19,8 @@ export type Database = {
           body: string | null
           caption: string | null
           created_at: string
-          hashtags: string[]
+          generation_status: string
+          hashtags: string | null
           idea: string
           id: string
           notes: string | null
@@ -34,7 +35,8 @@ export type Database = {
           body?: string | null
           caption?: string | null
           created_at?: string
-          hashtags?: string[]
+          generation_status?: string
+          hashtags?: string | null
           idea: string
           id?: string
           notes?: string | null
@@ -49,7 +51,8 @@ export type Database = {
           body?: string | null
           caption?: string | null
           created_at?: string
-          hashtags?: string[]
+          generation_status?: string
+          hashtags?: string | null
           idea?: string
           id?: string
           notes?: string | null
@@ -57,6 +60,122 @@ export type Database = {
           scheduled_at?: string | null
           status?: string
           title?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      academy_reel_generation_queue_jobs: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          error_message: string | null
+          id: string
+          reel_id: string
+          run_at: string
+          started_at: string | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          reel_id: string
+          run_at?: string
+          started_at?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          reel_id?: string
+          run_at?: string
+          started_at?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "academy_reel_generation_queue_jobs_reel_id_fkey"
+            columns: ["reel_id"]
+            isOneToOne: false
+            referencedRelation: "academy_reels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      academy_reel_generation_run_logs: {
+        Row: {
+          created_at: string
+          error_message: string | null
+          id: string
+          job_id: string | null
+          metadata: Json
+          reel_id: string | null
+          status: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          job_id?: string | null
+          metadata?: Json
+          reel_id?: string | null
+          status: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          job_id?: string | null
+          metadata?: Json
+          reel_id?: string | null
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "academy_reel_generation_run_logs_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "academy_reel_generation_queue_jobs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "academy_reel_generation_run_logs_reel_id_fkey"
+            columns: ["reel_id"]
+            isOneToOne: false
+            referencedRelation: "academy_reels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      academy_reel_generation_settings: {
+        Row: {
+          config: Json
+          created_at: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          config?: Json
+          created_at?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          config?: Json
+          created_at?: string
           updated_at?: string
           user_id?: string
         }

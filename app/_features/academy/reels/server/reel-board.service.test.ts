@@ -1,4 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { REEL_BOARD_STATUSES } from "../lib/reel-board.constants";
 import {
   createReelSchema,
@@ -18,6 +20,20 @@ vi.mock("./reel-board.repository", () => repositoryMocks);
 describe("reel board service", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+  });
+
+  it("exposes reel generation fields in the DB contract", () => {
+    const dbTypesPath = resolve(process.cwd(), "app/_server/supabase/database.types.ts");
+    const dbTypes = readFileSync(dbTypesPath, "utf8");
+
+    expect(dbTypes).toContain("academy_reels");
+    expect(dbTypes).toContain("generation_status");
+    expect(dbTypes).toContain("hashtags: string | null");
+    expect(dbTypes).not.toContain("hashtags: string[]");
+
+    expect(dbTypes).toContain("academy_reel_generation_settings");
+    expect(dbTypes).toContain("academy_reel_generation_queue_jobs");
+    expect(dbTypes).toContain("academy_reel_generation_run_logs");
   });
 
   it("exposes the exact allowed statuses", () => {
