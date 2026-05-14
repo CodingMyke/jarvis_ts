@@ -4,11 +4,14 @@ import { render, renderHook, screen, waitFor } from "@testing-library/react";
 import React, { type ReactNode } from "react";
 import { act } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import {
-  getProgressionStatus,
-} from "@/app/_features/progression/lib/progression-client";
+import { ensureUserSettings } from "@/app/_features/user-settings";
+import { getProgressionStatus } from "@/app/_features/progression/lib/progression-client";
 import { AppShellProgressionProvider } from "./AppShellProgressionProvider";
 import { useAppShellProgression } from "./useAppShellProgression";
+
+vi.mock("@/app/_features/user-settings", () => ({
+  ensureUserSettings: vi.fn(),
+}));
 
 vi.mock("@/app/_features/progression/lib/progression-client", () => ({
   getProgressionStatus: vi.fn(),
@@ -25,6 +28,10 @@ function ProviderWrapper({ children }: { children: ReactNode }) {
 describe("AppShellProgressionProvider", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(ensureUserSettings).mockResolvedValue({
+      success: true,
+      settings: { userId: "user-1", timezone: "Europe/Rome" },
+    });
     vi.mocked(getProgressionStatus).mockResolvedValue({
       success: true,
       status: "WARNING",
@@ -42,7 +49,8 @@ describe("AppShellProgressionProvider", () => {
     });
 
     await waitFor(() => {
-      expect(getProgressionStatus).toHaveBeenCalledWith(timezone);
+      expect(ensureUserSettings).toHaveBeenCalledWith(timezone);
+      expect(getProgressionStatus).toHaveBeenCalledWith();
       expect(result.current.hasProgressionDeadlineWarning).toBe(true);
     });
   });
@@ -74,6 +82,7 @@ describe("AppShellProgressionProvider", () => {
     });
 
     expect(getProgressionStatus).toHaveBeenCalledTimes(2);
+    expect(ensureUserSettings).toHaveBeenCalledTimes(2);
     expect(result.current.hasProgressionDeadlineWarning).toBe(true);
   });
 
@@ -92,6 +101,7 @@ describe("AppShellProgressionProvider", () => {
 
     expect(screen.getByText("Shell content")).toBeInTheDocument();
     await waitFor(() => {
+      expect(ensureUserSettings).toHaveBeenCalledOnce();
       expect(getProgressionStatus).toHaveBeenCalledOnce();
     });
   });

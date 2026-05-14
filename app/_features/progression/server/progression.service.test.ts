@@ -102,24 +102,18 @@ describe("progression.service", () => {
   it("ensures the profile through the Supabase RPC", async () => {
     const { ensureProgressionProfile } = await import("./progression.service");
     const supabase = createSupabase([], {
-      data: { user_id: userId, timezone: "Europe/Rome", total_xp: 0, level: 1 },
+      data: { user_id: userId, total_xp: 0, level: 1 },
       error: null,
     });
 
-    await expect(
-      ensureProgressionProfile(supabase as never, "Europe/Rome"),
-    ).resolves.toMatchObject({
+    await expect(ensureProgressionProfile(supabase as never)).resolves.toMatchObject({
       success: true,
-      profile: { timezone: "Europe/Rome" },
+      profile: { total_xp: 0 },
     });
-    expect(supabase.rpc).toHaveBeenCalledWith("progression_ensure_profile", {
-      p_timezone: "Europe/Rome",
-    });
+    expect(supabase.rpc).toHaveBeenCalledWith("progression_ensure_profile");
 
     supabase.rpc.mockResolvedValueOnce({ data: null, error: { message: "rpc failed" } });
-    await expect(
-      ensureProgressionProfile(supabase as never, "Europe/Rome"),
-    ).resolves.toEqual({
+    await expect(ensureProgressionProfile(supabase as never)).resolves.toEqual({
       success: false,
       error: "rpc failed",
     });
@@ -128,7 +122,8 @@ describe("progression.service", () => {
   it("loads overview data with profile, goals, actions, check-ins, deadlines and history", async () => {
     const { getProgressionOverview } = await import("./progression.service");
     const supabase = createSupabase([
-      { data: { user_id: userId, timezone: "Europe/Rome", total_xp: 10, level: 2 }, error: null },
+      { data: { user_id: userId, total_xp: 10, level: 2 }, error: null },
+      { data: { timezone: "Europe/Rome" }, error: null },
       { data: [openGoal], error: null },
       { data: [actionRow], error: null },
       {
@@ -172,6 +167,9 @@ describe("progression.service", () => {
         deadlineWarning: true,
       },
     });
+
+    expect(supabase.from).toHaveBeenNthCalledWith(1, "progression_profiles");
+    expect(supabase.from).toHaveBeenNthCalledWith(2, "user_settings");
   });
 
   it("treats legacy actions without a stored frequency type as daily", async () => {
@@ -182,7 +180,8 @@ describe("progression.service", () => {
     } as unknown as ProgressionActionRow;
 
     const supabase = createSupabase([
-      { data: { user_id: userId, timezone: "Europe/Rome", total_xp: 10, level: 2 }, error: null },
+      { data: { user_id: userId, total_xp: 10, level: 2 }, error: null },
+      { data: { timezone: "Europe/Rome" }, error: null },
       { data: [openGoal], error: null },
       { data: [legacyAction], error: null },
       { data: [], error: null },
@@ -195,6 +194,7 @@ describe("progression.service", () => {
     ).resolves.toMatchObject({
       success: true,
       today: {
+        timezone: "Europe/Rome",
         todayItems: [
           {
             id: actionId,
@@ -203,6 +203,8 @@ describe("progression.service", () => {
         ],
       },
     });
+
+    expect(supabase.from).toHaveBeenNthCalledWith(2, "user_settings");
   });
 
   it("loads goal details with action history metadata", async () => {
@@ -371,8 +373,10 @@ describe("progression.service", () => {
       "./progression.service"
     );
     const supabase = createSupabase([
+      { data: { user_id: userId, total_xp: 10, level: 2 }, error: null },
       { data: { timezone: "Europe/Rome" }, error: null },
       { data: { id: actionId, title: "Practice scales" }, error: null },
+      { data: { user_id: userId, total_xp: 10, level: 2 }, error: null },
       { data: { timezone: "Europe/Rome" }, error: null },
     ]);
     supabase.rpc

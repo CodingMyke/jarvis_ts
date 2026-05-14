@@ -1,7 +1,8 @@
 // @vitest-environment jsdom
 
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import React from "react";
+import { act } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { Button } from "@/app/design/atoms/shared/Button";
 import { AuthButton } from "@/app/design/molecules/auth/AuthButton";
@@ -11,6 +12,8 @@ import { SettingsTemplate } from "@/app/design/templates/settings/SettingsTempla
 const authUiMocks = vi.hoisted(() => ({
   searchParams: new URLSearchParams(),
   useAuth: vi.fn(),
+  getUserSettings: vi.fn(),
+  updateUserSettings: vi.fn(),
   getReelAutomationSettings: vi.fn(),
   updateReelAutomationSettings: vi.fn(),
 }));
@@ -48,6 +51,11 @@ vi.mock("@/app/_features/auth/hooks/useAuth", () => ({
   useAuth: authUiMocks.useAuth,
 }));
 
+vi.mock("@/app/_features/user-settings", () => ({
+  getUserSettings: authUiMocks.getUserSettings,
+  updateUserSettings: authUiMocks.updateUserSettings,
+}));
+
 vi.mock("@/app/_features/academy/reels", async () => {
   const actual = await vi.importActual<typeof import("@/app/_features/academy/reels")>(
     "@/app/_features/academy/reels",
@@ -73,6 +81,20 @@ describe("auth design", () => {
   beforeEach(() => {
     authUiMocks.searchParams = new URLSearchParams();
     authUiMocks.useAuth.mockReset();
+    authUiMocks.getUserSettings.mockResolvedValue({
+      success: true,
+      settings: {
+        userId: "user-1",
+        timezone: "Europe/Rome",
+      },
+    });
+    authUiMocks.updateUserSettings.mockResolvedValue({
+      success: true,
+      settings: {
+        userId: "user-1",
+        timezone: "America/New_York",
+      },
+    });
     authUiMocks.getReelAutomationSettings.mockResolvedValue({
       success: true,
       settings: {
@@ -172,7 +194,7 @@ describe("auth design", () => {
     expect(screen.getByRole("link", { name: "Accedi" })).toHaveAttribute("href", "/");
 
     const signOut = vi.fn();
-    authUiMocks.useAuth.mockReturnValueOnce({
+    authUiMocks.useAuth.mockReturnValue({
       isLoading: false,
       user: {
         email: "jarvis@example.com",
@@ -188,6 +210,7 @@ describe("auth design", () => {
     rerender(<SettingsTemplate />);
 
     expect(screen.getByText("Account Google")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Timezone" })).toBeInTheDocument();
     expect(screen.getByText("Integrazioni")).toBeInTheDocument();
     expect(screen.getByText("Jarvis User")).toBeInTheDocument();
     expect(screen.getByTitle("jarvis@example.com")).toBeInTheDocument();
@@ -199,9 +222,24 @@ describe("auth design", () => {
       "href",
       "/setup/calendar",
     );
+    await waitFor(() => {
+      expect(screen.getByLabelText("Timezone")).toHaveValue("Europe/Rome");
+    });
     expectNoLegacyRoundedUtility(screen.getByText("Account Google").closest("section") as HTMLElement);
+    expectNoLegacyRoundedUtility(screen.getByRole("heading", { name: "Timezone" }).closest("section") as HTMLElement);
     expectNoLegacyRoundedUtility(screen.getByText("Integrazioni").closest("section") as HTMLElement);
     expect(screen.queryByText("Reel automation")).not.toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText("Timezone"), {
+        target: { value: "America/New_York" },
+      });
+      fireEvent.click(screen.getByRole("button", { name: "Salva timezone" }));
+      await Promise.resolve();
+    });
+    expect(authUiMocks.updateUserSettings).toHaveBeenCalledWith({
+      timezone: "America/New_York",
+    });
 
     fireEvent.click(screen.getByRole("button", { name: "Esci" }));
     expect(signOut).toHaveBeenCalledOnce();

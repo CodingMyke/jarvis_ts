@@ -31,6 +31,7 @@ interface QueueJobLike {
 interface GenerationSettingsRowLike {
   user_id: string;
   config: unknown;
+  timezone?: string;
 }
 
 interface WorkerDeps {
@@ -98,7 +99,26 @@ const defaultDeps: WorkerDeps = {
   },
   async listSettings(supabase) {
     const { data } = await listGenerationSettingsRows(supabase);
-    return (data ?? []) as GenerationSettingsRowLike[];
+    const settingsRows = (data ?? []) as GenerationSettingsRowLike[];
+
+    if (settingsRows.length === 0) {
+      return settingsRows;
+    }
+
+    const { data: timezoneRows } = await supabase
+      .from("user_settings")
+      .select("user_id, timezone")
+      .in("user_id", settingsRows.map((row) => row.user_id));
+
+    const timezoneByUserId = new Map(
+      ((timezoneRows ?? []) as Array<{ user_id: string; timezone: string }>)
+        .map((row) => [row.user_id, row.timezone]),
+    );
+
+    return settingsRows.map((row) => ({
+      ...row,
+      timezone: timezoneByUserId.get(row.user_id),
+    }));
   },
   async listIdeaReelIds(supabase, userId) {
     const { data } = await listIdeaReelIdsByUser(supabase, userId);
@@ -141,7 +161,26 @@ function toSettings(config: unknown): { enabled: boolean; runTimes: string[] } {
   };
 }
 
-function toSlotIso(now: Date, runTime: string): string | null {
+function getTimePartsInTimezone(now: Date, timezone: string): Record<string, string> {
+  const formatter = new Intl.DateTimeFormat("en-CA", {
+    timeZone: timezone,
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  });
+
+  return Object.fromEntries(
+    formatter
+      .formatToParts(now)
+      .filter((part) => part.type !== "literal")
+      .map((part) => [part.type, part.value]),
+  );
+}
+
+function toSlotIso(now: Date, runTime: string, timezone: string): string | null {
   const [hourRaw, minuteRaw] = runTime.split(":");
   const hour = Number(hourRaw);
   const minute = Number(minuteRaw);
@@ -149,24 +188,42 @@ function toSlotIso(now: Date, runTime: string): string | null {
     return null;
   }
 
-  const slot = new Date(now);
+  const parts = getTimePartsInTimezone(now, timezone);
+  const year = Number(parts.year);
+  const month = Number(parts.month);
+  const day = Number(parts.day);
+
+  if (!Number.isInteger(year) || !Number.isInteger(month) || !Number.isInteger(day)) {
+    return null;
+  }
+
+  const targetLocalTimestamp = Date.UTC(year, month - 1, day, hour, minute, 0, 0);
+  let slot = new Date(targetLocalTimestamp);
+  const resolvedParts = getTimePartsInTimezone(slot, timezone);
+  const resolvedLocalTimestamp = Date.UTC(
+    Number(resolvedParts.year),
+    Number(resolvedParts.month) - 1,
+    Number(resolvedParts.day),
+    Number(resolvedParts.hour),
+    Number(resolvedParts.minute),
+    0,
+    0,
+  );
+
+  slot = new Date(slot.getTime() + (targetLocalTimestamp - resolvedLocalTimestamp));
   slot.setUTCSeconds(0, 0);
-  slot.setUTCHours(hour, minute, 0, 0);
   return slot.toISOString();
 }
 
-function isDueForRunTime(now: Date, runTime: string): boolean {
+function isDueForRunTime(now: Date, runTime: string, timezone: string): boolean {
   const [hourRaw, minuteRaw] = runTime.split(":");
-  const scheduledHour = Number(hourRaw);
-  const scheduledMinute = Number(minuteRaw);
-  if (!Number.isInteger(scheduledHour) || !Number.isInteger(scheduledMinute)) {
+  if (hourRaw === undefined || minuteRaw === undefined) {
     return false;
   }
 
-  const nowHour = now.getUTCHours();
-  const nowMinute = now.getUTCMinutes();
+  const parts = getTimePartsInTimezone(now, timezone);
 
-  return nowHour === scheduledHour && nowMinute === scheduledMinute;
+  return parts.hour === hourRaw && parts.minute === minuteRaw;
 }
 
 export async function enqueueScheduledIdeaReels(
@@ -185,6 +242,7 @@ export async function enqueueScheduledIdeaReels(
 
   for (const row of settingsRows) {
     const settings = toSettings(row.config);
+    const timezone = row.timezone ?? "UTC";
     if (!settings.enabled) {
       console.log("[reels-worker] skipping disabled user", {
         config: row.config,
@@ -194,7 +252,7 @@ export async function enqueueScheduledIdeaReels(
     }
 
     const dueRunTimes = settings.runTimes.filter((runTime) =>
-      isDueForRunTime(now, runTime),
+      isDueForRunTime(now, runTime, timezone),
     );
 
     console.log("[reels-worker] user with no due run times", {
@@ -233,7 +291,7 @@ export async function enqueueScheduledIdeaReels(
     });
 
     for (const runTime of dueRunTimes) {
-      const runAtIso = toSlotIso(now, runTime);
+      const runAtIso = toSlotIso(now, runTime, timezone);
       if (!runAtIso) {
         continue;
       }

@@ -12,7 +12,6 @@ import {
   createProgressionCheckin,
   createProgressionGoal,
   deleteProgressionGoal,
-  ensureProgressionProfile,
   getProgressionOverview,
   getProgressionXpHistory,
   resolveProgressionDeadline,
@@ -228,13 +227,7 @@ export const useProgressionStore = create<ProgressionStoreState>((set, get) => (
     set(setOverviewState(result.overview));
     return true;
   },
-  ensureProfile: async (timezone) => {
-    const result = await ensureProgressionProfile(timezone);
-    if (!result.success) {
-      set((state) => ({ ...state, status: "error", error: getErrorMessage(result) }));
-      return false;
-    }
-
+  ensureProfile: async () => {
     return get().refresh();
   },
   createGoal: async (input) => {

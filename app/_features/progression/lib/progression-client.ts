@@ -178,10 +178,9 @@ export async function getProgressionGoals(): Promise<
 }
 
 export async function getProgressionStatus(
-  timezone: string,
 ): Promise<ProgressionClientResult<ProgressionStatusResponse>> {
   return runProgressionRequest(
-    fetch("/api/progression/status", jsonRequest("POST", { timezone })),
+    fetch("/api/progression/status"),
     (data) => data.status ? { status: data.status } : null,
     "GET_PROGRESSION_STATUS_FAILED",
     "Progression status response is invalid.",
@@ -200,14 +199,12 @@ export async function getProgressionGoalDetails(
 }
 
 export async function ensureProgressionProfile(
-  timezone: string,
 ): Promise<ProgressionClientResult<{ profile: unknown }>> {
-  return runProgressionRequest(
-    fetch("/api/progression/profile", jsonRequest("POST", { timezone })),
-    (data) => data.profile !== undefined ? { profile: data.profile } : null,
-    "PROFILE_ENSURE_FAILED",
-    "Progression profile response is invalid.",
-  );
+  return Promise.resolve({
+    success: false,
+    error: "PROFILE_ENSURE_REMOVED",
+    errorMessage: "Progression profile ensure moved to server-only user settings bootstrap.",
+  });
 }
 
 export async function createProgressionGoal(

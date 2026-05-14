@@ -19,6 +19,7 @@ Authenticated users now land on a shared `/dashboard` shell.
 - **Progression system**: Supabase-backed goals, recurring actions, server-rendered daily/weekly visibility, XP history, leveling, and deadline review in `/progression`
 - **Academy reels board**: owner-scoped editorial Kanban in `/academy/reels` with quick idea capture, drawer editing, drag/drop status changes, hard delete confirmation, and a published-column cap with placeholder archive routes
 - **Academy reel AI generation v1**: manual field/global generation, per-user automation settings, DB-backed queue + run logs, and local worker execution
+- **User timezone settings**: `/settings` stores a per-user timezone preference used by progression and automation scheduling
 - **Authentication**: Google OAuth via Supabase; memory/calendar/tasks routes are session-protected
 - **UI**: thin App Router entrypoints, feature boundaries, markdown chat rendering, voice orb, shared app shell (`/dashboard` + sibling sections), dashboard calendar + ToDo blocks (explicit empty/error states), progression workspace + deadline warning, standalone legacy `/assistant`, standalone `/setup/calendar`
 
@@ -93,6 +94,7 @@ If `--linked` works, the project is ready for migrations, schema changes, and da
 3. **Academy**: `Accademia` expands in the shared sidebar and currently exposes `/academy/reels`, `/academy/courses`, and `/academy/reels/published`.
    Reel scope: statuses `idea`, `script`, `to_record`, `to_edit`, `ready`, `published`; drawer edit; manual AI generation (global/field) from drawer; settings in `/settings` for automation run times + editorial context.
 4. **Progression**: `/progression` shows XP level progress, due actions, weekly targets, goal filters, a lazy XP history sidebar, and a blocking deadline review only when expired goals exist.
+   Progression reads the current timezone from `user_settings`, not from the progression profile.
 5. **Start**: click the `Jarvis / Personal OS` logo box in the app-shell sidebar.
 6. **Activation**: the assistant enters wake-word mode (yellow border).
    Say "Jarvis" (or your configured wake word) to connect (cyan border).
@@ -151,11 +153,13 @@ npm run reels:worker        # Run local reel generation worker
 - The shared UI system now lives in `app/_shared/ui`, with semantic tokens in `app/_shared/ui/tokens` and reusable atoms/molecules/organisms exported from the same boundary.
 - `app/design` stays a composition layer for templates, page assemblies, and feature-facing UI composition on top of `app/_shared/ui`; it is no longer the source of truth for shared primitives.
 - Shared authenticated navigation lives in `app/(app-shell)` and exposes `/dashboard`, `/projects`, `/academy/reels`, `/academy/courses`, `/academy/reels/published`, `/reflections`, `/learning`, `/progression`, `/news`, and `/settings`.
+- `/settings` includes the per-user timezone preference used by progression day-boundaries and reel automation scheduling.
 - The Academy Reel workspace is owned by `app/_features/academy/reels` for domain/API logic and `app/design/templates/academy` + `app/design/organisms/academy` for the board UI.
 - The live assistant session is owned by `app/_features/assistant/runtime`, mounted once in `app/layout.tsx` through `VoiceChatRuntimeProvider`.
 - `useVoiceChat` is now a thin adapter over the runtime snapshot + commands instead of owning the session lifecycle.
 - Calendar/task refresh side effects stay in UI adapters (`AppShellAssistantProvider`, `useAssistantWorkspace`) through runtime `tool executed` subscriptions.
 - The progression flow is owned by `app/_features/progression`, with Supabase RPC-backed XP/check-in mutations, server-composed `/progression` sections for level/goals/today/deadlines, and client-only islands for edits, check-ins, deadline actions, and on-demand XP history.
+  Current-local calculations read the timezone from `app/_features/user-settings`.
 - `/assistant` stays available as a legacy standalone protected route and is not exposed in the main shell navigation.
 - `/setup/calendar` stays standalone + protected, discoverable from the `/settings` page (`Integrazioni` section).
 - API routes validate inputs with Zod and delegate business logic to feature handlers/services.

@@ -112,4 +112,33 @@ describe("reel-worker.service", () => {
     expect(enqueued).toBe(0);
     expect(insertScheduledJobs).not.toHaveBeenCalled();
   });
+
+  it("matches run times in the persisted user timezone", async () => {
+    const insertedJobs: Array<{ userId: string; reelId: string; runAt: string }> = [];
+
+    const enqueued = await enqueueScheduledIdeaReels({} as never, {
+      listJobs: vi.fn().mockResolvedValue([]),
+      listSettings: vi.fn().mockResolvedValue([
+        {
+          user_id: "user-1",
+          config: { enabled: true, runTimes: ["09:15"] },
+          timezone: "Europe/Rome",
+        },
+      ]),
+      listIdeaReelIds: vi.fn().mockResolvedValue(["reel-1"]),
+      listActiveQueueReelIds: vi.fn().mockResolvedValue([]),
+      hasJobForSlot: vi.fn().mockResolvedValue(false),
+      insertScheduledJobs: vi.fn(async (_supabase, jobs) => {
+        insertedJobs.push(...jobs);
+      }),
+      updateJob: vi.fn().mockResolvedValue({ error: null }),
+      generateGlobal: vi.fn().mockResolvedValue({ success: true }),
+      generateField: vi.fn().mockResolvedValue({ success: true }),
+      insertLog: vi.fn().mockResolvedValue(undefined),
+      now: () => new Date("2026-05-13T07:15:05.000Z"),
+    });
+
+    expect(enqueued).toBe(1);
+    expect(insertedJobs[0]?.runAt).toBe("2026-05-13T07:15:00.000Z");
+  });
 });
