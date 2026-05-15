@@ -2,6 +2,8 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
+> **Status note (2026-05-15):** Implementation and automated verification are complete on this branch. Commit-slice steps remain unchecked where the work was committed in a different shape than this plan suggested. Manual browser verification remains unchecked because it is not documented as completed.
+
 **Goal:** Move timezone ownership from `progression_profiles` to a new per-user `user_settings` table, auto-seed it once from the browser, expose it in `/settings`, and make progression plus reel scheduling read from the new source of truth.
 
 **Architecture:** Add a new `app/_features/user-settings` boundary with schemas, service, route handlers, and client helpers. Roll out the DB migration, generated Supabase types, settings UI, progression refactor, and reel scheduler refactor in one implementation pass while preserving historical timezone snapshots on check-ins.
@@ -65,7 +67,7 @@
 - Modify: `app/_server/supabase/database.types.ts`
 - Test/Verify: generated type output and migration SQL review
 
-- [ ] **Step 1: Create the migration file**
+- [x] **Step 1: Create the migration file**
 
 Run:
 
@@ -79,7 +81,7 @@ Expected: a new file appears under `supabase/migrations/` and is renamed or edit
 supabase/migrations/20260513010000_move_timezone_to_user_settings.sql
 ```
 
-- [ ] **Step 2: Write the migration SQL**
+- [x] **Step 2: Write the migration SQL**
 
 Put this structure into `supabase/migrations/20260513010000_move_timezone_to_user_settings.sql`:
 
@@ -142,7 +144,7 @@ alter table public.progression_profiles
 
 Also update every SQL function inside the same migration file chain that still calls `public.progression_ensure_profile('UTC')` or expects a `p_timezone` profile seed so they now call `public.progression_ensure_profile()` with no argument.
 
-- [ ] **Step 3: Update the progression RPC signatures inside the generated types**
+- [x] **Step 3: Update the progression RPC signatures inside the generated types**
 
 After applying the migration locally or against the linked project, regenerate types:
 
@@ -190,7 +192,7 @@ progression_ensure_profile: {
   Args: Record<PropertyKey, never>
 ```
 
-- [ ] **Step 4: Verify the generated type diff**
+- [x] **Step 4: Verify the generated type diff**
 
 Run:
 
@@ -225,7 +227,7 @@ git commit -m "feat: move timezone ownership to user settings"
 - Create: `app/_features/user-settings/server/user-settings-route.handlers.ts`
 - Create: `app/_features/user-settings/server/user-settings-route.handlers.test.ts`
 
-- [ ] **Step 1: Write the failing service and client tests**
+- [x] **Step 1: Write the failing service and client tests**
 
 Create `app/_features/user-settings/server/user-settings.service.test.ts`:
 
@@ -336,7 +338,7 @@ describe("user-settings client", () => {
 });
 ```
 
-- [ ] **Step 2: Run the failing tests**
+- [x] **Step 2: Run the failing tests**
 
 Run:
 
@@ -346,7 +348,7 @@ npm run test -- app/_features/user-settings/server/user-settings.service.test.ts
 
 Expected: FAIL because the feature files do not exist yet.
 
-- [ ] **Step 3: Implement schemas, service, handlers, and client**
+- [x] **Step 3: Implement schemas, service, handlers, and client**
 
 Create `app/_features/user-settings/lib/user-settings.schemas.ts`:
 
@@ -507,7 +509,7 @@ export * from "./server/user-settings-route.schemas";
 export * from "./server/user-settings.service";
 ```
 
-- [ ] **Step 4: Re-run the feature tests**
+- [x] **Step 4: Re-run the feature tests**
 
 Run:
 
@@ -535,7 +537,7 @@ git commit -m "feat: add user settings feature boundary"
 - Modify: `app/design/organisms/auth/SettingsPanel.tsx`
 - Modify: `app/design/auth-ui.test.tsx`
 
-- [ ] **Step 1: Write the failing route/UI/bootstrap tests**
+- [x] **Step 1: Write the failing route/UI/bootstrap tests**
 
 Add route-handler assertions to `app/_features/user-settings/server/user-settings-route.handlers.test.ts`:
 
@@ -589,7 +591,7 @@ expect(authUiMocks.updateUserSettings).toHaveBeenCalledWith({
 });
 ```
 
-- [ ] **Step 2: Run the failing tests**
+- [x] **Step 2: Run the failing tests**
 
 Run:
 
@@ -599,7 +601,7 @@ npm run test -- app/design/templates/app-shell/AppShellProgressionProvider.test.
 
 Expected: FAIL because the route and UI do not use user settings yet.
 
-- [ ] **Step 3: Implement the route and UI/bootstrap changes**
+- [x] **Step 3: Implement the route and UI/bootstrap changes**
 
 Create `app/api/user/settings/route.ts`:
 
@@ -725,7 +727,7 @@ And render:
 </AppPanel>
 ```
 
-- [ ] **Step 4: Re-run the route/UI/bootstrap tests**
+- [x] **Step 4: Re-run the route/UI/bootstrap tests**
 
 Run:
 
@@ -758,7 +760,7 @@ git commit -m "feat: add timezone settings API and UI"
 - Modify: `app/api/progression/profile/route.ts`
 - Modify: `app/api/progression/status/route.ts`
 
-- [ ] **Step 1: Write the failing progression tests for the new source of truth**
+- [x] **Step 1: Write the failing progression tests for the new source of truth**
 
 Update `app/_features/progression/server/progression.service.test.ts` to mock a `user_settings` lookup instead of reading `profile.timezone`:
 
@@ -794,7 +796,7 @@ const removedEnsure = await ensureProgressionProfile("Europe/Rome");
 expect(removedEnsure.success).toBe(false);
 ```
 
-- [ ] **Step 2: Run the failing progression tests**
+- [x] **Step 2: Run the failing progression tests**
 
 Run:
 
@@ -804,7 +806,7 @@ npm run test -- app/_features/progression/server/progression.service.test.ts app
 
 Expected: FAIL because progression still depends on request/body timezone and `progression_profiles.timezone`.
 
-- [ ] **Step 3: Implement the progression refactor**
+- [x] **Step 3: Implement the progression refactor**
 
 In `app/_features/progression/server/progression.service.ts`, add a helper:
 
@@ -941,7 +943,7 @@ export async function getProgressionStatus(): Promise<ProgressionClientResult<Pr
 
 And delete the exported `ensureProgressionProfile` client helper.
 
-- [ ] **Step 4: Re-run the progression tests**
+- [x] **Step 4: Re-run the progression tests**
 
 Run:
 
@@ -966,7 +968,7 @@ git commit -m "refactor: read progression timezone from user settings"
 - Modify: `app/_features/academy/reels/server/reel-worker.service.ts`
 - Modify: `app/_features/academy/reels/server/reel-worker.service.test.ts`
 
-- [ ] **Step 1: Write the failing scheduler test**
+- [x] **Step 1: Write the failing scheduler test**
 
 Add this test to `app/_features/academy/reels/server/reel-worker.service.test.ts`:
 
@@ -1001,7 +1003,7 @@ it("matches run times in the persisted user timezone", async () => {
 });
 ```
 
-- [ ] **Step 2: Run the failing scheduler test**
+- [x] **Step 2: Run the failing scheduler test**
 
 Run:
 
@@ -1011,7 +1013,7 @@ npm run test -- app/_features/academy/reels/server/reel-worker.service.test.ts
 
 Expected: FAIL because the worker currently compares run times in UTC only.
 
-- [ ] **Step 3: Refactor the worker to use persisted user timezone**
+- [x] **Step 3: Refactor the worker to use persisted user timezone**
 
 Update the row shape in `app/_features/academy/reels/server/reel-worker.service.ts`:
 
@@ -1067,7 +1069,7 @@ const dueRunTimes = settings.runTimes.filter((runTime) =>
 
 If you need to compute the stored `run_at`, derive the UTC instant for that user-local slot before inserting jobs and keep the de-duplication check using that UTC timestamp.
 
-- [ ] **Step 4: Re-run the worker tests**
+- [x] **Step 4: Re-run the worker tests**
 
 Run:
 
@@ -1092,7 +1094,7 @@ git commit -m "feat: use user timezone for reel scheduling"
 - Modify: `README.md`
 - Modify: `docs/progression-system-spec.md`
 
-- [ ] **Step 1: Update the documentation**
+- [x] **Step 1: Update the documentation**
 
 In `docs/progression-system-spec.md`, replace progression-owned timezone text with user-settings-owned timezone text. Update sections like:
 
@@ -1114,7 +1116,7 @@ In `README.md`, add one short note in the settings/app-shell/progression section
 - `/settings` now includes the per-user timezone preference used by progression and automation scheduling.
 ```
 
-- [ ] **Step 2: Run targeted tests for all touched areas**
+- [x] **Step 2: Run targeted tests for all touched areas**
 
 Run:
 
@@ -1124,7 +1126,7 @@ npm run test -- app/_features/user-settings/server/user-settings.service.test.ts
 
 Expected: PASS.
 
-- [ ] **Step 3: Run lint and typecheck**
+- [x] **Step 3: Run lint and typecheck**
 
 Run:
 
@@ -1151,7 +1153,7 @@ Manual checks:
 - open `/progression` and confirm today/deadline behavior still loads
 - let the app shell mount and confirm no errors when it seeds or reads timezone
 
-- [ ] **Step 5: Commit docs and verification-ready state**
+- [x] **Step 5: Commit docs and verification-ready state**
 
 ```bash
 git add README.md docs/progression-system-spec.md
