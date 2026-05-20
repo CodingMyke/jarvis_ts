@@ -3,6 +3,9 @@ import type { Database } from "@/app/_server/supabase/database.types";
 import type { ReelInsert, ReelUpdate } from "../lib/reel-board.types";
 
 type ReelSupabaseClient = SupabaseClient<Database>;
+type TransitionEventInsert =
+  Database["public"]["Tables"]["academy_reel_transition_events"]["Insert"];
+type RejectedIdeaInsert = Database["public"]["Tables"]["academy_reel_rejected_ideas"]["Insert"];
 
 export async function listReelsByUser(supabase: ReelSupabaseClient, userId: string) {
   return supabase
@@ -59,4 +62,18 @@ export async function deleteReelById(supabase: ReelSupabaseClient, userId: strin
     .eq("id", reelId)
     .select("id")
     .maybeSingle();
+}
+
+export async function insertTransitionEvent(
+  supabase: ReelSupabaseClient,
+  input: TransitionEventInsert,
+) {
+  return supabase.from("academy_reel_transition_events").insert(input).select("id").single();
+}
+
+export async function saveRejectedIdeaSnapshot(
+  supabase: ReelSupabaseClient,
+  input: RejectedIdeaInsert,
+) {
+  return supabase.from("academy_reel_rejected_ideas").insert(input).select("id").single();
 }

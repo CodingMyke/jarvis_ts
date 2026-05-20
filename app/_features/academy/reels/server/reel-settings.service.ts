@@ -17,17 +17,57 @@ interface SettingsSuccess {
   settings: ReelAutomationSettings;
 }
 
-const DEFAULT_REEL_AUTOMATION_SETTINGS: ReelAutomationSettings = {
-  enabled: false,
-  runTimes: [],
-  editorialContext: null,
+export const DEFAULT_REEL_AUTOMATION_SETTINGS: ReelAutomationSettings = {
+  reelScripting: {
+    enabled: false,
+    runTimes: [],
+    scriptingContext: null,
+  },
+  reelIdeaGeneration: {
+    enabled: false,
+    runTimes: [],
+    ideasPerRun: 3,
+    maxPendingAiIdeas: 10,
+    latestPublishedReelsCount: 3,
+    ideaGenerationContext: null,
+  },
 };
 
 function getErrorMessage(error: { message?: string } | null, fallback: string): string {
   return error?.message ?? fallback;
 }
 
-function toSettings(config: unknown): ReelAutomationSettings {
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function toLegacySettings(config: Record<string, unknown>): ReelAutomationSettings {
+  const parsed = reelAutomationSettingsSchema.safeParse({
+    reelScripting: {
+      enabled: config.enabled,
+      runTimes: config.runTimes,
+      scriptingContext: config.editorialContext,
+    },
+    reelIdeaGeneration: DEFAULT_REEL_AUTOMATION_SETTINGS.reelIdeaGeneration,
+  });
+
+  if (parsed.success) {
+    return parsed.data;
+  }
+
+  return DEFAULT_REEL_AUTOMATION_SETTINGS;
+}
+
+export function normalizeReelAutomationSettings(config: unknown): ReelAutomationSettings {
+  if (
+    isRecord(config) &&
+    ("enabled" in config || "runTimes" in config || "editorialContext" in config) &&
+    !("reelScripting" in config) &&
+    !("reelIdeaGeneration" in config)
+  ) {
+    return toLegacySettings(config);
+  }
+
   const parsed = reelAutomationSettingsSchema.safeParse(config ?? {});
   if (parsed.success) {
     return parsed.data;
@@ -59,7 +99,7 @@ export async function getReelAutomationSettings(
 
   return {
     success: true,
-    settings: toSettings((data as { config?: unknown }).config),
+    settings: normalizeReelAutomationSettings((data as { config?: unknown }).config),
   };
 }
 
@@ -90,6 +130,6 @@ export async function updateReelAutomationSettings(
 
   return {
     success: true,
-    settings: toSettings((data as { config?: unknown }).config),
+    settings: normalizeReelAutomationSettings((data as { config?: unknown }).config),
   };
 }

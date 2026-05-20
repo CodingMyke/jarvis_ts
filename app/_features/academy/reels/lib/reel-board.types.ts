@@ -1,7 +1,8 @@
 import type { Database } from "@/app/_server/supabase/database.types";
-import { REEL_BOARD_STATUSES } from "./reel-board.constants";
+import { REEL_BOARD_STATUSES, REEL_ORIGINS } from "./reel-board.constants";
 
 export type ReelStatus = (typeof REEL_BOARD_STATUSES)[number];
+export type ReelOrigin = (typeof REEL_ORIGINS)[number];
 
 export type ReelRow = Database["public"]["Tables"]["academy_reels"]["Row"];
 export type ReelInsert = Database["public"]["Tables"]["academy_reels"]["Insert"];
@@ -16,6 +17,7 @@ export interface ReelBoard {
 
 export const EMPTY_REEL_BOARD: ReelBoard = {
   columns: {
+    ai_idea: [],
     idea: [],
     script: [],
     to_record: [],

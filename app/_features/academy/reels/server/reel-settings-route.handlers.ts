@@ -1,6 +1,7 @@
 import type { AuthContext } from "@/app/_server/http/auth";
 import { jsonError, jsonOk } from "@/app/_server/http/responses";
 import { getZodErrorMessage } from "@/app/_server/http/zod";
+import type { ReelAutomationSettings, ReelIdeaGenerationSettings, ReelScriptingSettings } from "../lib/reel-generation.types";
 import { reelSettingsPatchBodySchema } from "./reel-settings-route.schemas";
 import { getReelAutomationSettings, updateReelAutomationSettings } from "./reel-settings.service";
 
@@ -9,6 +10,27 @@ function toServiceErrorResponse(result: { error: string; message: string }) {
     error: result.error,
     message: result.message,
   });
+}
+
+type ReelAutomationSettingsPatch = {
+  reelScripting?: Partial<ReelScriptingSettings>;
+  reelIdeaGeneration?: Partial<ReelIdeaGenerationSettings>;
+};
+
+function mergeSettingsPatch(
+  current: ReelAutomationSettings,
+  patch: ReelAutomationSettingsPatch,
+): ReelAutomationSettings {
+  return {
+    reelScripting: {
+      ...current.reelScripting,
+      ...patch.reelScripting,
+    },
+    reelIdeaGeneration: {
+      ...current.reelIdeaGeneration,
+      ...patch.reelIdeaGeneration,
+    },
+  };
 }
 
 export async function handleGetReelAutomationSettings(auth: AuthContext) {
@@ -40,10 +62,7 @@ export async function handlePatchReelAutomationSettings(auth: AuthContext, body:
     return toServiceErrorResponse(current);
   }
 
-  const merged = {
-    ...current.settings,
-    ...parsedPatch.data,
-  };
+  const merged = mergeSettingsPatch(current.settings, parsedPatch.data);
 
   const updated = await updateReelAutomationSettings(auth.supabase, auth.userId, merged);
 
@@ -56,4 +75,3 @@ export async function handlePatchReelAutomationSettings(auth: AuthContext, body:
     settings: updated.settings,
   });
 }
-

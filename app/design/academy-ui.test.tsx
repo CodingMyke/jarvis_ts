@@ -19,6 +19,7 @@ const academyUiMocks = vi.hoisted(() => ({
   updateReelStatus: vi.fn(),
   generateReelFields: vi.fn(),
   generateReelField: vi.fn(),
+  fetch: vi.fn(),
 }));
 
 vi.mock("next/navigation", () => ({
@@ -57,11 +58,32 @@ function expectNoLegacyRoundedUtility(element: HTMLElement) {
 
 const boardFixture: ReelBoard = {
   columns: {
+    ai_idea: [
+      {
+        id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+        user_id: "22222222-2222-4222-8222-222222222222",
+        status: "ai_idea",
+        origin: "ai_idea_generation",
+        idea: "AI generated candidate",
+        title: "AI generated candidate",
+        caption: null,
+        body: null,
+        hashtags: null,
+        generation_status: "not_generated",
+        notes: null,
+        scheduled_at: null,
+        published_at: null,
+        last_idea_generation_run_id: "99999999-9999-4999-8999-999999999999",
+        created_at: "2026-05-11T07:00:00.000Z",
+        updated_at: "2026-05-11T07:00:00.000Z",
+      },
+    ],
     idea: [
       {
         id: "11111111-1111-4111-8111-111111111111",
         user_id: "22222222-2222-4222-8222-222222222222",
         status: "idea",
+        origin: "manual",
         idea: "First draft idea",
         title: null,
         caption: null,
@@ -71,6 +93,7 @@ const boardFixture: ReelBoard = {
         notes: null,
         scheduled_at: null,
         published_at: null,
+        last_idea_generation_run_id: null,
         created_at: "2026-05-11T08:00:00.000Z",
         updated_at: "2026-05-11T08:00:00.000Z",
       },
@@ -84,6 +107,7 @@ const boardFixture: ReelBoard = {
         id: "33333333-3333-4333-8333-333333333331",
         user_id: "22222222-2222-4222-8222-222222222222",
         status: "published",
+        origin: "manual",
         idea: "Published one",
         title: "Published one",
         caption: null,
@@ -93,6 +117,7 @@ const boardFixture: ReelBoard = {
         notes: null,
         scheduled_at: null,
         published_at: "2026-05-10T10:00:00.000Z",
+        last_idea_generation_run_id: null,
         created_at: "2026-05-10T09:00:00.000Z",
         updated_at: "2026-05-10T10:00:00.000Z",
       },
@@ -100,6 +125,7 @@ const boardFixture: ReelBoard = {
         id: "33333333-3333-4333-8333-333333333332",
         user_id: "22222222-2222-4222-8222-222222222222",
         status: "published",
+        origin: "manual",
         idea: "Published two",
         title: "Published two",
         caption: null,
@@ -109,6 +135,7 @@ const boardFixture: ReelBoard = {
         notes: null,
         scheduled_at: null,
         published_at: "2026-05-09T10:00:00.000Z",
+        last_idea_generation_run_id: null,
         created_at: "2026-05-09T09:00:00.000Z",
         updated_at: "2026-05-09T10:00:00.000Z",
       },
@@ -116,6 +143,7 @@ const boardFixture: ReelBoard = {
         id: "33333333-3333-4333-8333-333333333333",
         user_id: "22222222-2222-4222-8222-222222222222",
         status: "published",
+        origin: "manual",
         idea: "Published three",
         title: "Published three",
         caption: null,
@@ -125,6 +153,7 @@ const boardFixture: ReelBoard = {
         notes: null,
         scheduled_at: null,
         published_at: "2026-05-08T10:00:00.000Z",
+        last_idea_generation_run_id: null,
         created_at: "2026-05-08T09:00:00.000Z",
         updated_at: "2026-05-08T10:00:00.000Z",
       },
@@ -132,6 +161,7 @@ const boardFixture: ReelBoard = {
         id: "33333333-3333-4333-8333-333333333334",
         user_id: "22222222-2222-4222-8222-222222222222",
         status: "published",
+        origin: "manual",
         idea: "Published four",
         title: "Published four",
         caption: null,
@@ -141,21 +171,28 @@ const boardFixture: ReelBoard = {
         notes: null,
         scheduled_at: null,
         published_at: "2026-05-07T10:00:00.000Z",
+        last_idea_generation_run_id: null,
         created_at: "2026-05-07T09:00:00.000Z",
         updated_at: "2026-05-07T10:00:00.000Z",
       },
     ],
   },
-  count: 5,
+  count: 6,
 };
 
 describe("academy design", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.stubGlobal("fetch", academyUiMocks.fetch);
     academyUiMocks.getAuthContext.mockResolvedValue(null);
     academyUiMocks.getServerReelBoard.mockResolvedValue({
       success: true,
       board: boardFixture,
+    });
+    academyUiMocks.fetch.mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({ success: true, board: boardFixture }),
     });
   });
 
@@ -198,7 +235,29 @@ describe("academy design", () => {
       screen.getByRole("heading", { name: "Reel board" }).closest("section") as HTMLElement,
     );
     expect(screen.getAllByText("First draft idea")).toHaveLength(1);
+    expect(screen.getByRole("heading", { name: "AI Idea" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Generate AI ideas" })).toBeInTheDocument();
     expect(academyUiMocks.getServerReelBoard).toHaveBeenCalledWith({}, "user-1");
+  });
+
+  it("shows a clear error when manual idea generation is already running", async () => {
+    academyUiMocks.fetch.mockResolvedValueOnce({
+      ok: false,
+      status: 409,
+      json: async () => ({
+        success: false,
+        error: "FLOW_ALREADY_RUNNING",
+        message: "Idea generation already running",
+      }),
+    });
+
+    render(<ReelBoardTemplate initialBoard={boardFixture} />);
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Generate AI ideas" }));
+    });
+
+    expect(await screen.findByText("Idea generation already running")).toBeInTheDocument();
   });
 
   it("renders an explicit courses placeholder", async () => {
@@ -232,6 +291,7 @@ describe("academy design", () => {
         id: "44444444-4444-4444-8444-444444444444",
         user_id: "22222222-2222-4222-8222-222222222222",
         status: "idea",
+        origin: "manual",
         idea: "Created idea",
         title: null,
         caption: null,
@@ -241,6 +301,7 @@ describe("academy design", () => {
         notes: null,
         scheduled_at: null,
         published_at: null,
+        last_idea_generation_run_id: null,
         created_at: "2026-05-11T12:00:00.000Z",
         updated_at: "2026-05-11T12:00:00.000Z",
       },
@@ -323,6 +384,9 @@ describe("academy design", () => {
     expect(await screen.findByText("Updated title")).toBeInTheDocument();
     expect(screen.queryByText("idea")).not.toBeInTheDocument();
     expect(within(draftCard).queryByRole("button", { name: "Edit" })).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId("reel-card-aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa"));
+    expect(screen.getByRole("button", { name: "Approve" })).toBeInTheDocument();
 
     fireEvent.dragStart(draftCard);
     await act(async () => {

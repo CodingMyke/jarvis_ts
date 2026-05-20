@@ -7,6 +7,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { Button } from "@/app/design/atoms/shared/Button";
 import { AuthButton } from "@/app/design/molecules/auth/AuthButton";
 import { LoginTemplate } from "@/app/design/templates/auth/LoginTemplate";
+import { ReelAutomationSettingsPanel } from "@/app/design/organisms/settings/ReelAutomationSettingsPanel";
 import { SettingsTemplate } from "@/app/design/templates/settings/SettingsTemplate";
 
 const authUiMocks = vi.hoisted(() => ({
@@ -98,17 +99,37 @@ describe("auth design", () => {
     authUiMocks.getReelAutomationSettings.mockResolvedValue({
       success: true,
       settings: {
-        enabled: true,
-        runTimes: ["09:00", "17:00"],
-        editorialContext: "Current campaign context",
+        reelScripting: {
+          enabled: true,
+          runTimes: ["09:00", "17:00"],
+          scriptingContext: "Current campaign context",
+        },
+        reelIdeaGeneration: {
+          enabled: true,
+          runTimes: ["10:00", "18:00"],
+          ideasPerRun: 3,
+          maxPendingAiIdeas: 10,
+          latestPublishedReelsCount: 3,
+          ideaGenerationContext: "Idea generation context",
+        },
       },
     });
     authUiMocks.updateReelAutomationSettings.mockResolvedValue({
       success: true,
       settings: {
-        enabled: true,
-        runTimes: ["09:00", "17:00"],
-        editorialContext: "Current campaign context",
+        reelScripting: {
+          enabled: true,
+          runTimes: ["09:00", "17:00"],
+          scriptingContext: "Current campaign context",
+        },
+        reelIdeaGeneration: {
+          enabled: true,
+          runTimes: ["10:00", "18:00"],
+          ideasPerRun: 3,
+          maxPendingAiIdeas: 10,
+          latestPublishedReelsCount: 3,
+          ideaGenerationContext: "Idea generation context",
+        },
       },
     });
   });
@@ -266,5 +287,33 @@ describe("auth design", () => {
     expect(screen.getByRole("button", { name: "Secondario" }).className).toContain("bg-surface");
     expect(screen.getByRole("button", { name: "Secondario" }).className).toContain("border-line");
     expect(screen.getByRole("button", { name: "Recording" })).toBeInTheDocument();
+  });
+
+  it("shows separate settings cards for scripting and idea generation with one save button", async () => {
+    render(<ReelAutomationSettingsPanel />);
+
+    expect(await screen.findByText("Reel scripting")).toBeInTheDocument();
+    expect(screen.getByText("Reel idea generation")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Save reel automation" })).toBeInTheDocument();
+  });
+
+  it("shows a 10-minute validation error for idea generation run times in the form", async () => {
+    render(<ReelAutomationSettingsPanel />);
+
+    const input = await screen.findByLabelText("Idea generation run times");
+    fireEvent.change(input, { target: { value: "09:00, 09:05" } });
+    fireEvent.click(screen.getByRole("button", { name: "Save reel automation" }));
+
+    expect(await screen.findByText(/at least 10 minutes apart/i)).toBeInTheDocument();
+  });
+
+  it("preserves idea generation numeric defaults when a required field is cleared", async () => {
+    render(<ReelAutomationSettingsPanel />);
+
+    const ideasPerRun = (await screen.findByLabelText("Ideas per run")) as HTMLInputElement;
+    fireEvent.change(ideasPerRun, { target: { value: "" } });
+    fireEvent.blur(ideasPerRun);
+
+    expect(ideasPerRun.value).toBe("3");
   });
 });

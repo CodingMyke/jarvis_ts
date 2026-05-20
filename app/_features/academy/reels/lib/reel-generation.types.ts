@@ -13,10 +13,24 @@ export type ReelGenerationTargetField = (typeof REEL_GENERATION_TARGET_FIELDS)[n
 export type ReelGenerationQueueJobStatus = (typeof REEL_GENERATION_QUEUE_JOB_STATUSES)[number];
 export type ReelGenerationRunLogStatus = (typeof REEL_GENERATION_RUN_LOG_STATUSES)[number];
 
-export interface ReelAutomationSettings {
+export interface ReelScriptingSettings {
   enabled: boolean;
   runTimes: string[];
-  editorialContext: string | null;
+  scriptingContext: string | null;
+}
+
+export interface ReelIdeaGenerationSettings {
+  enabled: boolean;
+  runTimes: string[];
+  ideasPerRun: number;
+  maxPendingAiIdeas: number;
+  latestPublishedReelsCount: number;
+  ideaGenerationContext: string | null;
+}
+
+export interface ReelAutomationSettings {
+  reelScripting: ReelScriptingSettings;
+  reelIdeaGeneration: ReelIdeaGenerationSettings;
 }
 
 export type ReelGenerationSettingsRow =
@@ -27,8 +41,17 @@ export type ReelGenerationRunLogRow =
   Database["public"]["Tables"]["academy_reel_generation_run_logs"]["Row"];
 
 export type ReelGenerationSettingsConfig = Json & {
-  enabled?: boolean;
-  runTimes?: unknown;
-  editorialContext?: unknown;
+  reelScripting?: {
+    enabled?: boolean;
+    runTimes?: unknown;
+    scriptingContext?: unknown;
+  };
+  reelIdeaGeneration?: {
+    enabled?: boolean;
+    runTimes?: unknown;
+    ideasPerRun?: unknown;
+    maxPendingAiIdeas?: unknown;
+    latestPublishedReelsCount?: unknown;
+    ideaGenerationContext?: unknown;
+  };
 };
-

@@ -37,7 +37,21 @@ function getMissingFields(reel: ReelRow): ReelGenerationTargetField[] {
 function toSettings(config: unknown): ReelAutomationSettings {
   const parsed = reelAutomationSettingsSchema.safeParse(config ?? {});
   if (parsed.success) return parsed.data;
-  return { enabled: false, runTimes: [], editorialContext: null };
+  return {
+    reelScripting: {
+      enabled: false,
+      runTimes: [],
+      scriptingContext: null,
+    },
+    reelIdeaGeneration: {
+      enabled: false,
+      runTimes: [],
+      ideasPerRun: 3,
+      maxPendingAiIdeas: 10,
+      latestPublishedReelsCount: 3,
+      ideaGenerationContext: null,
+    },
+  };
 }
 
 function createOutputSchema(targetFields: ReelGenerationTargetField[]) {
@@ -83,7 +97,7 @@ export async function generateReelFields(
   const prompt = buildReelGenerationPrompt({
     reel,
     targetFields,
-    editorialContext: settings.editorialContext,
+    editorialContext: settings.reelScripting.scriptingContext,
   });
 
   await insertRunLog(supabase, userId, {
@@ -175,7 +189,7 @@ export async function generateReelField(
   const prompt = buildReelGenerationPrompt({
     reel,
     targetFields,
-    editorialContext: settings.editorialContext,
+    editorialContext: settings.reelScripting.scriptingContext,
   });
 
   await insertRunLog(supabase, userId, {

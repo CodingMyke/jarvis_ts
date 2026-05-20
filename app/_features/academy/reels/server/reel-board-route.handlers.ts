@@ -2,6 +2,7 @@ import type { AuthContext } from "@/app/_server/http/auth";
 import { jsonError, jsonOk } from "@/app/_server/http/responses";
 import { getZodErrorMessage } from "@/app/_server/http/zod";
 import {
+  approveAiIdea,
   createReel,
   deleteReel,
   getReelBoard,
@@ -11,12 +12,16 @@ import {
 import {
   reelCreateBodySchema,
   reelIdParamsSchema,
+  reelApproveBodySchema,
   reelUpdateBodySchema,
   reelUpdateStatusBodySchema,
 } from "./reel-board-route.schemas";
 
 function toServiceErrorResponse(result: { error: string; message: string }) {
-  return jsonError(result.error === "NOT_FOUND" ? 404 : 500, {
+  const status =
+    result.error === "INVALID_STATUS_TRANSITION" ? 400 : result.error === "NOT_FOUND" ? 404 : 500;
+
+  return jsonError(status, {
     error: result.error,
     message: result.message,
   });
@@ -124,6 +129,37 @@ export async function handleUpdateReelStatus(auth: AuthContext, reelId: string, 
     parsedReelId.data.reelId,
     parsedBody.data,
   );
+
+  if (!result.success) {
+    return toServiceErrorResponse(result);
+  }
+
+  return jsonOk({
+    success: true,
+    reel: result.reel,
+  });
+}
+
+export async function handleApproveAiIdea(auth: AuthContext, reelId: string, body: unknown) {
+  const parsedReelId = parseReelId(reelId);
+
+  if (!parsedReelId.success) {
+    return jsonError(400, {
+      error: "INVALID_PARAMS",
+      message: getZodErrorMessage(parsedReelId.error),
+    });
+  }
+
+  const parsedBody = reelApproveBodySchema.safeParse(body ?? {});
+
+  if (!parsedBody.success) {
+    return jsonError(400, {
+      error: "INVALID_PAYLOAD",
+      message: getZodErrorMessage(parsedBody.error),
+    });
+  }
+
+  const result = await approveAiIdea(auth.supabase, auth.userId, parsedReelId.data.reelId, parsedBody.data);
 
   if (!result.success) {
     return toServiceErrorResponse(result);

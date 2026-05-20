@@ -1,12 +1,15 @@
 "use client";
 
-import { startTransition, useMemo, useState } from "react";
+import { startTransition, useEffect, useMemo, useRef, useState } from "react";
 import {
   EMPTY_REEL_BOARD,
+  approveAiIdea as approveAiIdeaRequest,
   createReel,
   deleteReel,
   generateReelField,
   generateReelFields,
+  getReelBoard,
+  reelBoardSchema,
   updateReel,
   updateReelStatus,
 } from "@/app/_features/academy/reels";
@@ -21,10 +24,13 @@ function sortColumn(reels: ReelRow[]): ReelRow[] {
   return [...reels].sort((left, right) => right.updated_at.localeCompare(left.updated_at));
 }
 
+const APPROVE_AI_IDEA_EVENT = "reel:approve-ai-idea";
+
 function normalizeBoard(board: ReelBoard): ReelBoard {
   return {
     count: board.count,
     columns: {
+      ai_idea: sortColumn(board.columns.ai_idea),
       idea: sortColumn(board.columns.idea),
       script: sortColumn(board.columns.script),
       to_record: sortColumn(board.columns.to_record),
@@ -37,6 +43,7 @@ function normalizeBoard(board: ReelBoard): ReelBoard {
 
 function replaceReel(board: ReelBoard, nextReel: ReelRow): ReelBoard {
   const columns = {
+    ai_idea: board.columns.ai_idea.filter((reel) => reel.id !== nextReel.id),
     idea: board.columns.idea.filter((reel) => reel.id !== nextReel.id),
     script: board.columns.script.filter((reel) => reel.id !== nextReel.id),
     to_record: board.columns.to_record.filter((reel) => reel.id !== nextReel.id),
@@ -55,6 +62,7 @@ function replaceReel(board: ReelBoard, nextReel: ReelRow): ReelBoard {
 
 function removeReel(board: ReelBoard, reelId: string): ReelBoard {
   const columns = {
+    ai_idea: board.columns.ai_idea.filter((reel) => reel.id !== reelId),
     idea: board.columns.idea.filter((reel) => reel.id !== reelId),
     script: board.columns.script.filter((reel) => reel.id !== reelId),
     to_record: board.columns.to_record.filter((reel) => reel.id !== reelId),
@@ -77,6 +85,7 @@ export interface ReelBoardWorkspaceResult {
   isCreating: boolean;
   isSaving: boolean;
   isGenerating: boolean;
+  isGeneratingIdeas: boolean;
   editingReel: ReelRow | null;
   deletingReel: ReelRow | null;
   draggedReelId: string | null;
@@ -84,6 +93,8 @@ export interface ReelBoardWorkspaceResult {
   openEditReel: (reel: ReelRow) => void;
   closeEditReel: () => void;
   saveEditReel: (input: UpdateReelInput) => Promise<void>;
+  approveAiIdea: (input: UpdateReelInput) => Promise<void>;
+  triggerManualIdeaGeneration: () => Promise<void>;
   queueGlobalGeneration: (input: UpdateReelInput) => Promise<void>;
   queueFieldGeneration: (
     field: "title" | "caption" | "body" | "hashtags",
@@ -112,9 +123,11 @@ export function useReelBoardWorkspace(initialBoard?: ReelBoard): ReelBoardWorksp
   const [isCreating, setIsCreating] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isGeneratingIdeas, setIsGeneratingIdeas] = useState(false);
   const [editingReel, setEditingReel] = useState<ReelRow | null>(null);
   const [deletingReel, setDeletingReel] = useState<ReelRow | null>(null);
   const [draggedReelId, setDraggedReelId] = useState<string | null>(null);
+  const approveAiIdeaRef = useRef<(input: UpdateReelInput) => Promise<void>>(async () => {});
 
   const visiblePublished = useMemo(
     () => board.columns.published.slice(0, 3),
@@ -163,6 +176,44 @@ export function useReelBoardWorkspace(initialBoard?: ReelBoard): ReelBoardWorksp
       setBoard((currentBoard) => replaceReel(currentBoard, result.reel));
     });
   }
+
+  async function approveAiIdea(input: UpdateReelInput) {
+    if (!editingReel || editingReel.status !== "ai_idea") {
+      return;
+    }
+
+    setIsSaving(true);
+    setErrorMessage(null);
+    const approved = await approveAiIdeaRequest(editingReel.id, {
+      ...input,
+      idea: input.idea ?? editingReel.idea,
+    });
+    setIsSaving(false);
+
+    if (!approved.success) {
+      setErrorMessage(approved.errorMessage);
+      return;
+    }
+
+    setEditingReel(null);
+    startTransition(() => {
+      setBoard((currentBoard) => replaceReel(currentBoard, approved.reel));
+    });
+  }
+
+  approveAiIdeaRef.current = approveAiIdea;
+
+  useEffect(() => {
+    function handleApproveAiIdea(event: Event) {
+      const detail = (event as CustomEvent<{ input?: UpdateReelInput }>).detail;
+      void approveAiIdeaRef.current(detail?.input ?? {});
+    }
+
+    window.addEventListener(APPROVE_AI_IDEA_EVENT, handleApproveAiIdea as EventListener);
+    return () => {
+      window.removeEventListener(APPROVE_AI_IDEA_EVENT, handleApproveAiIdea as EventListener);
+    };
+  }, []);
 
   async function queueGlobalGeneration(input: UpdateReelInput) {
     if (!editingReel) {
@@ -284,6 +335,44 @@ export function useReelBoardWorkspace(initialBoard?: ReelBoard): ReelBoardWorksp
     });
   }
 
+  async function triggerManualIdeaGeneration() {
+    setIsGeneratingIdeas(true);
+    setErrorMessage(null);
+
+    try {
+      const response = await fetch("/api/academy/reels/idea-generation", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: "{}",
+      });
+      const data = (await response.json().catch(() => null)) as
+        | { board?: unknown; error?: string; message?: string; errorMessage?: string }
+        | null;
+
+      if (!response.ok) {
+        setErrorMessage(data?.errorMessage ?? data?.message ?? data?.error ?? "Unable to generate ideas");
+        return;
+      }
+
+      const parsedBoard = reelBoardSchema.safeParse(data?.board);
+      if (parsedBoard.success) {
+        setBoard(normalizeBoard(parsedBoard.data));
+        return;
+      }
+
+      const refreshedBoard = await getReelBoard();
+      if (refreshedBoard.success) {
+        setBoard(normalizeBoard(refreshedBoard.board));
+      }
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : "Unable to generate ideas");
+    } finally {
+      setIsGeneratingIdeas(false);
+    }
+  }
+
   function isReelFieldComplete(value: string | null | undefined): boolean {
     return Boolean(value && value.trim().length > 0);
   }
@@ -309,6 +398,7 @@ export function useReelBoardWorkspace(initialBoard?: ReelBoard): ReelBoardWorksp
     isCreating,
     isSaving,
     isGenerating,
+    isGeneratingIdeas,
     editingReel,
     deletingReel,
     draggedReelId,
@@ -319,6 +409,8 @@ export function useReelBoardWorkspace(initialBoard?: ReelBoard): ReelBoardWorksp
     },
     closeEditReel: () => setEditingReel(null),
     saveEditReel,
+    approveAiIdea,
+    triggerManualIdeaGeneration,
     queueGlobalGeneration,
     queueFieldGeneration,
     isGlobalGenerationDisabled,

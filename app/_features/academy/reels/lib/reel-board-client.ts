@@ -36,6 +36,7 @@ export type CreateReelOperationResult = { success: true; reel: ReelRow } | Opera
 export type UpdateReelOperationResult = { success: true; reel: ReelRow } | OperationError;
 export type UpdateReelStatusOperationResult = { success: true; reel: ReelRow } | OperationError;
 export type DeleteReelOperationResult = { success: true; reelId: string } | OperationError;
+export type ApproveAiIdeaOperationResult = { success: true; reel: ReelRow } | OperationError;
 
 function getOperationErrorMessage(response: ReelBoardApiResponse | null, fallback: string): string {
   return response?.errorMessage ?? response?.message ?? response?.error ?? fallback;
@@ -217,6 +218,50 @@ export async function updateReelStatus(
     };
   } catch (error) {
     return toUnexpectedOperationError(error, "Unknown error while updating the reel status.");
+  }
+}
+
+export async function approveAiIdea(
+  reelId: string,
+  input: UpdateReelInput,
+): Promise<ApproveAiIdeaOperationResult> {
+  const parsed = updateReelSchema.safeParse(input);
+
+  if (!parsed.success) {
+    return {
+      success: false,
+      error: "INVALID_PAYLOAD",
+      errorMessage: getZodErrorMessage(parsed.error),
+      status: 400,
+    };
+  }
+
+  try {
+    const response = await fetch(`/api/academy/reels/${reelId}/approve`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(parsed.data),
+    });
+    const data = await parseResponse(response);
+    const parsedReel = reelSchema.safeParse(data?.reel);
+
+    if (!response.ok || !data?.success || !parsedReel.success) {
+      return toOperationError(
+        data,
+        "APPROVE_FAILED",
+        `HTTP error ${response.status}`,
+        response.status,
+      );
+    }
+
+    return {
+      success: true,
+      reel: parsedReel.data,
+    };
+  } catch (error) {
+    return toUnexpectedOperationError(error, "Unknown error while approving the ai idea.");
   }
 }
 

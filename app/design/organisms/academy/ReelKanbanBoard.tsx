@@ -5,6 +5,7 @@ import type { ReelBoardWorkspaceResult } from "@/app/design/templates/academy/us
 import { ReelKanbanColumn } from "./ReelKanbanColumn";
 
 const COLUMN_TITLES: Record<ReelStatus, string> = {
+  ai_idea: "AI Idea",
   idea: "Idea",
   script: "Script",
   to_record: "To Record",
@@ -20,6 +21,21 @@ export interface ReelKanbanBoardProps {
 export function ReelKanbanBoard({ workspace }: ReelKanbanBoardProps) {
   return (
     <div className="grid gap-4 xl:grid-cols-3">
+      <ReelKanbanColumn
+        title={COLUMN_TITLES.ai_idea}
+        status="ai_idea"
+        reels={workspace.board.columns.ai_idea}
+        headerActionLabel="Generate AI ideas"
+        headerActionBusyLabel="Generating..."
+        isHeaderActionBusy={workspace.isGeneratingIdeas}
+        onHeaderAction={workspace.triggerManualIdeaGeneration}
+        onEdit={workspace.openEditReel}
+        onDelete={workspace.requestDeleteReel}
+        onDragStart={workspace.startDraggingReel}
+        onDragEnd={workspace.finishDraggingReel}
+        onDropReel={workspace.moveReelToStatus}
+        draggedReelId={workspace.draggedReelId}
+      />
       <ReelKanbanColumn
         title={COLUMN_TITLES.idea}
         status="idea"

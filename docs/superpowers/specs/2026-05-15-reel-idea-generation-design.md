@@ -48,7 +48,8 @@ Rules:
 - users may not move any reel into `ai_idea` manually;
 - reels in `ai_idea` remain fully editable through the normal reel editor;
 - the `Approve` action is visible only for reels in `ai_idea`;
-- `Approve` saves any pending edits and then moves the reel to `idea`.
+- `Approve` saves any pending edits and then moves the reel to `idea` through one dedicated
+  server-backed action path.
 
 Manual drag and drop from `ai_idea` to `idea` is also allowed. It is semantically similar to
 approval at the board level, but logs should distinguish explicit `Approve` from manual move.
@@ -134,6 +135,9 @@ message.
 
 If the scheduler determines that a run is due, it must not perform the flow work inline. It should
 spawn a separate run process for that user and flow.
+
+When a spawned `Reel Idea Generation` process runs, it must reuse the queued run id instead of
+creating a second nested run record.
 
 If run process spawning fails:
 

@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
+  approveAiIdea,
   createReel,
   deleteReel,
   getReelBoard,
@@ -30,6 +31,7 @@ describe("reel board client", () => {
         success: true,
         board: {
           columns: {
+            ai_idea: [],
             idea: [],
             script: [],
             to_record: [],
@@ -46,11 +48,14 @@ describe("reel board client", () => {
           id: "11111111-1111-4111-8111-111111111111",
           user_id: "22222222-2222-4222-8222-222222222222",
           status: "idea",
+          origin: "manual",
+          last_idea_generation_run_id: null,
+          generation_status: "not_generated",
           idea: "Idea",
           title: null,
           caption: null,
           body: null,
-          hashtags: [],
+          hashtags: null,
           notes: null,
           scheduled_at: null,
           published_at: null,
@@ -63,12 +68,15 @@ describe("reel board client", () => {
         reel: {
           id: "11111111-1111-4111-8111-111111111111",
           user_id: "22222222-2222-4222-8222-222222222222",
-          status: "idea",
+          status: "ai_idea",
+          origin: "ai_idea_generation",
+          last_idea_generation_run_id: "33333333-3333-4333-8333-333333333333",
+          generation_status: "completed",
           idea: "Idea",
           title: "Updated",
           caption: null,
           body: null,
-          hashtags: [],
+          hashtags: null,
           notes: null,
           scheduled_at: null,
           published_at: null,
@@ -82,11 +90,14 @@ describe("reel board client", () => {
           id: "11111111-1111-4111-8111-111111111111",
           user_id: "22222222-2222-4222-8222-222222222222",
           status: "ready",
+          origin: "ai_idea_generation",
+          last_idea_generation_run_id: "33333333-3333-4333-8333-333333333333",
+          generation_status: "completed",
           idea: "Idea",
           title: "Updated",
           caption: null,
           body: null,
-          hashtags: [],
+          hashtags: null,
           notes: null,
           scheduled_at: null,
           published_at: null,
@@ -94,15 +105,50 @@ describe("reel board client", () => {
           updated_at: "2026-05-11T08:20:00.000Z",
         },
       }))
+      .mockResolvedValueOnce(createJsonResponse({
+        success: true,
+        reel: {
+          id: "11111111-1111-4111-8111-111111111111",
+          user_id: "22222222-2222-4222-8222-222222222222",
+          status: "idea",
+          origin: "ai_idea_generation",
+          last_idea_generation_run_id: "33333333-3333-4333-8333-333333333333",
+          generation_status: "completed",
+          idea: "Approved idea",
+          title: "Updated",
+          caption: "Caption",
+          body: "Body",
+          hashtags: "#tags",
+          notes: null,
+          scheduled_at: null,
+          published_at: null,
+          created_at: "2026-05-11T08:00:00.000Z",
+          updated_at: "2026-05-11T08:21:00.000Z",
+        },
+      }))
       .mockResolvedValueOnce(createJsonResponse(
         { success: false, error: "DELETE_FAILED", message: "boom" },
         { status: 500 },
       ));
 
-    await expect(getReelBoard()).resolves.toMatchObject({ success: true, board: { count: 0 } });
-    await createReel({ idea: "Idea" });
-    await updateReel("reel-1", { title: "Updated" });
+    await expect(getReelBoard()).resolves.toMatchObject({
+      success: true,
+      board: { columns: { ai_idea: [] }, count: 0 },
+    });
+    await expect(createReel({ idea: "Idea" })).resolves.toMatchObject({
+      success: true,
+      reel: { status: "idea", origin: "manual" },
+    });
+    await expect(updateReel("reel-1", { title: "Updated" })).resolves.toMatchObject({
+      success: true,
+      reel: { last_idea_generation_run_id: "33333333-3333-4333-8333-333333333333" },
+    });
     await updateReelStatus("reel-1", { status: "ready" });
+    await expect(approveAiIdea("reel-1", { idea: "Approved idea", caption: "Caption", body: "Body", hashtags: "#tags" }))
+      .resolves.toMatchObject({
+        success: true,
+        reel: { status: "idea", idea: "Approved idea" },
+      });
     await expect(deleteReel("reel-1")).resolves.toEqual({
       success: false,
       error: "DELETE_FAILED",
@@ -128,6 +174,11 @@ describe("reel board client", () => {
     );
     expect(fetchMock).toHaveBeenNthCalledWith(
       5,
+      "/api/academy/reels/reel-1/approve",
+      expect.objectContaining({ method: "POST" }),
+    );
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      6,
       "/api/academy/reels/reel-1",
       expect.objectContaining({ method: "DELETE" }),
     );

@@ -1,4 +1,4 @@
-export { REEL_BOARD_DEFAULT_STATUS, REEL_BOARD_STATUSES } from "./lib/reel-board.constants";
+export { REEL_BOARD_DEFAULT_STATUS, REEL_BOARD_STATUSES, REEL_ORIGINS } from "./lib/reel-board.constants";
 export { REEL_GENERATION_STATUSES } from "./lib/reel-board.constants";
 export {
   REEL_GENERATION_QUEUE_JOB_STATUSES,
@@ -11,6 +11,7 @@ export {
   createReelSchema,
   generationStatusSchema,
   reelBoardSchema,
+  reelOriginSchema,
   reelSchema,
   reelStatusSchema,
   updateReelSchema,
@@ -19,12 +20,15 @@ export {
 export {
   reelAutomationSettingsPatchSchema,
   reelAutomationSettingsSchema,
+  reelIdeaGenerationSettingsSchema,
+  reelScriptingSettingsSchema,
 } from "./lib/reel-generation.schemas";
 export { EMPTY_REEL_BOARD } from "./lib/reel-board.types";
 export type {
   CreateReelInput,
   ReelBoard,
   ReelBoardColumns,
+  ReelOrigin,
   ReelRow,
   ReelStatus,
   UpdateReelInput,
@@ -32,12 +36,15 @@ export type {
 } from "./lib/reel-board.types";
 export type {
   ReelAutomationSettings,
+  ReelIdeaGenerationSettings,
   ReelGenerationQueueJobRow,
   ReelGenerationRunLogRow,
   ReelGenerationSettingsRow,
   ReelGenerationTargetField,
+  ReelScriptingSettings,
 } from "./lib/reel-generation.types";
 export {
+  approveAiIdea,
   createReel,
   deleteReel,
   getReelBoard,
@@ -50,6 +57,7 @@ export {
   updateReelAutomationSettings,
 } from "./lib/reel-settings-client";
 export {
+  handleApproveAiIdea,
   getReelBoardUnauthorizedResponse,
   handleCreateReel,
   handleDeleteReel,
@@ -61,11 +69,16 @@ export {
   handleGenerateReelField,
   handleGenerateReelFields,
 } from "./server/reel-generation-route.handlers";
+export { handleTriggerManualReelIdeaGeneration } from "./server/reel-idea-generation-route.handlers";
 export {
   handleGetReelAutomationSettings,
   handlePatchReelAutomationSettings,
 } from "./server/reel-settings-route.handlers";
 export { getReelBoard as getServerReelBoard } from "./server/reel-board.service";
+export {
+  runReelIdeaGeneration as runServerReelIdeaGeneration,
+  triggerManualReelIdeaGeneration as triggerServerManualReelIdeaGeneration,
+} from "./server/reel-idea-generation.service";
 export {
   getReelAutomationSettings as getServerReelAutomationSettings,
   updateReelAutomationSettings as updateServerReelAutomationSettings,

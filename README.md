@@ -17,8 +17,8 @@ Authenticated users now land on a shared `/dashboard` shell.
 - **Conversation persistence**: Supabase-backed chat storage with rolling assistant history and semantic search; automatic summary-turn compaction is disabled for now
 - **Voice Chat Runtime**: one shared runtime owns wake word, Gemini transport, transcript projection, persistence, reconnect flows, and chat switching/deletion/new-chat orchestration
 - **Progression system**: Supabase-backed goals, recurring actions, server-rendered daily/weekly visibility, XP history, leveling, and deadline review in `/progression`
-- **Academy reels board**: owner-scoped editorial Kanban in `/academy/reels` with quick idea capture, drawer editing, drag/drop status changes, hard delete confirmation, and a published-column cap with placeholder archive routes
-- **Academy reel AI generation v1**: manual field/global generation, per-user automation settings, DB-backed queue + run logs, and local worker execution
+- **Academy reels board**: owner-scoped editorial Kanban in `/academy/reels` with `ai_idea -> idea -> script -> to_record -> to_edit -> ready -> published`, drawer editing, explicit `Approve` for AI ideas, drag/drop status changes, rejected-ai-idea snapshots on delete, and a published-column cap with placeholder archive routes
+- **Academy reel automation**: `Reel Scripting` + `Reel Idea Generation`, per-user nested automation settings in `/academy/automation`, spawned run-process orchestration, run logs, and local worker execution
 - **User timezone settings**: `/settings` stores a per-user timezone preference used by progression and automation scheduling
 - **Authentication**: Google OAuth via Supabase; memory/calendar/tasks routes are session-protected
 - **UI**: thin App Router entrypoints, feature boundaries, markdown chat rendering, voice orb, shared app shell (`/dashboard` + sibling sections), dashboard calendar + ToDo blocks (explicit empty/error states), progression workspace + deadline warning, standalone legacy `/assistant`, standalone `/setup/calendar`
@@ -91,8 +91,8 @@ If `--linked` works, the project is ready for migrations, schema changes, and da
 2. **Dashboard**: `/dashboard` shows `Eventi` and `ToDo` side by side when space allows (wrap on smaller widths).
    Calendar empty/error states: `Nessun evento nei prossimi 7 giorni` / `Si è verificato un errore`.
    ToDo empty/error states: `Non ci sono elementi` / `Si è verificato un errore`.
-3. **Academy**: `Accademia` expands in the shared sidebar and currently exposes `/academy/reels`, `/academy/courses`, and `/academy/reels/published`.
-   Reel scope: statuses `idea`, `script`, `to_record`, `to_edit`, `ready`, `published`; drawer edit; manual AI generation (global/field) from drawer; settings in `/settings` for automation run times + editorial context.
+3. **Academy**: `Accademia` expands in the shared sidebar and currently exposes `/academy/reels`, `/academy/automation`, `/academy/courses`, and `/academy/reels/published`.
+   Reel scope: statuses `ai_idea`, `idea`, `script`, `to_record`, `to_edit`, `ready`, `published`; drawer edit; explicit `Approve` for AI ideas; manual AI idea trigger from the `AI idea` column; manual scripting generation (global/field) from drawer.
 4. **Progression**: `/progression` shows XP level progress, due actions, weekly targets, goal filters, a lazy XP history sidebar, and a blocking deadline review only when expired goals exist.
    Progression reads the current timezone from `user_settings`, not from the progression profile.
 5. **Start**: click the `Jarvis / Personal OS` logo box in the app-shell sidebar.
@@ -153,8 +153,10 @@ npm run reels:worker        # Run local reel generation worker
 - The shared UI system now lives in `app/_shared/ui`, with semantic tokens in `app/_shared/ui/tokens` and reusable atoms/molecules/organisms exported from the same boundary.
 - `app/design` stays a composition layer for templates, page assemblies, and feature-facing UI composition on top of `app/_shared/ui`; it is no longer the source of truth for shared primitives.
 - Shared authenticated navigation lives in `app/(app-shell)` and exposes `/dashboard`, `/projects`, `/academy/reels`, `/academy/courses`, `/academy/reels/published`, `/reflections`, `/learning`, `/progression`, `/news`, and `/settings`.
-- `/settings` includes the per-user timezone preference used by progression day-boundaries and reel automation scheduling.
+- `/settings` includes the per-user timezone preference used by progression day-boundaries and Academy automation scheduling.
+- `/academy/automation` owns the nested `Reel Scripting` and `Reel Idea Generation` settings UI.
 - The Academy Reel workspace is owned by `app/_features/academy/reels` for domain/API logic and `app/design/templates/academy` + `app/design/organisms/academy` for the board UI.
+- Reel automation discovery runs in `scripts/reels-worker.ts`; each due flow run is executed in a spawned child process through `scripts/reel-automation-run.ts`.
 - The live assistant session is owned by `app/_features/assistant/runtime`, mounted once in `app/layout.tsx` through `VoiceChatRuntimeProvider`.
 - `useVoiceChat` is now a thin adapter over the runtime snapshot + commands instead of owning the session lifecycle.
 - Calendar/task refresh side effects stay in UI adapters (`AppShellAssistantProvider`, `useAssistantWorkspace`) through runtime `tool executed` subscriptions.

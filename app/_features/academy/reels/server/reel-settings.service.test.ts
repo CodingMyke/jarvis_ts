@@ -18,50 +18,120 @@ describe("reel settings service", () => {
   const userId = "11111111-1111-4111-8111-111111111111";
 
   it("validates settings payload and normalizes run times", () => {
-    expect(reelAutomationSettingsSchema.safeParse({ enabled: true, runTimes: [] }).success).toBe(false);
+    expect(
+      reelAutomationSettingsSchema.safeParse({
+        reelScripting: { enabled: true, runTimes: [], scriptingContext: null },
+      }).success,
+    ).toBe(false);
 
     const parsed = reelAutomationSettingsSchema.parse({
-      enabled: true,
-      runTimes: ["09:00", "09:00", "08:00"],
-      editorialContext: "  context ",
+      reelScripting: {
+        enabled: true,
+        runTimes: ["09:00", "09:00", "08:00"],
+        scriptingContext: "  context ",
+      },
+      reelIdeaGeneration: {
+        enabled: true,
+        runTimes: ["10:00", "10:15", "10:15"],
+        ideasPerRun: 3,
+        maxPendingAiIdeas: 10,
+        latestPublishedReelsCount: 3,
+        ideaGenerationContext: "  idea context ",
+      },
     });
 
     expect(parsed).toEqual({
-      enabled: true,
-      runTimes: ["08:00", "09:00"],
-      editorialContext: "context",
+      reelScripting: {
+        enabled: true,
+        runTimes: ["08:00", "09:00"],
+        scriptingContext: "context",
+      },
+      reelIdeaGeneration: {
+        enabled: true,
+        runTimes: ["10:00", "10:15"],
+        ideasPerRun: 3,
+        maxPendingAiIdeas: 10,
+        latestPublishedReelsCount: 3,
+        ideaGenerationContext: "idea context",
+      },
     });
   });
 
   it("loads and updates user settings through the repository", async () => {
     repositoryMocks.getGenerationSettingsByUser.mockResolvedValue({
-      data: { user_id: userId, config: { enabled: false, runTimes: [], editorialContext: null } },
+      data: {
+        user_id: userId,
+        config: {
+          reelScripting: { enabled: false, runTimes: [], scriptingContext: null },
+          reelIdeaGeneration: {
+            enabled: false,
+            runTimes: [],
+            ideasPerRun: 3,
+            maxPendingAiIdeas: 10,
+            latestPublishedReelsCount: 3,
+            ideaGenerationContext: null,
+          },
+        },
+      },
       error: null,
     });
 
     const getResult = await getReelAutomationSettings(supabase, userId);
-    expect(getResult).toMatchObject({ success: true, settings: { enabled: false } });
+    expect(getResult).toMatchObject({
+      success: true,
+      settings: { reelScripting: { enabled: false } },
+    });
 
     repositoryMocks.upsertGenerationSettings.mockResolvedValue({
-      data: { user_id: userId, config: { enabled: true, runTimes: ["08:00"] } },
+      data: {
+        user_id: userId,
+        config: {
+          reelScripting: { enabled: true, runTimes: ["08:00"], scriptingContext: null },
+          reelIdeaGeneration: {
+            enabled: false,
+            runTimes: [],
+            ideasPerRun: 3,
+            maxPendingAiIdeas: 10,
+            latestPublishedReelsCount: 3,
+            ideaGenerationContext: null,
+          },
+        },
+      },
       error: null,
     });
 
     const updateResult = await updateReelAutomationSettings(supabase, userId, {
-      enabled: true,
-      runTimes: ["08:00"],
-      editorialContext: null,
+      reelScripting: {
+        enabled: true,
+        runTimes: ["08:00"],
+        scriptingContext: null,
+      },
+      reelIdeaGeneration: {
+        enabled: false,
+        runTimes: [],
+        ideasPerRun: 3,
+        maxPendingAiIdeas: 10,
+        latestPublishedReelsCount: 3,
+        ideaGenerationContext: null,
+      },
     });
 
     expect(repositoryMocks.upsertGenerationSettings).toHaveBeenCalledWith(
       supabase,
       userId,
-      expect.objectContaining({ enabled: true, runTimes: ["08:00"], editorialContext: null }),
+      expect.objectContaining({
+        reelScripting: { enabled: true, runTimes: ["08:00"], scriptingContext: null },
+      }),
     );
-    expect(updateResult).toMatchObject({ success: true, settings: { enabled: true, runTimes: ["08:00"] } });
+    expect(updateResult).toMatchObject({
+      success: true,
+      settings: {
+        reelScripting: { enabled: true, runTimes: ["08:00"] },
+      },
+    });
   });
 
-  it("returns default settings when no row exists yet", async () => {
+  it("returns nested default settings for users with no row", async () => {
     repositoryMocks.getGenerationSettingsByUser.mockResolvedValue({
       data: null,
       error: null,
@@ -72,9 +142,54 @@ describe("reel settings service", () => {
     expect(result).toEqual({
       success: true,
       settings: {
-        enabled: false,
-        runTimes: [],
-        editorialContext: null,
+        reelScripting: {
+          enabled: false,
+          runTimes: [],
+          scriptingContext: null,
+        },
+        reelIdeaGeneration: {
+          enabled: false,
+          runTimes: [],
+          ideasPerRun: 3,
+          maxPendingAiIdeas: 10,
+          latestPublishedReelsCount: 3,
+          ideaGenerationContext: null,
+        },
+      },
+    });
+  });
+
+  it("normalizes legacy flat settings rows into the nested shape", async () => {
+    repositoryMocks.getGenerationSettingsByUser.mockResolvedValue({
+      data: {
+        user_id: userId,
+        config: {
+          enabled: true,
+          runTimes: ["08:00"],
+          editorialContext: "legacy",
+        },
+      },
+      error: null,
+    });
+
+    const result = await getReelAutomationSettings(supabase, userId);
+
+    expect(result).toEqual({
+      success: true,
+      settings: {
+        reelScripting: {
+          enabled: true,
+          runTimes: ["08:00"],
+          scriptingContext: "legacy",
+        },
+        reelIdeaGeneration: {
+          enabled: false,
+          runTimes: [],
+          ideasPerRun: 3,
+          maxPendingAiIdeas: 10,
+          latestPublishedReelsCount: 3,
+          ideaGenerationContext: null,
+        },
       },
     });
   });

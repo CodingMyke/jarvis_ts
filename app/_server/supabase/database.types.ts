@@ -23,7 +23,9 @@ export type Database = {
           hashtags: string | null
           idea: string
           id: string
+          last_idea_generation_run_id: string | null
           notes: string | null
+          origin: string
           published_at: string | null
           scheduled_at: string | null
           status: string
@@ -39,7 +41,9 @@ export type Database = {
           hashtags?: string | null
           idea: string
           id?: string
+          last_idea_generation_run_id?: string | null
           notes?: string | null
+          origin?: string
           published_at?: string | null
           scheduled_at?: string | null
           status?: string
@@ -55,7 +59,9 @@ export type Database = {
           hashtags?: string | null
           idea?: string
           id?: string
+          last_idea_generation_run_id?: string | null
           notes?: string | null
+          origin?: string
           published_at?: string | null
           scheduled_at?: string | null
           status?: string
@@ -63,7 +69,158 @@ export type Database = {
           updated_at?: string
           user_id?: string
         }
+        Relationships: [
+          {
+            foreignKeyName: "academy_reels_last_idea_generation_run_id_fkey"
+            columns: ["last_idea_generation_run_id"]
+            isOneToOne: false
+            referencedRelation: "academy_reel_automation_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      academy_reel_automation_runs: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          flow: string
+          id: string
+          metadata: Json
+          slot: string | null
+          started_at: string | null
+          status: string
+          trigger: string
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          flow: string
+          id?: string
+          metadata?: Json
+          slot?: string | null
+          started_at?: string | null
+          status: string
+          trigger: string
+          user_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          flow?: string
+          id?: string
+          metadata?: Json
+          slot?: string | null
+          started_at?: string | null
+          status?: string
+          trigger?: string
+          user_id?: string
+        }
         Relationships: []
+      }
+      academy_reel_rejected_ideas: {
+        Row: {
+          body: string | null
+          caption: string | null
+          created_at: string
+          hashtags: string | null
+          id: string
+          idea: string
+          notes: string | null
+          origin: string
+          reel_id: string | null
+          rejected_at: string
+          run_id: string | null
+          title: string | null
+          user_id: string
+        }
+        Insert: {
+          body?: string | null
+          caption?: string | null
+          created_at?: string
+          hashtags?: string | null
+          id?: string
+          idea: string
+          notes?: string | null
+          origin: string
+          reel_id?: string | null
+          rejected_at?: string
+          run_id?: string | null
+          title?: string | null
+          user_id: string
+        }
+        Update: {
+          body?: string | null
+          caption?: string | null
+          created_at?: string
+          hashtags?: string | null
+          id?: string
+          idea?: string
+          notes?: string | null
+          origin?: string
+          reel_id?: string | null
+          rejected_at?: string
+          run_id?: string | null
+          title?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "academy_reel_rejected_ideas_reel_id_fkey"
+            columns: ["reel_id"]
+            isOneToOne: false
+            referencedRelation: "academy_reels"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "academy_reel_rejected_ideas_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "academy_reel_automation_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      academy_reel_transition_events: {
+        Row: {
+          action: string
+          created_at: string
+          from_status: string
+          id: string
+          metadata: Json
+          reel_id: string
+          to_status: string
+          user_id: string
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          from_status: string
+          id?: string
+          metadata?: Json
+          reel_id: string
+          to_status: string
+          user_id: string
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          from_status?: string
+          id?: string
+          metadata?: Json
+          reel_id?: string
+          to_status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "academy_reel_transition_events_reel_id_fkey"
+            columns: ["reel_id"]
+            isOneToOne: false
+            referencedRelation: "academy_reels"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       academy_reel_generation_queue_jobs: {
         Row: {

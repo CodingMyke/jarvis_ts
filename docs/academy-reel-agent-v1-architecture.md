@@ -2,13 +2,14 @@
 
 ## Purpose
 
-This document captures the implemented high-level design for Academy Reel generation v1.
+This document captures the implemented high-level design for Academy Reel automation with
+`Reel Scripting` and `Reel Idea Generation`.
 
 ## Goals
 
 - Implement manual and scheduled-ready reel AI generation on top of the existing Academy board.
 - Keep orchestration server-only and typed.
-- Persist queue and run logs in Supabase for traceability.
+- Persist run logs and AI-idea provenance in Supabase for traceability.
 
 ## Core Principles
 
@@ -20,16 +21,19 @@ This document captures the implemented high-level design for Academy Reel genera
   - Async orchestration is externalized to a local worker.
 - Minimal, scalable v1 scope.
 
-## Agreed End-to-End Flow (v1)
+## Agreed End-to-End Flow
 
 1. User opens Academy Reel page and creates/edits a reel.
-2. User triggers generation globally or for a single field.
-3. API validates input and enqueues one job in `academy_reel_generation_queue_jobs`.
-4. Local worker (`npm run reels:worker`) claims pending jobs.
-5. Worker calls one generation service that builds prompt + dynamic Zod output schema.
-6. Service calls OpenAI (`gpt-4o`) via Vercel AI SDK `generateObject`.
-7. Service updates reel fields and `generation_status`, then writes run logs.
-8. Drawer actions stay disabled while `generation_status = processing`.
+2. User either:
+   - triggers scripting generation globally or for a single field from the drawer, or
+   - triggers `Reel Idea Generation` from the `AI idea` column header, or
+   - relies on scheduled automation.
+3. API validates input and delegates to feature services.
+4. The local worker (`npm run reels:worker`) discovers due flow runs per user and spawns one child process per due run.
+5. The child process executes either `Reel Scripting` or `Reel Idea Generation`.
+6. `Reel Idea Generation` builds one prompt from latest published reels, recent memories, optional user context, and rejected idea snapshots, then creates new reels in `ai_idea`.
+7. `Reel Scripting` processes current reels in `idea`, generates only missing fields, and moves fully completed reels to `script`.
+8. Services update reels, transition events, rejected snapshots, and automation run metadata.
 
 ## Agent Output Contract (v1)
 
@@ -44,12 +48,14 @@ Notes:
 - Hook/beats and similar structure are embedded inside `body`.
 - Input idea is stored in the same record together with generated output.
 
-## Job and Async Strategy
+## Async Strategy
 
-- Async execution is handled by a local polling worker script.
+- Async execution is handled by a local polling worker script plus one spawned child process per due run.
 - Trigger model:
-  - API request creates queue jobs.
-  - Worker processes one job at a time and writes run logs.
+  - manual drawer actions execute immediately;
+  - scheduled discovery creates `academy_reel_automation_runs` rows;
+  - the worker spawns `scripts/reel-automation-run.ts` with `runId`, `userId`, `flow`, `trigger`, and `slot`;
+  - the child process owns `queued -> processing -> completed/failed`.
 
 ## Module Boundaries
 
@@ -73,12 +79,13 @@ Responsibilities:
 - Concrete typed tools used by the Reel agent.
 - UI state model and actions for Reel pages.
 
-### 3) Async Orchestration (Local Worker)
+### 3) Async Orchestration (Local Worker + Child Runner)
 
 Responsibilities:
-- Claim queued jobs.
-- Invoke generation workflow.
-- Drive status transitions (`processing` -> `completed`/`failed`).
+- Discover due runs for both automation flows.
+- Enforce single-flow-per-user locking through run-state checks.
+- Spawn one child process per due run.
+- Drive run status transitions (`queued` -> `processing` -> `completed`/`failed`).
 
 Non-responsibilities:
 - No heavy domain rule ownership beyond orchestration.
@@ -89,7 +96,7 @@ Non-responsibilities:
 - Each agent declares and receives only its allowed tools.
 - Tools own side effects (e.g., DB updates), not the agent core.
 
-## UI/UX Scope for v1
+## UI/UX Scope
 
 Statuses:
 - `not_generated`
@@ -98,11 +105,14 @@ Statuses:
 - `failed`
 
 Actions:
+- `Generate AI ideas` in the `AI idea` column header
+- `Approve` in the drawer for `ai_idea` reels
 - `generate all` in drawer header
 - `generate title/caption/body/hashtags`
-- settings panel in `/settings` for automation config
+- automation settings page in `/academy/automation`
 
 Rules:
+- `Approve` saves pending edits and moves the reel through one dedicated server-backed action path.
 - Generation actions are blocked while `processing`.
 - Global generation only targets missing fields.
 - Field generation only targets the selected field.
@@ -125,8 +135,10 @@ Rules:
 
 ## Summary
 
-The v1 implementation ships:
-- DB-backed queue + logs + per-user settings,
-- manual generation APIs and UI controls,
-- local worker orchestration,
-- typed contracts + route validation.
+The implementation ships:
+- `ai_idea` as a first-class board status with immutable `origin`,
+- explicit approval vs manual-move transition logging,
+- rejected-ai-idea snapshots used as negative prompt context,
+- nested per-user automation settings for scripting and idea generation,
+- spawned run-process orchestration for scheduled automation,
+- typed contracts, route validation, and board/settings UI.

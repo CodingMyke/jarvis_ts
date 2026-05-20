@@ -7,12 +7,15 @@ import { CloseIcon, SaveIcon } from "@/app/design/atoms/shared/icons";
 import type { ReelRow, UpdateReelInput } from "@/app/_features/academy/reels";
 import { ReelGenerationButton } from "./ReelGenerationButton";
 
+const APPROVE_AI_IDEA_EVENT = "reel:approve-ai-idea";
+
 export interface ReelEditDrawerProps {
   reel: ReelRow | null;
   open: boolean;
   busy?: boolean;
   onClose: () => void;
   onSave: (input: UpdateReelInput) => Promise<void>;
+  onApprove?: (input: UpdateReelInput) => Promise<void>;
   onGenerateGlobal?: (input: UpdateReelInput) => Promise<void>;
   onGenerateField?: (
     field: "title" | "caption" | "body" | "hashtags",
@@ -29,6 +32,7 @@ export function ReelEditDrawer({
   busy = false,
   onClose,
   onSave,
+  onApprove,
   onGenerateGlobal,
   onGenerateField,
   generationDisabled = false,
@@ -50,6 +54,19 @@ export function ReelEditDrawer({
     return null;
   }
 
+  async function handleApprove() {
+    if (onApprove) {
+      await onApprove(draft);
+      return;
+    }
+
+    window.dispatchEvent(
+      new CustomEvent<{ input: UpdateReelInput }>(APPROVE_AI_IDEA_EVENT, {
+        detail: { input: draft },
+      }),
+    );
+  }
+
   return (
     <Surface className="fixed inset-y-0 right-0 z-50 flex h-dvh w-full max-w-xl flex-col overflow-hidden border-l shadow-overlay" variant="overlay">
       <div className="sticky top-0 z-10 flex items-start justify-between gap-4 border-b border-line bg-overlay px-6 py-5 backdrop-blur-xl">
@@ -63,6 +80,11 @@ export function ReelEditDrawer({
           </h3>
         </div>
         <div className="flex items-center gap-2">
+          {reel.status === "ai_idea" ? (
+            <Button type="button" variant="secondary" onClick={() => void handleApprove()} disabled={busy}>
+              Approve
+            </Button>
+          ) : null}
           <Button
             type="button"
             className="h-10 w-10 shrink-0 p-0"

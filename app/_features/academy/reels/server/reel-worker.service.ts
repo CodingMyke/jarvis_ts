@@ -1,32 +1,16 @@
+import { spawn } from "node:child_process";
+import path from "node:path";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/app/_server/supabase/database.types";
-import {
-  generateReelField,
-  generateReelFields,
-} from "./reel-generation.service";
-import {
-  countJobsByUserAndRunAt,
-  insertRunLog,
-  insertScheduledGenerationJobs,
-  listActiveQueueReelIdsByUser,
-  listGenerationSettingsRows,
-  listIdeaReelIdsByUser,
-  listPendingJobs,
-} from "./reel-generation.repository";
-import { reelAutomationSettingsSchema } from "../lib/reel-generation.schemas";
+import { hasActiveFlowRun, insertAutomationRun, updateAutomationRun } from "./reel-idea-generation.repository";
+import { listGenerationSettingsRows } from "./reel-generation.repository";
+import { normalizeReelAutomationSettings } from "./reel-settings.service";
 
 type ReelSupabaseClient = SupabaseClient<Database>;
-
-type TriggerSource = "manual_global" | "manual_field" | "scheduled";
-
-interface QueueJobLike {
-  id: string;
-  user_id: string;
-  reel_id: string;
-  run_at: string;
-  trigger_source?: TriggerSource;
-  target_field?: "title" | "caption" | "body" | "hashtags" | null;
-}
+type AutomationRunInsert = Database["public"]["Tables"]["academy_reel_automation_runs"]["Insert"];
+type AutomationRunUpdate = Database["public"]["Tables"]["academy_reel_automation_runs"]["Update"];
+type AutomationRunFlow = "reel_scripting" | "reel_idea_generation";
+type AutomationRunTrigger = "scheduled" | "manual";
 
 interface GenerationSettingsRowLike {
   user_id: string;
@@ -34,131 +18,38 @@ interface GenerationSettingsRowLike {
   timezone?: string;
 }
 
-interface WorkerDeps {
-  listJobs: (
-    supabase: ReelSupabaseClient,
-    nowIso: string,
-  ) => Promise<QueueJobLike[]>;
-  listSettings: (
-    supabase: ReelSupabaseClient,
-  ) => Promise<GenerationSettingsRowLike[]>;
-  listIdeaReelIds: (
-    supabase: ReelSupabaseClient,
-    userId: string,
-  ) => Promise<string[]>;
-  listActiveQueueReelIds: (
-    supabase: ReelSupabaseClient,
-    userId: string,
-  ) => Promise<string[]>;
-  hasJobForSlot: (
-    supabase: ReelSupabaseClient,
-    userId: string,
-    runAtIso: string,
-  ) => Promise<boolean>;
-  insertScheduledJobs: (
-    supabase: ReelSupabaseClient,
-    jobs: Array<{ userId: string; reelId: string; runAt: string }>,
-  ) => Promise<void>;
-  updateJob: (
-    supabase: ReelSupabaseClient,
-    jobId: string,
-    patch: Database["public"]["Tables"]["academy_reel_generation_queue_jobs"]["Update"],
-  ) => Promise<{ error: { message: string } | null }>;
-  generateGlobal: (
-    supabase: ReelSupabaseClient,
-    userId: string,
-    reelId: string,
-  ) => Promise<{ success: boolean; message?: string }>;
-  generateField: (
-    supabase: ReelSupabaseClient,
-    userId: string,
-    reelId: string,
-    field: "title" | "caption" | "body" | "hashtags",
-  ) => Promise<{ success: boolean; message?: string }>;
-  insertLog: (
-    supabase: ReelSupabaseClient,
-    userId: string,
-    input: {
-      status: "started" | "completed" | "failed";
-      metadata: Database["public"]["Tables"]["academy_reel_generation_run_logs"]["Row"]["metadata"];
-      reelId?: string | null;
-      jobId?: string | null;
-      errorMessage?: string | null;
-    },
-  ) => Promise<void>;
-  now: () => Date;
+interface DueAutomationRun {
+  userId: string;
+  flow: AutomationRunFlow;
+  trigger: AutomationRunTrigger;
+  slot: string;
 }
 
-const defaultDeps: WorkerDeps = {
-  async listJobs(supabase, nowIso) {
-    const { data } = await listPendingJobs(supabase, {
-      now: nowIso,
-      limit: 100,
-    });
-    return (data ?? []) as QueueJobLike[];
-  },
-  async listSettings(supabase) {
-    const { data } = await listGenerationSettingsRows(supabase);
-    const settingsRows = (data ?? []) as GenerationSettingsRowLike[];
+interface SpawnRunProcessInput extends DueAutomationRun {
+  runId: string;
+}
 
-    if (settingsRows.length === 0) {
-      return settingsRows;
-    }
+interface CreatedAutomationRun {
+  id: string;
+}
 
-    const { data: timezoneRows } = await supabase
-      .from("user_settings")
-      .select("user_id, timezone")
-      .in("user_id", settingsRows.map((row) => row.user_id));
-
-    const timezoneByUserId = new Map(
-      ((timezoneRows ?? []) as Array<{ user_id: string; timezone: string }>)
-        .map((row) => [row.user_id, row.timezone]),
-    );
-
-    return settingsRows.map((row) => ({
-      ...row,
-      timezone: timezoneByUserId.get(row.user_id),
-    }));
-  },
-  async listIdeaReelIds(supabase, userId) {
-    const { data } = await listIdeaReelIdsByUser(supabase, userId);
-    return (data ?? []).map((row) => row.id);
-  },
-  async listActiveQueueReelIds(supabase, userId) {
-    const { data } = await listActiveQueueReelIdsByUser(supabase, userId);
-    return (data ?? []).map((row) => row.reel_id);
-  },
-  async hasJobForSlot(supabase, userId, runAtIso) {
-    const { count } = await countJobsByUserAndRunAt(supabase, userId, runAtIso);
-    return (count ?? 0) > 0;
-  },
-  async insertScheduledJobs(supabase, jobs) {
-    await insertScheduledGenerationJobs(supabase, jobs);
-  },
-  async updateJob(supabase, jobId, patch) {
-    const { error } = await supabase
-      .from("academy_reel_generation_queue_jobs")
-      .update(patch)
-      .eq("id", jobId);
-    return { error };
-  },
-  generateGlobal: generateReelFields,
-  generateField: generateReelField,
-  async insertLog(supabase, userId, input) {
-    await insertRunLog(supabase, userId, input);
-  },
-  now: () => new Date(),
-};
-
-function toSettings(config: unknown): { enabled: boolean; runTimes: string[] } {
-  const parsed = reelAutomationSettingsSchema.safeParse(config ?? {});
-  if (!parsed.success) {
-    return { enabled: false, runTimes: [] };
-  }
-  return {
-    enabled: parsed.data.enabled,
-    runTimes: parsed.data.runTimes,
-  };
+interface WorkerDeps {
+  listSettings: (supabase: ReelSupabaseClient) => Promise<GenerationSettingsRowLike[]>;
+  hasActiveRun: (
+    supabase: ReelSupabaseClient,
+    input: { userId: string; flow: AutomationRunFlow },
+  ) => Promise<boolean>;
+  createAutomationRun: (
+    supabase: ReelSupabaseClient,
+    input: DueAutomationRun & { status: "queued" },
+  ) => Promise<CreatedAutomationRun>;
+  updateAutomationRun: (
+    supabase: ReelSupabaseClient,
+    runId: string,
+    patch: AutomationRunUpdate,
+  ) => Promise<void>;
+  spawnRunProcess: (input: SpawnRunProcessInput) => Promise<{ success: boolean; message?: string }>;
+  now: () => Date;
 }
 
 function getTimePartsInTimezone(now: Date, timezone: string): Record<string, string> {
@@ -222,233 +113,191 @@ function isDueForRunTime(now: Date, runTime: string, timezone: string): boolean 
   }
 
   const parts = getTimePartsInTimezone(now, timezone);
-
   return parts.hour === hourRaw && parts.minute === minuteRaw;
 }
 
-export async function enqueueScheduledIdeaReels(
+function getDueRunsForUser(row: GenerationSettingsRowLike, now: Date): DueAutomationRun[] {
+  const settings = normalizeReelAutomationSettings(row.config);
+  const timezone = row.timezone ?? "UTC";
+  const dueRuns: DueAutomationRun[] = [];
+
+  const flowEntries: Array<{
+    flow: AutomationRunFlow;
+    enabled: boolean;
+    runTimes: string[];
+  }> = [
+    {
+      flow: "reel_scripting",
+      enabled: settings.reelScripting.enabled,
+      runTimes: settings.reelScripting.runTimes,
+    },
+    {
+      flow: "reel_idea_generation",
+      enabled: settings.reelIdeaGeneration.enabled,
+      runTimes: settings.reelIdeaGeneration.runTimes,
+    },
+  ];
+
+  for (const entry of flowEntries) {
+    if (!entry.enabled) {
+      continue;
+    }
+
+    for (const runTime of entry.runTimes) {
+      if (!isDueForRunTime(now, runTime, timezone)) {
+        continue;
+      }
+
+      const slot = toSlotIso(now, runTime, timezone);
+      if (!slot) {
+        continue;
+      }
+
+      dueRuns.push({
+        userId: row.user_id,
+        flow: entry.flow,
+        trigger: "scheduled",
+        slot,
+      });
+    }
+  }
+
+  return dueRuns;
+}
+
+const defaultDeps: WorkerDeps = {
+  async listSettings(supabase) {
+    const { data } = await listGenerationSettingsRows(supabase);
+    const settingsRows = (data ?? []) as GenerationSettingsRowLike[];
+
+    if (settingsRows.length === 0) {
+      return settingsRows;
+    }
+
+    const { data: timezoneRows } = await supabase
+      .from("user_settings")
+      .select("user_id, timezone")
+      .in("user_id", settingsRows.map((row) => row.user_id));
+
+    const timezoneByUserId = new Map(
+      ((timezoneRows ?? []) as Array<{ user_id: string; timezone: string | null }>).map((row) => [
+        row.user_id,
+        row.timezone ?? undefined,
+      ]),
+    );
+
+    return settingsRows.map((row) => ({
+      ...row,
+      timezone: timezoneByUserId.get(row.user_id),
+    }));
+  },
+  hasActiveRun: hasActiveFlowRun,
+  async createAutomationRun(supabase, input) {
+    const insertInput: AutomationRunInsert = {
+      user_id: input.userId,
+      flow: input.flow,
+      trigger: input.trigger,
+      slot: input.slot,
+      status: input.status,
+      metadata: {},
+    };
+
+    const { data, error } = await insertAutomationRun(supabase, insertInput);
+    if (error || !data) {
+      throw new Error(error?.message ?? "Unable to create automation run");
+    }
+
+    return { id: data.id };
+  },
+  async updateAutomationRun(supabase, runId, patch) {
+    const { error } = await updateAutomationRun(supabase, runId, patch);
+    if (error) {
+      throw new Error(error.message);
+    }
+  },
+  async spawnRunProcess(input) {
+    const scriptPath = path.resolve(process.cwd(), "scripts/reel-automation-run.ts");
+    const child = spawn(
+      process.execPath,
+      [
+        "--env-file=.env.local",
+        "--import",
+        "tsx",
+        scriptPath,
+        "--run-id",
+        input.runId,
+        "--user-id",
+        input.userId,
+        "--flow",
+        input.flow,
+        "--trigger",
+        input.trigger,
+        "--slot",
+        input.slot,
+      ],
+      {
+        stdio: "inherit",
+      },
+    );
+
+    return await new Promise<{ success: boolean; message?: string }>((resolve) => {
+      child.once("spawn", () => resolve({ success: true }));
+      child.once("error", (error) => resolve({ success: false, message: error.message }));
+    });
+  },
+  now: () => new Date(),
+};
+
+export async function processDueAutomationRuns(
   supabase: ReelSupabaseClient,
   deps: WorkerDeps = defaultDeps,
-): Promise<number> {
+): Promise<{ discovered: number; spawned: number; failed: number }> {
   const now = deps.now();
-  console.log("[reels-worker] scheduling scan started", {
-    now: now.toISOString(),
-  });
   const settingsRows = await deps.listSettings(supabase);
-  console.log("A [reels-worker] scheduling settings loaded", {
-    users: settingsRows.length,
-  });
-  let totalEnqueued = 0;
+  let discovered = 0;
+  let spawned = 0;
+  let failed = 0;
 
   for (const row of settingsRows) {
-    const settings = toSettings(row.config);
-    const timezone = row.timezone ?? "UTC";
-    if (!settings.enabled) {
-      console.log("[reels-worker] skipping disabled user", {
-        config: row.config,
+    const dueRuns = getDueRunsForUser(row, now);
+
+    for (const dueRun of dueRuns) {
+      const hasActiveRun = await deps.hasActiveRun(supabase, {
+        userId: dueRun.userId,
+        flow: dueRun.flow,
       });
 
-      continue;
-    }
-
-    const dueRunTimes = settings.runTimes.filter((runTime) =>
-      isDueForRunTime(now, runTime, timezone),
-    );
-
-    console.log("[reels-worker] user with no due run times", {
-      config: row.config,
-    });
-
-    if (dueRunTimes.length === 0) {
-      continue;
-    }
-    console.log("[reels-worker] user has due run times", {
-      userId: row.user_id,
-      dueRunTimes,
-    });
-
-    const ideaReelIds = await deps.listIdeaReelIds(supabase, row.user_id);
-    console.log("[reels-worker] idea reels fetched", {
-      userId: row.user_id,
-      ideaCount: ideaReelIds.length,
-      ideaReelIds,
-    });
-
-    if (ideaReelIds.length === 0) {
-      console.log("[reels-worker] no idea reels to enqueue", {
-        userId: row.user_id,
-      });
-      continue;
-    }
-
-    const activeQueueReelIds = new Set(
-      await deps.listActiveQueueReelIds(supabase, row.user_id),
-    );
-    console.log("[reels-worker] candidate reels loaded", {
-      userId: row.user_id,
-      ideaCount: ideaReelIds.length,
-      activeQueueCount: activeQueueReelIds.size,
-    });
-
-    for (const runTime of dueRunTimes) {
-      const runAtIso = toSlotIso(now, runTime, timezone);
-      if (!runAtIso) {
+      if (hasActiveRun) {
         continue;
       }
 
-      const hasExistingSlot = await deps.hasJobForSlot(
-        supabase,
-        row.user_id,
-        runAtIso,
-      );
-      if (hasExistingSlot) {
-        console.log("[reels-worker] slot already scheduled, skipping enqueue", {
-          userId: row.user_id,
-          runAt: runAtIso,
+      discovered += 1;
+      const createdRun = await deps.createAutomationRun(supabase, {
+        ...dueRun,
+        status: "queued",
+      });
+
+      const spawnedProcess = await deps.spawnRunProcess({
+        ...dueRun,
+        runId: createdRun.id,
+      });
+
+      if (!spawnedProcess.success) {
+        failed += 1;
+        await deps.updateAutomationRun(supabase, createdRun.id, {
+          status: "failed",
+          completed_at: now.toISOString(),
+          metadata: {
+            error: spawnedProcess.message ?? "Unable to spawn automation run process",
+          },
         });
         continue;
       }
 
-      const jobsToInsert = ideaReelIds
-        .filter((reelId) => !activeQueueReelIds.has(reelId))
-        .map((reelId) => ({ userId: row.user_id, reelId, runAt: runAtIso }));
-
-      if (jobsToInsert.length === 0) {
-        console.log("[reels-worker] nothing new to enqueue for slot", {
-          userId: row.user_id,
-          runAt: runAtIso,
-        });
-        continue;
-      }
-
-      await deps.insertScheduledJobs(supabase, jobsToInsert);
-      totalEnqueued += jobsToInsert.length;
-      console.log("[reels-worker] scheduled jobs enqueued", {
-        userId: row.user_id,
-        runAt: runAtIso,
-        enqueued: jobsToInsert.length,
-      });
+      spawned += 1;
     }
   }
 
-  console.log("[reels-worker] scheduling scan completed", { totalEnqueued });
-  return totalEnqueued;
+  return { discovered, spawned, failed };
 }
 
-function getPriority(source: TriggerSource | undefined): number {
-  if (source === "manual_global" || source === "manual_field") {
-    return 0;
-  }
-  return 1;
-}
-
-export function pickNextReelGenerationJob(
-  jobs: QueueJobLike[],
-): QueueJobLike | null {
-  if (jobs.length === 0) {
-    return null;
-  }
-
-  return [...jobs].sort((left, right) => {
-    const priorityDelta =
-      getPriority(left.trigger_source) - getPriority(right.trigger_source);
-    if (priorityDelta !== 0) {
-      return priorityDelta;
-    }
-
-    return left.run_at.localeCompare(right.run_at);
-  })[0];
-}
-
-export async function processNextReelGenerationJob(
-  supabase: ReelSupabaseClient,
-  deps: WorkerDeps = defaultDeps,
-): Promise<{ processed: boolean; error?: string }> {
-  const enqueued = await enqueueScheduledIdeaReels(supabase, deps);
-  if (enqueued > 0) {
-    console.log("[reels-worker] new jobs ready from scheduler", { enqueued });
-  }
-
-  const nowIso = deps.now().toISOString();
-  const jobs = await deps.listJobs(supabase, nowIso);
-  console.log("[reels-worker] pending jobs snapshot", {
-    now: nowIso,
-    count: jobs.length,
-  });
-  const nextJob = pickNextReelGenerationJob(jobs);
-
-  if (!nextJob) {
-    return { processed: false };
-  }
-  console.log("[reels-worker] selected job", {
-    jobId: nextJob.id,
-    userId: nextJob.user_id,
-    reelId: nextJob.reel_id,
-    triggerSource: nextJob.trigger_source ?? "scheduled",
-    targetField: nextJob.target_field ?? null,
-  });
-
-  const claimed = await deps.updateJob(supabase, nextJob.id, {
-    status: "processing",
-    started_at: nowIso,
-    updated_at: nowIso,
-  });
-  if (claimed.error) {
-    return { processed: false, error: claimed.error.message };
-  }
-
-  await deps.insertLog(supabase, nextJob.user_id, {
-    status: "started",
-    reelId: nextJob.reel_id,
-    jobId: nextJob.id,
-    metadata: {
-      triggerSource: nextJob.trigger_source ?? "scheduled",
-      targetField: nextJob.target_field ?? null,
-    },
-  });
-
-  const result = nextJob.target_field
-    ? await deps.generateField(
-        supabase,
-        nextJob.user_id,
-        nextJob.reel_id,
-        nextJob.target_field,
-      )
-    : await deps.generateGlobal(supabase, nextJob.user_id, nextJob.reel_id);
-
-  const doneAt = deps.now().toISOString();
-  const status = result.success ? "completed" : "failed";
-  const update = await deps.updateJob(supabase, nextJob.id, {
-    status,
-    completed_at: doneAt,
-    error_message: result.success
-      ? null
-      : (result.message ?? "Generation failed"),
-    updated_at: doneAt,
-  });
-  if (update.error) {
-    return { processed: false, error: update.error.message };
-  }
-
-  await deps.insertLog(supabase, nextJob.user_id, {
-    status,
-    reelId: nextJob.reel_id,
-    jobId: nextJob.id,
-    metadata: {
-      triggerSource: nextJob.trigger_source ?? "scheduled",
-      targetField: nextJob.target_field ?? null,
-    },
-    errorMessage: result.success
-      ? null
-      : (result.message ?? "Generation failed"),
-  });
-
-  console.log("[reels-worker] job completed", {
-    jobId: nextJob.id,
-    userId: nextJob.user_id,
-    status,
-    message: result.success ? "ok" : (result.message ?? "Generation failed"),
-  });
-
-  return { processed: true };
-}

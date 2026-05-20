@@ -50,7 +50,20 @@ describe("reel generation service", () => {
       error: null,
     });
     generationRepositoryMocks.getGenerationSettingsByUser.mockResolvedValue({
-      data: { user_id: userId, config: { editorialContext: "ctx", enabled: false, runTimes: [] } },
+      data: {
+        user_id: userId,
+        config: {
+          reelScripting: { enabled: false, runTimes: [], scriptingContext: "ctx" },
+          reelIdeaGeneration: {
+            enabled: false,
+            runTimes: [],
+            ideasPerRun: 3,
+            maxPendingAiIdeas: 10,
+            latestPublishedReelsCount: 3,
+            ideaGenerationContext: null,
+          },
+        },
+      },
       error: null,
     });
     llmMocks.generateReelGenerationObject.mockResolvedValue({
@@ -103,7 +116,20 @@ describe("reel generation service", () => {
       error: null,
     });
     generationRepositoryMocks.getGenerationSettingsByUser.mockResolvedValue({
-      data: { user_id: userId, config: { editorialContext: null, enabled: false, runTimes: [] } },
+      data: {
+        user_id: userId,
+        config: {
+          reelScripting: { enabled: false, runTimes: [], scriptingContext: null },
+          reelIdeaGeneration: {
+            enabled: false,
+            runTimes: [],
+            ideasPerRun: 3,
+            maxPendingAiIdeas: 10,
+            latestPublishedReelsCount: 3,
+            ideaGenerationContext: null,
+          },
+        },
+      },
       error: null,
     });
     llmMocks.generateReelGenerationObject.mockResolvedValue({
@@ -138,4 +164,3 @@ describe("reel generation service", () => {
     expect(result).toMatchObject({ success: true });
   });
 });
-

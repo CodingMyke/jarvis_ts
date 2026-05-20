@@ -9,6 +9,10 @@ export interface ReelKanbanColumnProps {
   status: ReelStatus;
   reels: ReelRow[];
   showPublishedLink?: boolean;
+  headerActionLabel?: string;
+  headerActionBusyLabel?: string;
+  isHeaderActionBusy?: boolean;
+  onHeaderAction?: () => Promise<void>;
   onEdit: (reel: ReelRow) => void;
   onDelete: (reel: ReelRow) => void;
   onDragStart: (reelId: string) => void;
@@ -22,6 +26,10 @@ export function ReelKanbanColumn({
   status,
   reels,
   showPublishedLink = false,
+  headerActionLabel,
+  headerActionBusyLabel = "Working...",
+  isHeaderActionBusy = false,
+  onHeaderAction,
   onEdit,
   onDelete,
   onDragStart,
@@ -45,6 +53,17 @@ export function ReelKanbanColumn({
           <h2 className="text-sm font-semibold uppercase tracking-[0.18em] text-foreground">{title}</h2>
           <p className="text-xs text-muted">{reels.length} reels</p>
         </div>
+
+        {onHeaderAction && headerActionLabel ? (
+          <button
+            type="button"
+            className="rounded-app border border-line px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-surface disabled:cursor-not-allowed disabled:opacity-60"
+            onClick={() => void onHeaderAction()}
+            disabled={isHeaderActionBusy}
+          >
+            {isHeaderActionBusy ? headerActionBusyLabel : headerActionLabel}
+          </button>
+        ) : null}
 
         {showPublishedLink ? (
           <Link className="text-xs text-accent underline" href="/academy/reels/published">

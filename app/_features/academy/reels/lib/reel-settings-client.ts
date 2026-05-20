@@ -19,6 +19,10 @@ type SettingsApiResponse = {
 
 export type GetSettingsResult = { success: true; settings: ReelAutomationSettings } | OperationError;
 export type UpdateSettingsResult = { success: true; settings: ReelAutomationSettings } | OperationError;
+export type ReelAutomationSettingsPatch = Partial<{
+  reelScripting: Partial<ReelAutomationSettings["reelScripting"]>;
+  reelIdeaGeneration: Partial<ReelAutomationSettings["reelIdeaGeneration"]>;
+}>;
 
 async function parseResponse(response: Response): Promise<SettingsApiResponse | null> {
   return (await response.json().catch(() => null)) as SettingsApiResponse | null;
@@ -63,7 +67,7 @@ export async function getReelAutomationSettings(): Promise<GetSettingsResult> {
 }
 
 export async function updateReelAutomationSettings(
-  patch: Partial<ReelAutomationSettings>,
+  patch: ReelAutomationSettingsPatch,
 ): Promise<UpdateSettingsResult> {
   const parsedPatch = reelAutomationSettingsPatchSchema.safeParse(patch);
 
@@ -98,4 +102,3 @@ export async function updateReelAutomationSettings(
     };
   }
 }
-

@@ -1,9 +1,8 @@
-import { describe, expect, it, vi } from "vitest";
-import {
-  insertManualGenerationJob,
-  insertRunLog,
-  listPendingJobs,
-} from "./reel-generation.repository";
+import { describe, expect, expectTypeOf, it, vi } from "vitest";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
+import type { Database } from "@/app/_server/supabase/database.types";
+import { insertManualGenerationJob, insertRunLog, listPendingJobs } from "./reel-generation.repository";
 
 function createSupabaseMock() {
   const calls: Array<{ table: string; method: string; args: unknown[] }> = [];
@@ -54,6 +53,39 @@ function createSupabaseMock() {
 }
 
 describe("reel generation repository", () => {
+  it("defines rejected ideas and automation runs in the migration and generated types", () => {
+    const migrationPath = resolve(
+      process.cwd(),
+      "supabase/migrations/20260519000000_add_reel_idea_generation_flow.sql",
+    );
+    const dbTypesPath = resolve(process.cwd(), "app/_server/supabase/database.types.ts");
+
+    const migration = readFileSync(migrationPath, "utf8");
+    const dbTypes = readFileSync(dbTypesPath, "utf8");
+
+    expect(migration).toContain("academy_reel_rejected_ideas");
+    expect(migration).toContain("academy_reel_automation_runs");
+    expect(migration).toContain("academy_reel_transition_events");
+    expect(migration).toContain("origin text not null check (origin in ('manual', 'ai_idea_generation'))");
+    expect(migration).toContain("flow text not null check (flow in ('reel_scripting', 'reel_idea_generation'))");
+
+    expect(dbTypes).toContain("academy_reel_rejected_ideas");
+    expect(dbTypes).toContain("academy_reel_automation_runs");
+    expect(dbTypes).toContain("academy_reel_transition_events");
+    expect(dbTypes).toContain("last_idea_generation_run_id");
+  });
+
+  it("keeps rejected idea persistence fields aligned with generated DB types", () => {
+    type RejectedIdeaRow = Database["public"]["Tables"]["academy_reel_rejected_ideas"]["Row"];
+    type AutomationRunRow = Database["public"]["Tables"]["academy_reel_automation_runs"]["Row"];
+
+    expectTypeOf<RejectedIdeaRow["origin"]>().toEqualTypeOf<"manual" | "ai_idea_generation" | string>();
+    expectTypeOf<RejectedIdeaRow["idea"]>().toEqualTypeOf<string>();
+    expectTypeOf<RejectedIdeaRow["reel_id"]>().toEqualTypeOf<string | null>();
+    expectTypeOf<RejectedIdeaRow["run_id"]>().toEqualTypeOf<string | null>();
+    expectTypeOf<AutomationRunRow["flow"]>().toEqualTypeOf<string>();
+  });
+
   it("queries pending jobs by queue status and time", async () => {
     const { supabase, calls } = createSupabaseMock();
 
