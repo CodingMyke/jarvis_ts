@@ -13,9 +13,14 @@ export type GenerationOperationResult = { success: true } | OperationError;
 
 const reelIdSchema = z.string().uuid();
 const fieldSchema = z.enum(REEL_GENERATION_TARGET_FIELDS);
+const INVALID_GENERATION_RESPONSE_MESSAGE = "Reel generation response is invalid.";
 
 async function parseResponse(response: Response): Promise<{ success?: boolean; error?: string; message?: string } | null> {
   return (await response.json().catch(() => null)) as { success?: boolean; error?: string; message?: string } | null;
+}
+
+function getHttpErrorMessage(response: Response): string {
+  return `HTTP error ${response.status}`;
 }
 
 function toOperationError(
@@ -47,8 +52,12 @@ export async function generateReelFields(reelId: string): Promise<GenerationOper
     const response = await fetch(`/api/academy/reels/${parsedReelId.data}/generate`, { method: "POST" });
     const data = await parseResponse(response);
 
-    if (!response.ok || !data?.success) {
-      return toOperationError(data, "GENERATION_FAILED", `HTTP error ${response.status}`, response.status);
+    if (!response.ok) {
+      return toOperationError(data, "GENERATION_FAILED", getHttpErrorMessage(response), response.status);
+    }
+
+    if (!data?.success) {
+      return toOperationError(data, "GENERATION_FAILED", INVALID_GENERATION_RESPONSE_MESSAGE, response.status);
     }
 
     return { success: true };
@@ -92,8 +101,12 @@ export async function generateReelField(
     );
     const data = await parseResponse(response);
 
-    if (!response.ok || !data?.success) {
-      return toOperationError(data, "GENERATION_FAILED", `HTTP error ${response.status}`, response.status);
+    if (!response.ok) {
+      return toOperationError(data, "GENERATION_FAILED", getHttpErrorMessage(response), response.status);
+    }
+
+    if (!data?.success) {
+      return toOperationError(data, "GENERATION_FAILED", INVALID_GENERATION_RESPONSE_MESSAGE, response.status);
     }
 
     return { success: true };
@@ -105,4 +118,3 @@ export async function generateReelField(
     };
   }
 }
-

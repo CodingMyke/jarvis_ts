@@ -15,7 +15,7 @@ const reel = {
   body: null,
   hashtags: null,
   last_idea_generation_run_id: null,
-  generation_status: "not_generated",
+  generation_status: "not_generated" as const,
   notes: null,
   scheduled_at: null,
   published_at: null,

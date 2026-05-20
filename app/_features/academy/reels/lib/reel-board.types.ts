@@ -1,10 +1,12 @@
+import type { z } from "zod";
 import type { Database } from "@/app/_server/supabase/database.types";
 import { REEL_BOARD_STATUSES, REEL_ORIGINS } from "./reel-board.constants";
+import { reelSchema } from "./reel-board.schemas";
 
 export type ReelStatus = (typeof REEL_BOARD_STATUSES)[number];
 export type ReelOrigin = (typeof REEL_ORIGINS)[number];
 
-export type ReelRow = Database["public"]["Tables"]["academy_reels"]["Row"];
+export type ReelRow = z.output<typeof reelSchema>;
 export type ReelInsert = Database["public"]["Tables"]["academy_reels"]["Insert"];
 export type ReelUpdate = Database["public"]["Tables"]["academy_reels"]["Update"];
 

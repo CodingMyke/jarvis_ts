@@ -63,7 +63,7 @@ describe("reel board service", () => {
     expectTypeOf<ReelStatus>().toEqualTypeOf<
       "ai_idea" | "idea" | "script" | "to_record" | "to_edit" | "ready" | "published"
     >();
-    expectTypeOf<ReelRow["origin"]>().toEqualTypeOf<"manual" | "ai_idea_generation" | string>();
+    expectTypeOf<ReelRow["origin"]>().toEqualTypeOf<"manual" | "ai_idea_generation">();
     expectTypeOf<ReelRow["last_idea_generation_run_id"]>().toEqualTypeOf<string | null>();
   });
 

@@ -21,8 +21,6 @@ The app supports wake word activation, live voice chat, tool calling
 - Respect existing boundaries: domain logic in `app/_features`, shared primitives in `app/_shared`,
   server-only code in `app/_server`, and thin App Router/API entrypoints.
 
-## Product Priorities
-
 ## Tooling Rules
 
 - Use the Supabase MCP tool for Supabase work (schema, SQL, migrations, logs, project ops).
@@ -49,13 +47,14 @@ The app supports wake word activation, live voice chat, tool calling
 - All code, comments, commit messages, and documentation must be written in English.
 - When speaking with the user, always communicate in Italian.
 - Keep user replies and documentation very short.
-- Prefer brevity over perfect grammar.
+- Prefer brevity over perfect grammar. Avoid all filler words
 
 ## Source Of Truth
 
 - `AGENTS.md`: execution rules, workflow rules, coding standards, and delivery process.
 - `README.md`: product overview, setup steps, architecture map, and operational usage.
 - `Description.md`: deep technical specification for chat memory and conversation compaction.
+- `CONTEXT.md`: List of domain Terms.
 - Conflict resolution:
   - Follow direct user instructions first.
   - For workflow/process conflicts, `AGENTS.md` wins.
@@ -90,7 +89,7 @@ The app supports wake word activation, live voice chat, tool calling
 
 ### TypeScript/React Development
 
-- Use TypeScript 5 with strict mode.
+- Use TypeScript with strict mode.
 - Lint with ESLint (`npm run lint`).
 - Type check with TypeScript (`npm run typecheck`).
 - Test with Vitest (`npm run test`).

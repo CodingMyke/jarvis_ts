@@ -183,4 +183,57 @@ describe("reel board client", () => {
       expect.objectContaining({ method: "DELETE" }),
     );
   });
+
+  it("does not report HTTP 200 when a successful status code returns an invalid payload", async () => {
+    const fetchMock = vi.fn().mockResolvedValueOnce(
+      createJsonResponse({
+        reel: {
+          id: "11111111-1111-4111-8111-111111111111",
+        },
+      }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(updateReelStatus("reel-1", { status: "ready" })).resolves.toEqual({
+      success: false,
+      error: "UPDATE_FAILED",
+      errorMessage: "Reel response is invalid.",
+      status: 200,
+    });
+  });
+
+  it("normalizes a minimal create response payload", async () => {
+    const fetchMock = vi.fn().mockResolvedValueOnce(
+      createJsonResponse({
+        success: true,
+        reel: {
+          id: "11111111-1111-4111-8111-111111111111",
+          status: "idea",
+          idea: "Idea",
+          generation_status: "not_generated",
+          title: null,
+          caption: null,
+          body: null,
+          hashtags: null,
+          notes: null,
+          scheduled_at: null,
+          published_at: null,
+          created_at: "2026-05-20T19:00:00.000Z",
+        },
+      }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(createReel({ idea: "Idea" })).resolves.toMatchObject({
+      success: true,
+      reel: {
+        id: "11111111-1111-4111-8111-111111111111",
+        status: "idea",
+        idea: "Idea",
+        origin: "manual",
+        last_idea_generation_run_id: null,
+        updated_at: "2026-05-20T19:00:00.000Z",
+      },
+    });
+  });
 });

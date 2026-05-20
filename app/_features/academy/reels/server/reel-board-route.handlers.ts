@@ -9,6 +9,7 @@ import {
   updateReel,
   updateReelStatus,
 } from "./reel-board.service";
+import { jsonValidatedBoard, jsonValidatedReel } from "./reel-route-response";
 import {
   reelCreateBodySchema,
   reelIdParamsSchema,
@@ -45,7 +46,7 @@ export async function handleGetReelBoard(auth: AuthContext) {
     return toServiceErrorResponse(result);
   }
 
-  return jsonOk({
+  return jsonValidatedBoard({
     success: true,
     board: result.board,
   });
@@ -67,7 +68,7 @@ export async function handleCreateReel(auth: AuthContext, body: unknown) {
     return toServiceErrorResponse(result);
   }
 
-  return jsonOk({
+  return jsonValidatedReel({
     success: true,
     reel: result.reel,
   });
@@ -98,7 +99,7 @@ export async function handleUpdateReel(auth: AuthContext, reelId: string, body: 
     return toServiceErrorResponse(result);
   }
 
-  return jsonOk({
+  return jsonValidatedReel({
     success: true,
     reel: result.reel,
   });
@@ -134,7 +135,7 @@ export async function handleUpdateReelStatus(auth: AuthContext, reelId: string, 
     return toServiceErrorResponse(result);
   }
 
-  return jsonOk({
+  return jsonValidatedReel({
     success: true,
     reel: result.reel,
   });
@@ -165,7 +166,7 @@ export async function handleApproveAiIdea(auth: AuthContext, reelId: string, bod
     return toServiceErrorResponse(result);
   }
 
-  return jsonOk({
+  return jsonValidatedReel({
     success: true,
     reel: result.reel,
   });

@@ -38,6 +38,10 @@ export type UpdateReelStatusOperationResult = { success: true; reel: ReelRow } |
 export type DeleteReelOperationResult = { success: true; reelId: string } | OperationError;
 export type ApproveAiIdeaOperationResult = { success: true; reel: ReelRow } | OperationError;
 
+const INVALID_BOARD_RESPONSE_MESSAGE = "Reel board response is invalid.";
+const INVALID_REEL_RESPONSE_MESSAGE = "Reel response is invalid.";
+const INVALID_DELETE_RESPONSE_MESSAGE = "Reel delete response is invalid.";
+
 function getOperationErrorMessage(response: ReelBoardApiResponse | null, fallback: string): string {
   return response?.errorMessage ?? response?.message ?? response?.error ?? fallback;
 }
@@ -68,19 +72,31 @@ async function parseResponse(response: Response): Promise<ReelBoardApiResponse |
   return (await response.json().catch(() => null)) as ReelBoardApiResponse | null;
 }
 
+function getHttpErrorMessage(response: Response): string {
+  return `HTTP error ${response.status}`;
+}
+
 export async function getReelBoard(): Promise<GetReelBoardOperationResult> {
   try {
     const response = await fetch("/api/academy/reels");
     const data = await parseResponse(response);
-    const parsedBoard = reelBoardSchema.safeParse(data?.board);
-
-    if (!response.ok || !data?.success || !parsedBoard.success) {
+    if (!response.ok) {
       return toOperationError(
         data,
         "GET_REEL_BOARD_FAILED",
-        `HTTP error ${response.status}`,
+        getHttpErrorMessage(response),
         response.status,
       );
+    }
+
+    if (!data?.success) {
+      return toOperationError(data, "GET_REEL_BOARD_FAILED", INVALID_BOARD_RESPONSE_MESSAGE, response.status);
+    }
+
+    const parsedBoard = reelBoardSchema.safeParse(data.board);
+
+    if (!parsedBoard.success) {
+      return toOperationError(data, "GET_REEL_BOARD_FAILED", INVALID_BOARD_RESPONSE_MESSAGE, response.status);
     }
 
     return {
@@ -113,15 +129,18 @@ export async function createReel(input: CreateReelInput): Promise<CreateReelOper
       body: JSON.stringify(parsed.data),
     });
     const data = await parseResponse(response);
-    const parsedReel = reelSchema.safeParse(data?.reel);
+    if (!response.ok) {
+      return toOperationError(data, "CREATION_FAILED", getHttpErrorMessage(response), response.status);
+    }
 
-    if (!response.ok || !data?.success || !parsedReel.success) {
-      return toOperationError(
-        data,
-        "CREATION_FAILED",
-        `HTTP error ${response.status}`,
-        response.status,
-      );
+    if (!data?.success) {
+      return toOperationError(data, "CREATION_FAILED", INVALID_REEL_RESPONSE_MESSAGE, response.status);
+    }
+
+    const parsedReel = reelSchema.safeParse(data.reel);
+
+    if (!parsedReel.success) {
+      return toOperationError(data, "CREATION_FAILED", INVALID_REEL_RESPONSE_MESSAGE, response.status);
     }
 
     return {
@@ -157,15 +176,18 @@ export async function updateReel(
       body: JSON.stringify(parsed.data),
     });
     const data = await parseResponse(response);
-    const parsedReel = reelSchema.safeParse(data?.reel);
+    if (!response.ok) {
+      return toOperationError(data, "UPDATE_FAILED", getHttpErrorMessage(response), response.status);
+    }
 
-    if (!response.ok || !data?.success || !parsedReel.success) {
-      return toOperationError(
-        data,
-        "UPDATE_FAILED",
-        `HTTP error ${response.status}`,
-        response.status,
-      );
+    if (!data?.success) {
+      return toOperationError(data, "UPDATE_FAILED", INVALID_REEL_RESPONSE_MESSAGE, response.status);
+    }
+
+    const parsedReel = reelSchema.safeParse(data.reel);
+
+    if (!parsedReel.success) {
+      return toOperationError(data, "UPDATE_FAILED", INVALID_REEL_RESPONSE_MESSAGE, response.status);
     }
 
     return {
@@ -201,15 +223,18 @@ export async function updateReelStatus(
       body: JSON.stringify(parsed.data),
     });
     const data = await parseResponse(response);
-    const parsedReel = reelSchema.safeParse(data?.reel);
+    if (!response.ok) {
+      return toOperationError(data, "UPDATE_FAILED", getHttpErrorMessage(response), response.status);
+    }
 
-    if (!response.ok || !data?.success || !parsedReel.success) {
-      return toOperationError(
-        data,
-        "UPDATE_FAILED",
-        `HTTP error ${response.status}`,
-        response.status,
-      );
+    if (!data?.success) {
+      return toOperationError(data, "UPDATE_FAILED", INVALID_REEL_RESPONSE_MESSAGE, response.status);
+    }
+
+    const parsedReel = reelSchema.safeParse(data.reel);
+
+    if (!parsedReel.success) {
+      return toOperationError(data, "UPDATE_FAILED", INVALID_REEL_RESPONSE_MESSAGE, response.status);
     }
 
     return {
@@ -245,15 +270,18 @@ export async function approveAiIdea(
       body: JSON.stringify(parsed.data),
     });
     const data = await parseResponse(response);
-    const parsedReel = reelSchema.safeParse(data?.reel);
+    if (!response.ok) {
+      return toOperationError(data, "APPROVE_FAILED", getHttpErrorMessage(response), response.status);
+    }
 
-    if (!response.ok || !data?.success || !parsedReel.success) {
-      return toOperationError(
-        data,
-        "APPROVE_FAILED",
-        `HTTP error ${response.status}`,
-        response.status,
-      );
+    if (!data?.success) {
+      return toOperationError(data, "APPROVE_FAILED", INVALID_REEL_RESPONSE_MESSAGE, response.status);
+    }
+
+    const parsedReel = reelSchema.safeParse(data.reel);
+
+    if (!parsedReel.success) {
+      return toOperationError(data, "APPROVE_FAILED", INVALID_REEL_RESPONSE_MESSAGE, response.status);
     }
 
     return {
@@ -272,13 +300,16 @@ export async function deleteReel(reelId: string): Promise<DeleteReelOperationRes
     });
     const data = await parseResponse(response);
 
-    if (!response.ok || !data?.success || typeof data.reelId !== "string") {
-      return toOperationError(
-        data,
-        "DELETE_FAILED",
-        `HTTP error ${response.status}`,
-        response.status,
-      );
+    if (!response.ok) {
+      return toOperationError(data, "DELETE_FAILED", getHttpErrorMessage(response), response.status);
+    }
+
+    if (!data?.success) {
+      return toOperationError(data, "DELETE_FAILED", INVALID_DELETE_RESPONSE_MESSAGE, response.status);
+    }
+
+    if (typeof data.reelId !== "string") {
+      return toOperationError(data, "DELETE_FAILED", INVALID_DELETE_RESPONSE_MESSAGE, response.status);
     }
 
     return {
