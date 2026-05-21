@@ -17,10 +17,10 @@ export function TimerControls({
       {!timer.isExpired ? (
         <button
           onClick={onPauseResume}
-          className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/10 transition-colors hover:bg-white/20 ${
+          className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-surface-raised transition-colors hover:bg-interactive-strong ${
             timer.isPaused
               ? "text-yellow-400 hover:text-yellow-300"
-              : "text-muted hover:text-foreground"
+              : "text-copy-muted hover:text-copy"
           }`}
           aria-label={timer.isPaused ? "Riprendi timer" : "Metti in pausa timer"}
         >
@@ -66,7 +66,7 @@ export function TimerControls({
 
       <button
         onClick={onStop}
-        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/10 text-muted transition-colors hover:bg-white/20 hover:text-foreground"
+        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-surface-raised text-copy-muted transition-colors hover:bg-interactive-strong hover:text-copy"
         aria-label="Ferma timer"
       >
         <StopIcon className="h-4 w-4" />

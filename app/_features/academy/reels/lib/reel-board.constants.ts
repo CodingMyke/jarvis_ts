@@ -1,0 +1,20 @@
+export const REEL_BOARD_STATUSES = [
+  "ai_idea",
+  "idea",
+  "script",
+  "to_record",
+  "to_edit",
+  "ready",
+  "published",
+] as const;
+
+export const REEL_ORIGINS = ["manual", "ai_idea_generation"] as const;
+
+export const REEL_BOARD_DEFAULT_STATUS = "idea";
+
+export const REEL_GENERATION_STATUSES = [
+  "not_generated",
+  "processing",
+  "completed",
+  "failed",
+] as const;

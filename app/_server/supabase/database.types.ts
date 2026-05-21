@@ -14,6 +14,330 @@ export type Database = {
   }
   public: {
     Tables: {
+      academy_reels: {
+        Row: {
+          body: string | null
+          caption: string | null
+          created_at: string
+          generation_status: string
+          hashtags: string | null
+          idea: string
+          id: string
+          last_idea_generation_run_id: string | null
+          notes: string | null
+          origin: string
+          published_at: string | null
+          scheduled_at: string | null
+          status: string
+          title: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          body?: string | null
+          caption?: string | null
+          created_at?: string
+          generation_status?: string
+          hashtags?: string | null
+          idea: string
+          id?: string
+          last_idea_generation_run_id?: string | null
+          notes?: string | null
+          origin?: string
+          published_at?: string | null
+          scheduled_at?: string | null
+          status?: string
+          title?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          body?: string | null
+          caption?: string | null
+          created_at?: string
+          generation_status?: string
+          hashtags?: string | null
+          idea?: string
+          id?: string
+          last_idea_generation_run_id?: string | null
+          notes?: string | null
+          origin?: string
+          published_at?: string | null
+          scheduled_at?: string | null
+          status?: string
+          title?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "academy_reels_last_idea_generation_run_id_fkey"
+            columns: ["last_idea_generation_run_id"]
+            isOneToOne: false
+            referencedRelation: "academy_reel_automation_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      academy_reel_automation_runs: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          flow: string
+          id: string
+          metadata: Json
+          slot: string | null
+          started_at: string | null
+          status: string
+          trigger: string
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          flow: string
+          id?: string
+          metadata?: Json
+          slot?: string | null
+          started_at?: string | null
+          status: string
+          trigger: string
+          user_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          flow?: string
+          id?: string
+          metadata?: Json
+          slot?: string | null
+          started_at?: string | null
+          status?: string
+          trigger?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      academy_reel_rejected_ideas: {
+        Row: {
+          body: string | null
+          caption: string | null
+          created_at: string
+          hashtags: string | null
+          id: string
+          idea: string
+          notes: string | null
+          origin: string
+          reel_id: string | null
+          rejected_at: string
+          run_id: string | null
+          title: string | null
+          user_id: string
+        }
+        Insert: {
+          body?: string | null
+          caption?: string | null
+          created_at?: string
+          hashtags?: string | null
+          id?: string
+          idea: string
+          notes?: string | null
+          origin: string
+          reel_id?: string | null
+          rejected_at?: string
+          run_id?: string | null
+          title?: string | null
+          user_id: string
+        }
+        Update: {
+          body?: string | null
+          caption?: string | null
+          created_at?: string
+          hashtags?: string | null
+          id?: string
+          idea?: string
+          notes?: string | null
+          origin?: string
+          reel_id?: string | null
+          rejected_at?: string
+          run_id?: string | null
+          title?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "academy_reel_rejected_ideas_reel_id_fkey"
+            columns: ["reel_id"]
+            isOneToOne: false
+            referencedRelation: "academy_reels"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "academy_reel_rejected_ideas_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "academy_reel_automation_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      academy_reel_transition_events: {
+        Row: {
+          action: string
+          created_at: string
+          from_status: string
+          id: string
+          metadata: Json
+          reel_id: string
+          to_status: string
+          user_id: string
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          from_status: string
+          id?: string
+          metadata?: Json
+          reel_id: string
+          to_status: string
+          user_id: string
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          from_status?: string
+          id?: string
+          metadata?: Json
+          reel_id?: string
+          to_status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "academy_reel_transition_events_reel_id_fkey"
+            columns: ["reel_id"]
+            isOneToOne: false
+            referencedRelation: "academy_reels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      academy_reel_generation_queue_jobs: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          error_message: string | null
+          id: string
+          reel_id: string
+          run_at: string
+          started_at: string | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          reel_id: string
+          run_at?: string
+          started_at?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          reel_id?: string
+          run_at?: string
+          started_at?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "academy_reel_generation_queue_jobs_reel_id_fkey"
+            columns: ["reel_id"]
+            isOneToOne: false
+            referencedRelation: "academy_reels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      academy_reel_generation_run_logs: {
+        Row: {
+          created_at: string
+          error_message: string | null
+          id: string
+          job_id: string | null
+          metadata: Json
+          reel_id: string | null
+          status: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          job_id?: string | null
+          metadata?: Json
+          reel_id?: string | null
+          status: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          job_id?: string | null
+          metadata?: Json
+          reel_id?: string | null
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "academy_reel_generation_run_logs_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "academy_reel_generation_queue_jobs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "academy_reel_generation_run_logs_reel_id_fkey"
+            columns: ["reel_id"]
+            isOneToOne: false
+            referencedRelation: "academy_reels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      academy_reel_generation_settings: {
+        Row: {
+          config: Json
+          created_at: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          config?: Json
+          created_at?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          config?: Json
+          created_at?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       chats: {
         Row: {
           assistant_history: Json
@@ -116,6 +440,258 @@ export type Database = {
         }
         Relationships: []
       }
+      user_settings: {
+        Row: {
+          created_at: string
+          timezone: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          timezone: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          timezone?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      progression_actions: {
+        Row: {
+          active: boolean
+          created_at: string
+          deactivated_at: string | null
+          description: string | null
+          frequency_config: Json
+          frequency_type: string
+          goal_id: string
+          id: string
+          title: string
+          updated_at: string
+          user_id: string
+          xp_per_checkin: number
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          deactivated_at?: string | null
+          description?: string | null
+          frequency_config?: Json
+          frequency_type: string
+          goal_id: string
+          id?: string
+          title: string
+          updated_at?: string
+          user_id: string
+          xp_per_checkin?: number
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          deactivated_at?: string | null
+          description?: string | null
+          frequency_config?: Json
+          frequency_type?: string
+          goal_id?: string
+          id?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+          xp_per_checkin?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "progression_actions_goal_id_fkey"
+            columns: ["goal_id"]
+            isOneToOne: false
+            referencedRelation: "progression_goals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      progression_checkins: {
+        Row: {
+          action_id: string
+          created_at: string
+          goal_id: string
+          id: string
+          local_date: string
+          timezone: string
+          user_id: string
+          xp_awarded: number
+        }
+        Insert: {
+          action_id: string
+          created_at?: string
+          goal_id: string
+          id?: string
+          local_date: string
+          timezone: string
+          user_id: string
+          xp_awarded?: number
+        }
+        Update: {
+          action_id?: string
+          created_at?: string
+          goal_id?: string
+          id?: string
+          local_date?: string
+          timezone?: string
+          user_id?: string
+          xp_awarded?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "progression_checkins_action_id_fkey"
+            columns: ["action_id"]
+            isOneToOne: false
+            referencedRelation: "progression_actions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "progression_checkins_goal_id_fkey"
+            columns: ["goal_id"]
+            isOneToOne: false
+            referencedRelation: "progression_goals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      progression_goals: {
+        Row: {
+          completed_at: string | null
+          completion_xp: number
+          created_at: string
+          deadline: string | null
+          deadline_change_count: number
+          deleted_at: string | null
+          description: string | null
+          failed_at: string | null
+          id: string
+          started_at: string | null
+          status: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          completion_xp?: number
+          created_at?: string
+          deadline?: string | null
+          deadline_change_count?: number
+          deleted_at?: string | null
+          description?: string | null
+          failed_at?: string | null
+          id?: string
+          started_at?: string | null
+          status?: string
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          completion_xp?: number
+          created_at?: string
+          deadline?: string | null
+          deadline_change_count?: number
+          deleted_at?: string | null
+          description?: string | null
+          failed_at?: string | null
+          id?: string
+          started_at?: string | null
+          status?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      progression_profiles: {
+        Row: {
+          created_at: string
+          level: number
+          total_xp: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          level?: number
+          total_xp?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          level?: number
+          total_xp?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      progression_xp_history: {
+        Row: {
+          action_id: string | null
+          checkin_id: string | null
+          created_at: string
+          description: string
+          goal_id: string | null
+          id: string
+          user_id: string
+          xp_amount: number
+        }
+        Insert: {
+          action_id?: string | null
+          checkin_id?: string | null
+          created_at?: string
+          description: string
+          goal_id?: string | null
+          id?: string
+          user_id: string
+          xp_amount: number
+        }
+        Update: {
+          action_id?: string | null
+          checkin_id?: string | null
+          created_at?: string
+          description?: string
+          goal_id?: string | null
+          id?: string
+          user_id?: string
+          xp_amount?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "progression_xp_history_action_id_fkey"
+            columns: ["action_id"]
+            isOneToOne: false
+            referencedRelation: "progression_actions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "progression_xp_history_checkin_id_fkey"
+            columns: ["checkin_id"]
+            isOneToOne: false
+            referencedRelation: "progression_checkins"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "progression_xp_history_goal_id_fkey"
+            columns: ["goal_id"]
+            isOneToOne: false
+            referencedRelation: "progression_goals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -153,6 +729,113 @@ export type Database = {
           summary_text: string
           title: string
         }[]
+      }
+      progression_calculate_level: {
+        Args: { p_total_xp: number }
+        Returns: number
+      }
+      progression_complete_goal: {
+        Args: { p_description?: string; p_goal_id: string }
+        Returns: {
+          completed_at: string | null
+          completion_xp: number
+          created_at: string
+          deadline: string | null
+          deadline_change_count: number
+          deleted_at: string | null
+          description: string | null
+          failed_at: string | null
+          id: string
+          started_at: string | null
+          status: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+      }
+      progression_create_checkin: {
+        Args: {
+          p_action_id: string
+          p_description?: string
+          p_local_date: string
+          p_timezone: string
+        }
+        Returns: {
+          action_id: string
+          created_at: string
+          goal_id: string
+          id: string
+          local_date: string
+          timezone: string
+          user_id: string
+          xp_awarded: number
+        }
+      }
+      progression_ensure_profile: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          created_at: string
+          level: number
+          total_xp: number
+          updated_at: string
+          user_id: string
+        }
+      }
+      progression_fail_goal: {
+        Args: { p_description?: string; p_goal_id: string }
+        Returns: {
+          completed_at: string | null
+          completion_xp: number
+          created_at: string
+          deadline: string | null
+          deadline_change_count: number
+          deleted_at: string | null
+          description: string | null
+          failed_at: string | null
+          id: string
+          started_at: string | null
+          status: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+      }
+      progression_record_xp: {
+        Args: {
+          p_action_id?: string
+          p_checkin_id?: string
+          p_description: string
+          p_goal_id?: string
+          p_xp_amount: number
+        }
+        Returns: {
+          action_id: string | null
+          checkin_id: string | null
+          created_at: string
+          description: string
+          goal_id: string | null
+          id: string
+          user_id: string
+          xp_amount: number
+        } | null
+      }
+      progression_undo_checkin: {
+        Args: {
+          p_checkin_id: string
+          p_description?: string
+          p_local_date: string
+          p_timezone: string
+        }
+        Returns: {
+          action_id: string
+          created_at: string
+          goal_id: string
+          id: string
+          local_date: string
+          timezone: string
+          user_id: string
+          xp_awarded: number
+        }
       }
     }
     Enums: {

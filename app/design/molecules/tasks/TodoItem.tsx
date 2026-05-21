@@ -29,7 +29,7 @@ export function TodoItem({
 
       <button
         onClick={onDelete}
-        className="flex h-6 w-6 shrink-0 items-center justify-center rounded text-muted transition-colors hover:bg-white/10 hover:text-red-400"
+        className="flex h-6 w-6 shrink-0 items-center justify-center rounded-app text-copy-muted transition-colors hover:bg-interactive hover:text-danger"
         aria-label="Elimina todo"
       >
         <TrashIcon className="h-4 w-4" />

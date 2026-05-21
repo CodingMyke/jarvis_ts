@@ -1,13 +1,46 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { getUserSettings, updateUserSettings } from "@/app/_features/user-settings";
 import { Button } from "@/app/design/atoms/shared";
 import { SettingsSectionHeader } from "@/app/design/molecules/auth/SettingsSectionHeader";
 import { useAuth } from "@/app/_features/auth/hooks/useAuth";
+import { AppPanel } from "@/app/_shared/ui";
 
 export function SettingsPanel() {
   const { user, isLoading, signOut } = useAuth();
+  const [timezone, setTimezone] = useState("");
+  const [isSavingTimezone, setIsSavingTimezone] = useState(false);
+
+  useEffect(() => {
+    if (!user) {
+      return;
+    }
+
+    let isActive = true;
+
+    void getUserSettings().then((result) => {
+      if (isActive && result.success) {
+        setTimezone(result.settings.timezone);
+      }
+    });
+
+    return () => {
+      isActive = false;
+    };
+  }, [user]);
+
+  async function handleSaveTimezone(): Promise<void> {
+    setIsSavingTimezone(true);
+    const result = await updateUserSettings({ timezone });
+    setIsSavingTimezone(false);
+
+    if (result.success) {
+      setTimezone(result.settings.timezone);
+    }
+  }
 
   if (isLoading) {
     return (
@@ -39,7 +72,7 @@ export function SettingsPanel() {
 
   return (
     <div className="mx-auto max-w-md space-y-8 p-6">
-      <section className="rounded-[28px] border border-white/10 bg-white/5 p-6 backdrop-blur-xl">
+      <AppPanel as="section" variant="overlay">
         <SettingsSectionHeader
           title="Account Google"
           description="Identità usata per autenticazione e integrazioni."
@@ -63,18 +96,52 @@ export function SettingsPanel() {
             ) : null}
           </div>
         </div>
-      </section>
+      </AppPanel>
+
+      <AppPanel as="section" variant="overlay">
+        <SettingsSectionHeader
+          title="Timezone"
+          description="Fuso orario usato per automazioni, progression e logiche locali."
+        />
+        <div className="space-y-4">
+          <label className="flex flex-col gap-2 text-sm text-foreground">
+            <span>Fuso orario</span>
+            <input
+              aria-label="Timezone"
+              className="min-h-10 rounded-app border border-line bg-surface px-3 py-2 text-sm text-foreground outline-none"
+              value={timezone}
+              onChange={(event) => setTimezone(event.target.value)}
+              placeholder="Europe/Rome"
+            />
+          </label>
+          <Button
+            variant="secondary"
+            type="button"
+            onClick={() => void handleSaveTimezone()}
+            disabled={isSavingTimezone}
+          >
+            {isSavingTimezone ? "Salvataggio..." : "Salva timezone"}
+          </Button>
+        </div>
+      </AppPanel>
+
+      <AppPanel as="section" variant="overlay">
+        <SettingsSectionHeader
+          title="Integrazioni"
+          description="Collega i servizi esterni usati dall'assistente."
+        />
+        <Link
+          href="/setup/calendar"
+          className="ui-button ui-button-secondary ui-focus-ring min-h-10 px-4 py-2 text-sm"
+        >
+          Configura calendario
+        </Link>
+      </AppPanel>
 
       <div className="flex flex-col gap-3">
         <Button variant="secondary" onClick={() => signOut()} type="button">
           Esci
         </Button>
-        <Link
-          href="/assistant"
-          className="flex w-full items-center justify-center rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-muted transition-colors hover:bg-white/10 hover:text-foreground focus:outline-none focus:ring-2 focus:ring-accent/20"
-        >
-          Torna all&apos;assistente
-        </Link>
       </div>
     </div>
   );

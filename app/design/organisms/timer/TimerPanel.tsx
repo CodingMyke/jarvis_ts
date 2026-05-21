@@ -25,7 +25,7 @@ export function TimerPanel() {
   }
 
   return (
-    <div className="glass absolute right-6 top-6 z-10 rounded-lg px-4 py-3 shadow-lg">
+    <div className="glass absolute right-6 top-6 z-10 rounded-app border border-line bg-overlay px-4 py-3 shadow-overlay">
       <div className="flex items-center gap-4">
         <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-accent/10">
           <svg
@@ -64,7 +64,7 @@ export function TimerPanel() {
       </div>
 
       {timer.isExpired ? (
-        <div className="mt-3 flex items-center justify-center gap-2 text-sm font-medium text-red-400">
+        <div className="mt-3 flex items-center justify-center gap-2 text-sm font-medium text-danger">
           <span className="animate-pulse">🔔</span>
           <span>Timer scaduto!</span>
         </div>

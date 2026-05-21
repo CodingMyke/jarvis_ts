@@ -1,17 +1,22 @@
 // @vitest-environment jsdom
-// used the fkg testing skill zioo
 
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import React from "react";
+import { act } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { Button } from "@/app/design/atoms/shared/Button";
 import { AuthButton } from "@/app/design/molecules/auth/AuthButton";
 import { LoginTemplate } from "@/app/design/templates/auth/LoginTemplate";
+import { ReelAutomationSettingsPanel } from "@/app/design/organisms/settings/ReelAutomationSettingsPanel";
 import { SettingsTemplate } from "@/app/design/templates/settings/SettingsTemplate";
 
 const authUiMocks = vi.hoisted(() => ({
   searchParams: new URLSearchParams(),
   useAuth: vi.fn(),
+  getUserSettings: vi.fn(),
+  updateUserSettings: vi.fn(),
+  getReelAutomationSettings: vi.fn(),
+  updateReelAutomationSettings: vi.fn(),
 }));
 
 vi.mock("next/link", () => ({
@@ -47,10 +52,86 @@ vi.mock("@/app/_features/auth/hooks/useAuth", () => ({
   useAuth: authUiMocks.useAuth,
 }));
 
+vi.mock("@/app/_features/user-settings", () => ({
+  getUserSettings: authUiMocks.getUserSettings,
+  updateUserSettings: authUiMocks.updateUserSettings,
+}));
+
+vi.mock("@/app/_features/academy/reels", async () => {
+  const actual = await vi.importActual<typeof import("@/app/_features/academy/reels")>(
+    "@/app/_features/academy/reels",
+  );
+
+  return {
+    ...actual,
+    getReelAutomationSettings: authUiMocks.getReelAutomationSettings,
+    updateReelAutomationSettings: authUiMocks.updateReelAutomationSettings,
+  };
+});
+
+function expectNoLegacyRoundedUtility(element: HTMLElement) {
+  expect(element.className).not.toMatch(/(^|\s)rounded-(?!app\b|round\b)[^\s]+(?=\s|$)/);
+}
+
+function expectSemanticAppRadius(element: HTMLElement) {
+  expect(element.className).toContain("rounded-app");
+  expectNoLegacyRoundedUtility(element);
+}
+
 describe("auth design", () => {
   beforeEach(() => {
     authUiMocks.searchParams = new URLSearchParams();
     authUiMocks.useAuth.mockReset();
+    authUiMocks.getUserSettings.mockResolvedValue({
+      success: true,
+      settings: {
+        userId: "user-1",
+        timezone: "Europe/Rome",
+      },
+    });
+    authUiMocks.updateUserSettings.mockResolvedValue({
+      success: true,
+      settings: {
+        userId: "user-1",
+        timezone: "America/New_York",
+      },
+    });
+    authUiMocks.getReelAutomationSettings.mockResolvedValue({
+      success: true,
+      settings: {
+        reelScripting: {
+          enabled: true,
+          runTimes: ["09:00", "17:00"],
+          scriptingContext: "Current campaign context",
+        },
+        reelIdeaGeneration: {
+          enabled: true,
+          runTimes: ["10:00", "18:00"],
+          ideasPerRun: 3,
+          maxPendingAiIdeas: 10,
+          latestPublishedReelsCount: 3,
+          ideaGenerationContext: "Idea generation context",
+        },
+      },
+    });
+    authUiMocks.updateReelAutomationSettings.mockResolvedValue({
+      success: true,
+      settings: {
+        reelScripting: {
+          enabled: true,
+          runTimes: ["09:00", "17:00"],
+          scriptingContext: "Current campaign context",
+        },
+        reelIdeaGeneration: {
+          enabled: true,
+          runTimes: ["10:00", "18:00"],
+          ideasPerRun: 3,
+          maxPendingAiIdeas: 10,
+          latestPublishedReelsCount: 3,
+          ideaGenerationContext: "Idea generation context",
+        },
+      },
+    });
   });
 
   it("renders buttons for loading, signed-in and signed-out auth states", () => {
@@ -63,7 +144,7 @@ describe("auth design", () => {
       signOut,
     });
 
-    const { rerender } = render(<AuthButton redirectToAfterLogin="/assistant" />);
+    const { rerender } = render(<AuthButton redirectToAfterLogin="/dashboard" />);
     expect(screen.getByText("...")).toBeInTheDocument();
 
     authUiMocks.useAuth.mockReturnValueOnce({
@@ -75,7 +156,7 @@ describe("auth design", () => {
       signOut,
     });
 
-    rerender(<AuthButton redirectToAfterLogin="/assistant" />);
+    rerender(<AuthButton redirectToAfterLogin="/dashboard" />);
     fireEvent.click(screen.getByRole("button", { name: "Esci" }));
     expect(signOut).toHaveBeenCalledOnce();
 
@@ -86,17 +167,18 @@ describe("auth design", () => {
       signOut,
     });
 
-    rerender(<AuthButton redirectToAfterLogin="/assistant" />);
+    rerender(<AuthButton redirectToAfterLogin="/dashboard" />);
     fireEvent.click(screen.getByRole("button", { name: "Accedi con Google" }));
-    expect(signInWithGoogle).toHaveBeenCalledWith("/assistant");
+    expect(signInWithGoogle).toHaveBeenCalledWith("/dashboard");
   });
 
   it("renders the login template and decodes auth errors from the query string", () => {
-    authUiMocks.searchParams = new URLSearchParams("error=Sessione%20scaduta");
+    authUiMocks.searchParams = new URLSearchParams("error=Sessione%20scaduta&next=%2Fassistant");
+    const signInWithGoogle = vi.fn();
     authUiMocks.useAuth.mockReturnValue({
       isLoading: false,
       user: null,
-      signInWithGoogle: vi.fn(),
+      signInWithGoogle,
       signOut: vi.fn(),
     });
 
@@ -105,10 +187,12 @@ describe("auth design", () => {
     expect(screen.getByText("Jarvis")).toBeInTheDocument();
     expect(screen.getByText("Voice Workspace")).toBeInTheDocument();
     expect(screen.getByText("Sessione scaduta")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Accedi con Google" })).toBeInTheDocument();
+    expectNoLegacyRoundedUtility(screen.getByText("Voice Workspace").closest("div") as HTMLElement);
+    fireEvent.click(screen.getByRole("button", { name: "Accedi con Google" }));
+    expect(signInWithGoogle).toHaveBeenCalledWith("/assistant");
   });
 
-  it("renders settings for loading, missing users and authenticated users", () => {
+  it("renders settings for loading, missing users and authenticated users", async () => {
     authUiMocks.useAuth.mockReturnValueOnce({
       isLoading: true,
       user: null,
@@ -131,7 +215,7 @@ describe("auth design", () => {
     expect(screen.getByRole("link", { name: "Accedi" })).toHaveAttribute("href", "/");
 
     const signOut = vi.fn();
-    authUiMocks.useAuth.mockReturnValueOnce({
+    authUiMocks.useAuth.mockReturnValue({
       isLoading: false,
       user: {
         email: "jarvis@example.com",
@@ -147,19 +231,40 @@ describe("auth design", () => {
     rerender(<SettingsTemplate />);
 
     expect(screen.getByText("Account Google")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Timezone" })).toBeInTheDocument();
+    expect(screen.getByText("Integrazioni")).toBeInTheDocument();
     expect(screen.getByText("Jarvis User")).toBeInTheDocument();
     expect(screen.getByTitle("jarvis@example.com")).toBeInTheDocument();
     expect(screen.getByAltText("Avatar")).toHaveAttribute(
       "src",
       "https://example.com/avatar.png",
     );
+    expect(screen.getByRole("link", { name: "Configura calendario" })).toHaveAttribute(
+      "href",
+      "/setup/calendar",
+    );
+    await waitFor(() => {
+      expect(screen.getByLabelText("Timezone")).toHaveValue("Europe/Rome");
+    });
+    expectNoLegacyRoundedUtility(screen.getByText("Account Google").closest("section") as HTMLElement);
+    expectNoLegacyRoundedUtility(screen.getByRole("heading", { name: "Timezone" }).closest("section") as HTMLElement);
+    expectNoLegacyRoundedUtility(screen.getByText("Integrazioni").closest("section") as HTMLElement);
+    expect(screen.queryByText("Reel automation")).not.toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText("Timezone"), {
+        target: { value: "America/New_York" },
+      });
+      fireEvent.click(screen.getByRole("button", { name: "Salva timezone" }));
+      await Promise.resolve();
+    });
+    expect(authUiMocks.updateUserSettings).toHaveBeenCalledWith({
+      timezone: "America/New_York",
+    });
 
     fireEvent.click(screen.getByRole("button", { name: "Esci" }));
     expect(signOut).toHaveBeenCalledOnce();
-    expect(screen.getByRole("link", { name: "Torna all'assistente" })).toHaveAttribute(
-      "href",
-      "/assistant",
-    );
+    expect(screen.queryByRole("link", { name: "Torna all'assistente" })).not.toBeInTheDocument();
   });
 
   it("renders the shared button variants", () => {
@@ -176,6 +281,39 @@ describe("auth design", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Primario" }));
     expect(onClick).toHaveBeenCalledOnce();
+    expectSemanticAppRadius(screen.getByRole("button", { name: "Primario" }));
+    expectSemanticAppRadius(screen.getByRole("button", { name: "Secondario" }));
+    expectSemanticAppRadius(screen.getByRole("button", { name: "Recording" }));
+    expect(screen.getByRole("button", { name: "Secondario" }).className).toContain("bg-surface");
+    expect(screen.getByRole("button", { name: "Secondario" }).className).toContain("border-line");
     expect(screen.getByRole("button", { name: "Recording" })).toBeInTheDocument();
+  });
+
+  it("shows separate settings cards for scripting and idea generation with one save button", async () => {
+    render(<ReelAutomationSettingsPanel />);
+
+    expect(await screen.findByText("Reel scripting")).toBeInTheDocument();
+    expect(screen.getByText("Reel idea generation")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Save reel automation" })).toBeInTheDocument();
+  });
+
+  it("shows a 10-minute validation error for idea generation run times in the form", async () => {
+    render(<ReelAutomationSettingsPanel />);
+
+    const input = await screen.findByLabelText("Idea generation run times");
+    fireEvent.change(input, { target: { value: "09:00, 09:05" } });
+    fireEvent.click(screen.getByRole("button", { name: "Save reel automation" }));
+
+    expect(await screen.findByText(/at least 10 minutes apart/i)).toBeInTheDocument();
+  });
+
+  it("preserves idea generation numeric defaults when a required field is cleared", async () => {
+    render(<ReelAutomationSettingsPanel />);
+
+    const ideasPerRun = (await screen.findByLabelText("Ideas per run")) as HTMLInputElement;
+    fireEvent.change(ideasPerRun, { target: { value: "" } });
+    fireEvent.blur(ideasPerRun);
+
+    expect(ideasPerRun.value).toBe("3");
   });
 });

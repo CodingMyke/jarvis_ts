@@ -17,7 +17,7 @@ export function TimerReadout({
       <span
         className={`text-3xl font-semibold tabular-nums ${
           timer.isExpired
-            ? "text-red-400"
+            ? "text-danger"
             : timer.isPaused
               ? "text-yellow-400"
               : "text-foreground"
@@ -25,7 +25,7 @@ export function TimerReadout({
       >
         {formatTimerDisplay(displayTime.seconds, displayTime.milliseconds)}
       </span>
-      <div className="mt-2 h-1 w-full overflow-hidden rounded-full bg-white/10">
+      <div className="mt-2 h-1 w-full overflow-hidden rounded-full bg-line">
         <div
           className={`h-full transition-[width,background-color] duration-100 ${
             timer.isExpired ? "bg-red-500" : "bg-accent"

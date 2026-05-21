@@ -26,11 +26,20 @@ export { GEMINI_VOICES, type GeminiVoice } from "./config/voices.config";
 // Audio utilities
 export { WakeWordManager, type WakeWordManagerOptions } from "./audio";
 
+// Runtime
+export { createVoiceChatRuntime } from "../runtime/voice-chat-runtime";
+export type {
+  VoiceChatRuntime,
+  VoiceChatRuntimeDependencies,
+  VoiceChatRuntimeListener,
+  VoiceChatRuntimeSnapshot,
+  VoiceChatRuntimeToolExecutedEvent,
+  VoiceChatRuntimeToolExecutedListener,
+} from "../runtime/voice-chat-runtime.types";
+
 // Storage
 export {
   ConversationStorage,
-  summarizeConversation,
-  createSummaryTurns,
   type ConversationTurn,
   type SavedConversation,
 } from "./storage";

@@ -1,7 +1,9 @@
 export {
   createCalendarEvent,
+  fetchDashboardCalendarEvents,
   fetchCalendarEvents,
 } from "./lib/actions";
+export type { DashboardCalendarEventsResult } from "./lib/actions";
 export type {
   UICalendarEvent,
   UIDayEvents,
