@@ -368,11 +368,40 @@ describe("academy design", () => {
     expectNoLegacyRoundedUtility(screen.getByRole("button", { name: "Save changes" }));
     fireEvent.change(screen.getByLabelText("Title"), { target: { value: "Updated title" } });
     fireEvent.change(screen.getByLabelText("Body"), { target: { value: "Updated body" } });
-    expect(screen.getByRole("button", { name: "Generate all" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Generate title" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Generate caption" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Generate body" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Generate hashtags" })).toBeInTheDocument();
+    const saveButton = screen.getByRole("button", { name: "Save changes" });
+    const headerActions = saveButton.parentElement;
+
+    expect(headerActions).not.toBeNull();
+    expect(within(headerActions as HTMLElement).getByRole("button", { name: "Generate all" }))
+      .toBeInTheDocument();
+
+    const titleFieldHeader = screen.getByLabelText("Title").previousElementSibling;
+    const captionFieldHeader = screen.getByLabelText("Caption").previousElementSibling;
+    const bodyFieldHeader = screen.getByLabelText("Body").previousElementSibling;
+    const hashtagsFieldHeader = screen.getByLabelText("Hashtags").previousElementSibling;
+    const ideaFieldHeader = screen.getByLabelText("Idea").previousElementSibling;
+    const notesFieldHeader = screen.getByLabelText("Notes").previousElementSibling;
+
+    expect(titleFieldHeader).not.toBeNull();
+    expect(captionFieldHeader).not.toBeNull();
+    expect(bodyFieldHeader).not.toBeNull();
+    expect(hashtagsFieldHeader).not.toBeNull();
+    expect(ideaFieldHeader).not.toBeNull();
+    expect(notesFieldHeader).not.toBeNull();
+
+    expect(within(titleFieldHeader as HTMLElement).getByRole("button", { name: "Generate title" }))
+      .toBeInTheDocument();
+    expect(within(captionFieldHeader as HTMLElement).getByRole("button", { name: "Generate caption" }))
+      .toBeInTheDocument();
+    expect(within(bodyFieldHeader as HTMLElement).getByRole("button", { name: "Generate body" }))
+      .toBeInTheDocument();
+    expect(
+      within(hashtagsFieldHeader as HTMLElement).getByRole("button", { name: "Generate hashtags" }),
+    ).toBeInTheDocument();
+    expect(within(ideaFieldHeader as HTMLElement).queryByRole("button", { name: /Generate/i }))
+      .not.toBeInTheDocument();
+    expect(within(notesFieldHeader as HTMLElement).queryByRole("button", { name: /Generate/i }))
+      .not.toBeInTheDocument();
     await act(async () => {
       fireEvent.click(screen.getByRole("button", { name: "Generate title" }));
     });

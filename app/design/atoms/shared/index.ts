@@ -6,6 +6,7 @@ export {
   GearIcon,
   MicrophoneIcon,
   SaveIcon,
+  SparklesIcon,
   StopIcon,
   TrashIcon,
 } from "./icons";

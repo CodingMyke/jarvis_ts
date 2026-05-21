@@ -18,13 +18,13 @@ export async function hasActiveFlowRun(
     .eq("user_id", input.userId)
     .eq("flow", input.flow)
     .in("status", ["queued", "processing"])
-    .maybeSingle();
+    .limit(1);
 
   if (error) {
     throw error;
   }
 
-  return Boolean(data);
+  return (data?.length ?? 0) > 0;
 }
 
 export async function insertAutomationRun(

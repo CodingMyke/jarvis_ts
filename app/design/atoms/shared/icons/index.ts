@@ -5,5 +5,6 @@ export { ChevronUpIcon } from "./ChevronUpIcon";
 export { GearIcon } from "./GearIcon";
 export { MicrophoneIcon } from "./MicrophoneIcon";
 export { SaveIcon } from "./SaveIcon";
+export { SparklesIcon } from "./SparklesIcon";
 export { StopIcon } from "./StopIcon";
 export { TrashIcon } from "./TrashIcon";
