@@ -1,9 +1,9 @@
-# Total System Restructure - Jarvis Personal OS
+# Jarvis Personal OS - Product Evolution Draft
 
 ## Obiettivo
-Ristrutturare totalmente il sistema Jarvis da assistente centrato sulla singola esperienza chat/voce
-a piattaforma personale a sezioni, dove organizzazione, crescita e apprendimento sono il flusso
-principale.
+Evolvere Jarvis da assistente centrato sulla singola esperienza chat/voce a piattaforma personale
+a sezioni, dove organizzazione, crescita e apprendimento diventano il flusso principale, lasciando
+comunque spazio a iterazioni e ridefinizioni progressive.
 
 ## Perché applicarla
 - L'esperienza attuale è forte sulla conversazione, ma debole nella visione d'insieme quotidiana.
@@ -59,7 +59,17 @@ Percorsi personalizzati con supporto attivo:
 
 Obiettivo: apprendimento misurabile e progressivo.
 
-### 6) News
+### 6) Progression / Gamification
+Layer trasversale per rendere più motivante la crescita personale:
+- tracciare attività rilevanti della vita quotidiana, per esempio palestra, studio e routine utili
+- assegnare punti/XP e livelli in base alla costanza
+- sbloccare obiettivi personali, reward o milestone al raggiungimento di soglie definite
+- rendere visibile il progresso nel tempo in modo semplice e motivante
+
+Obiettivo: trasformare abitudini e miglioramento personale in un sistema concreto, misurabile e
+coinvolgente.
+
+### 7) News
 Notizie sintetizzate in base agli interessi:
 - selezione personalizzata
 - sintesi utile, non rumorosa
@@ -81,6 +91,7 @@ Il sistema deve guidare l'utente su tre assi:
 3. Apprendimento continuo
 
 ## Nota di progettazione
-La direzione è definita a livello alto, ma alcuni dettagli UX/funzionali vanno ancora chiariti con
-discovery e iterazioni (priorità sezioni, interazioni principali, livello automazioni, comportamento
-assistente in ogni sezione).
+Questa direzione va trattata come bozza evolutiva e non come struttura già definitiva.
+Alcuni dettagli UX/funzionali vanno ancora chiariti con discovery e iterazioni (priorità sezioni,
+interazioni principali, livello automazioni, comportamento assistente in ogni sezione, profondità
+del sistema di gamification personale).

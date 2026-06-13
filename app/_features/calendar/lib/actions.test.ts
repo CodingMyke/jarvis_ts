@@ -22,7 +22,7 @@ describe("calendar server actions", () => {
           },
         ],
       })
-      .mockRejectedValueOnce(new Error("calendar down"));
+      .mockRejectedValueOnce(new Error("calendar down assistant"));
     const getCalendarService = vi.fn(() => ({ getEvents }));
     const groupCalendarEventsByDay = vi.fn().mockReturnValue([{ date: "2026-03-15", events: [] }]);
 
@@ -40,6 +40,46 @@ describe("calendar server actions", () => {
       { date: "2026-03-15", events: [] },
     ]);
     await expect(fetchCalendarEvents()).resolves.toEqual([]);
+
+    expect(getEvents).toHaveBeenCalledWith({ maxResults: 10 });
+    expect(groupCalendarEventsByDay).toHaveBeenCalled();
+    expect(errorSpy).toHaveBeenCalled();
+  });
+
+  it("returns dashboard calendar data with explicit error signaling", async () => {
+    const getEvents = vi
+      .fn()
+      .mockResolvedValueOnce({
+        events: [
+          {
+            id: "event-1",
+            title: "Riunione",
+            startTime: new Date("2026-03-15T09:00:00.000Z"),
+          },
+        ],
+      })
+      .mockRejectedValueOnce(new Error("calendar down dashboard"));
+    const getCalendarService = vi.fn(() => ({ getEvents }));
+    const groupCalendarEventsByDay = vi.fn().mockReturnValue([{ date: "2026-03-15", events: [] }]);
+
+    vi.doMock("@/app/_features/calendar/server/calendar.service", () => ({
+      getCalendarService,
+    }));
+    vi.doMock("@/app/_features/calendar/lib/calendar-mappers", () => ({
+      groupCalendarEventsByDay,
+    }));
+
+    const { fetchDashboardCalendarEvents } = await import("./actions");
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
+
+    await expect(fetchDashboardCalendarEvents({ maxResults: 10 })).resolves.toEqual({
+      days: [{ date: "2026-03-15", events: [] }],
+      hasError: false,
+    });
+    await expect(fetchDashboardCalendarEvents()).resolves.toEqual({
+      days: [],
+      hasError: true,
+    });
 
     expect(getEvents).toHaveBeenCalledWith({ maxResults: 10 });
     expect(groupCalendarEventsByDay).toHaveBeenCalled();

@@ -99,13 +99,8 @@ describe("chats.service", () => {
   it("creates chats and surfaces insert errors", async () => {
     vi.doMock("@/app/_features/assistant", () => ({
       SUMMARY_WINDOW_SIZE: 3,
-      createSummaryTurn: vi.fn((text: string) => ({
-        role: "model",
-        parts: [{ text }],
-      })),
     }));
     vi.doMock("@/app/_server/ai/llm", () => ({
-      generateSummaryFromTurns: vi.fn(),
       generateChatSummaryForSearch: vi.fn(),
       generateChatTitle: vi.fn(),
     }));
@@ -151,10 +146,8 @@ describe("chats.service", () => {
   it("gets chats by id, lists chats and deletes chats", async () => {
     vi.doMock("@/app/_features/assistant", () => ({
       SUMMARY_WINDOW_SIZE: 3,
-      createSummaryTurn: vi.fn(),
     }));
     vi.doMock("@/app/_server/ai/llm", () => ({
-      generateSummaryFromTurns: vi.fn(),
       generateChatSummaryForSearch: vi.fn(),
       generateChatTitle: vi.fn(),
     }));
@@ -220,10 +213,8 @@ describe("chats.service", () => {
       .mockResolvedValueOnce([0.1, 0.2]);
     vi.doMock("@/app/_features/assistant", () => ({
       SUMMARY_WINDOW_SIZE: 3,
-      createSummaryTurn: vi.fn(),
     }));
     vi.doMock("@/app/_server/ai/llm", () => ({
-      generateSummaryFromTurns: vi.fn(),
       generateChatSummaryForSearch: vi.fn(),
       generateChatTitle: vi.fn(),
     }));
@@ -280,22 +271,15 @@ describe("chats.service", () => {
     });
   });
 
-  it("appends turns, compacts history, updates summaries and falls back on title generation failure", async () => {
-    const createSummaryTurn = vi.fn((text: string) => ({
-      role: "model",
-      parts: [{ text: `summary:${text}` }],
-    }));
-    const generateSummaryFromTurns = vi.fn().mockResolvedValue("compact summary");
+  it("appends turns, trims history, updates summaries and falls back on title generation failure", async () => {
     const generateChatSummaryForSearch = vi.fn().mockResolvedValue("search summary");
     const generateChatTitle = vi.fn().mockRejectedValue(new Error("title failed"));
     const embedMock = vi.fn().mockResolvedValue([0.2, 0.4]);
 
     vi.doMock("@/app/_features/assistant", () => ({
       SUMMARY_WINDOW_SIZE: 3,
-      createSummaryTurn,
     }));
     vi.doMock("@/app/_server/ai/llm", () => ({
-      generateSummaryFromTurns,
       generateChatSummaryForSearch,
       generateChatTitle,
     }));
@@ -357,13 +341,18 @@ describe("chats.service", () => {
       success: true,
       chat: { id: chatId },
     });
-    expect(createSummaryTurn).toHaveBeenCalledWith("compact summary");
     expect(generateChatSummaryForSearch).toHaveBeenCalled();
+    expect(generateChatTitle).toHaveBeenCalledWith("search summary");
     expect(embedMock).toHaveBeenCalledWith("search summary", {
       taskType: "RETRIEVAL_DOCUMENT",
     });
     expect(updateBuilder.update).toHaveBeenCalledWith(
       expect.objectContaining({
+        assistant_history: [
+          { role: "model", parts: [{ text: "due" }] },
+          { role: "user", parts: [{ text: "tre" }] },
+          { role: "model", parts: [{ text: "quattro" }] },
+        ],
         title: "Chat",
         summary_text: "search summary",
         summary_embedding: JSON.stringify([0.2, 0.4]),

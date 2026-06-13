@@ -27,6 +27,15 @@ vi.mock("next/link", () => ({
   ),
 }));
 
+function expectNoLegacyRoundedUtility(element: HTMLElement) {
+  expect(element.className).not.toMatch(/(^|\s)rounded-(?!app\b|round\b)[^\s]+(?=\s|$)/);
+}
+
+function expectSemanticAppRadius(element: HTMLElement) {
+  expect(element.className).toContain("rounded-app");
+  expectNoLegacyRoundedUtility(element);
+}
+
 function DateTimeProbe() {
   const { date, dateRef, day, dayRef, time, timeRef } = useAssistantDateTime();
 
@@ -124,7 +133,9 @@ describe("assistant design", () => {
       />,
     );
 
+    const floatingShell = container.querySelector(".floating-chat > div") as HTMLElement;
     const scrollContainer = container.querySelector(".chat-fade-top") as HTMLDivElement;
+    expectSemanticAppRadius(floatingShell);
     expect(scrollContainer.scrollTop).toBe(480);
 
     fireEvent.click(screen.getByLabelText("Espandi chat"));
@@ -138,6 +149,10 @@ describe("assistant design", () => {
     expect(
       screen.getByText(/Sei sicuro di voler eliminare definitivamente questa chat/),
     ).toBeInTheDocument();
+    expectSemanticAppRadius(
+      screen.getByText(/Sei sicuro di voler eliminare definitivamente questa chat/)
+        .closest(".rounded-app") as HTMLElement,
+    );
 
     fireEvent.click(screen.getAllByRole("button", { name: "Elimina chat" })[1] as HTMLElement);
 
@@ -328,6 +343,7 @@ describe("assistant design", () => {
 
     expect(onClick).toHaveBeenCalledTimes(2);
     expect(screen.getByText('In attesa... Dì "Jarvis"')).toBeInTheDocument();
+    expectSemanticAppRadius(screen.getByRole("link", { name: "Impostazioni" }));
     expect(screen.getByRole("link", { name: "Impostazioni" })).toHaveAttribute(
       "href",
       "/settings",

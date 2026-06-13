@@ -1,4 +1,3 @@
-// used the fkg testing skill zioo
 import { NextRequest } from "next/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -36,18 +35,63 @@ const chatsMocks = vi.hoisted(() => ({
   handleDeleteChat: vi.fn(),
 }));
 
+const progressionMocks = vi.hoisted(() => ({
+  getProgressionUnauthorizedResponse: vi.fn(),
+  handleGetProgressionOverview: vi.fn(),
+  handleGetProgressionLevel: vi.fn(),
+  handleGetProgressionStatus: vi.fn(),
+  handleEnsureProgressionProfile: vi.fn(),
+  handleGetProgressionToday: vi.fn(),
+  handleGetProgressionGoals: vi.fn(),
+  handleCreateProgressionGoal: vi.fn(),
+  handleUpdateProgressionGoal: vi.fn(),
+  handleDeleteProgressionGoal: vi.fn(),
+  handleCreateProgressionCheckin: vi.fn(),
+  handleUndoProgressionCheckin: vi.fn(),
+  handleGetProgressionDeadlines: vi.fn(),
+  handleGetProgressionDeadlineReview: vi.fn(),
+  handleResolveProgressionDeadline: vi.fn(),
+  handleGetProgressionXpHistory: vi.fn(),
+}));
+
+const proxyMocks = vi.hoisted(() => ({
+  createServerClient: vi.fn(),
+  getSupabaseConfig: vi.fn(() => ({
+    url: "https://supabase.example",
+    anonKey: "anon-key",
+  })),
+  user: null as { id: string } | null,
+}));
+
 vi.mock("next/headers", () => nextHeadersMocks);
 vi.mock("@/app/_server", () => serverMocks);
 vi.mock("@/app/_features/tasks", () => tasksMocks);
 vi.mock("@/app/_features/calendar", () => calendarMocks);
 vi.mock("@/app/_features/chats", () => chatsMocks);
+vi.mock("@/app/_features/progression", () => progressionMocks);
+vi.mock("@supabase/ssr", () => ({
+  createServerClient: proxyMocks.createServerClient,
+}));
+vi.mock("@/app/_server/supabase/supabase.client", () => ({
+  getSupabaseConfig: proxyMocks.getSupabaseConfig,
+}));
 
 import * as authCallbackRoute from "./auth/callback/google/route";
 import * as authGoogleRoute from "./auth/google/route";
 import * as calendarRoute from "./calendar/events/route";
 import * as chatsRoute from "./chats/route";
+import * as progressionRoute from "./progression/route";
+import * as progressionLevelRoute from "./progression/level/route";
+import * as progressionProfileRoute from "./progression/profile/route";
+import * as progressionStatusRoute from "./progression/status/route";
+import * as progressionTodayRoute from "./progression/today/route";
+import * as progressionGoalsRoute from "./progression/goals/route";
+import * as progressionCheckinsRoute from "./progression/check-ins/route";
+import * as progressionDeadlinesRoute from "./progression/deadlines/route";
+import * as progressionXpHistoryRoute from "./progression/xp-history/route";
 import * as supabaseAuthCallbackRoute from "../auth/callback/route";
 import * as tasksRoute from "./tasks/route";
+import * as proxyRoute from "@/proxy";
 
 function createJsonResponse(body: Record<string, unknown>, status: number = 200): Response {
   return Response.json(body, { status });
@@ -76,6 +120,18 @@ beforeEach(() => {
     getAll: vi.fn(() => []),
     set: vi.fn(),
   });
+  proxyMocks.user = null;
+  proxyMocks.getSupabaseConfig.mockReturnValue({
+    url: "https://supabase.example",
+    anonKey: "anon-key",
+  });
+  proxyMocks.createServerClient.mockImplementation(() => ({
+    auth: {
+      getUser: vi.fn().mockResolvedValue({
+        data: { user: proxyMocks.user },
+      }),
+    },
+  }));
 });
 
 describe("tasks route", () => {
@@ -417,6 +473,185 @@ describe("chats route", () => {
   });
 });
 
+describe("progression routes", () => {
+  it("returns the unauthorized response when auth is missing", async () => {
+    const unauthorized = createJsonResponse(
+      { success: false, error: "UNAUTHORIZED" },
+      401,
+    );
+    serverMocks.getAuthContext.mockResolvedValue(null);
+    progressionMocks.getProgressionUnauthorizedResponse.mockReturnValue(unauthorized);
+
+    const response = await progressionRoute.GET(
+      new NextRequest("http://localhost/api/progression"),
+    );
+
+    expect(progressionMocks.getProgressionUnauthorizedResponse).toHaveBeenCalledOnce();
+    expect(response.status).toBe(401);
+  });
+
+  it("delegates authenticated progression route requests", async () => {
+    serverMocks.getAuthContext.mockResolvedValue({ userId: "user-1" });
+    progressionMocks.handleGetProgressionOverview.mockResolvedValue(
+      createJsonResponse({ success: true }),
+    );
+    progressionMocks.handleGetProgressionLevel.mockResolvedValue(
+      createJsonResponse({ success: true, level: { levelProgress: { level: 3 } } }),
+    );
+    progressionMocks.handleGetProgressionStatus.mockResolvedValue(
+      createJsonResponse({ success: true, status: "OK" }),
+    );
+    progressionMocks.handleEnsureProgressionProfile.mockResolvedValue(
+      createJsonResponse({ success: true }),
+    );
+    progressionMocks.handleGetProgressionToday.mockResolvedValue(
+      createJsonResponse({ success: true, today: { todayItems: [] } }),
+    );
+    progressionMocks.handleGetProgressionGoals.mockResolvedValue(
+      createJsonResponse({ success: true, goals: [] }),
+    );
+    progressionMocks.handleCreateProgressionGoal.mockResolvedValue(
+      createJsonResponse({ success: true }),
+    );
+    progressionMocks.handleUpdateProgressionGoal.mockResolvedValue(
+      createJsonResponse({ success: true }),
+    );
+    progressionMocks.handleDeleteProgressionGoal.mockResolvedValue(
+      createJsonResponse({ success: true }),
+    );
+    progressionMocks.handleCreateProgressionCheckin.mockResolvedValue(
+      createJsonResponse({ success: true }),
+    );
+    progressionMocks.handleUndoProgressionCheckin.mockResolvedValue(
+      createJsonResponse({ success: true }),
+    );
+    progressionMocks.handleGetProgressionDeadlines.mockResolvedValue(
+      createJsonResponse({ success: true }),
+    );
+    progressionMocks.handleGetProgressionDeadlineReview.mockResolvedValue(
+      createJsonResponse({ success: true, expiredGoals: [] }),
+    );
+    progressionMocks.handleResolveProgressionDeadline.mockResolvedValue(
+      createJsonResponse({ success: true }),
+    );
+    progressionMocks.handleGetProgressionXpHistory.mockResolvedValue(
+      createJsonResponse({ success: true }),
+    );
+
+    const overviewRequest = new NextRequest("http://localhost/api/progression?status=all");
+    const statusRequest = new NextRequest("http://localhost/api/progression/status", {
+      method: "POST",
+      body: JSON.stringify({ timezone: "Europe/Rome" }),
+    });
+    const profileRequest = new NextRequest("http://localhost/api/progression/profile", {
+      method: "POST",
+      body: JSON.stringify({ timezone: "Europe/Rome" }),
+    });
+    const goalsRequest = new NextRequest("http://localhost/api/progression/goals?id=goal-1");
+    const goalsListRequest = new NextRequest("http://localhost/api/progression/goals");
+    const createGoalRequest = new NextRequest("http://localhost/api/progression/goals", {
+      method: "POST",
+      body: JSON.stringify({ title: "Learn piano" }),
+    });
+    const updateGoalRequest = new NextRequest("http://localhost/api/progression/goals", {
+      method: "PATCH",
+      body: JSON.stringify({ id: "goal-1", title: "Updated" }),
+    });
+    const deleteGoalRequest = new NextRequest("http://localhost/api/progression/goals?id=goal-1", {
+      method: "DELETE",
+    });
+    const createCheckinRequest = new NextRequest("http://localhost/api/progression/check-ins", {
+      method: "POST",
+      body: JSON.stringify({ actionId: "action-1" }),
+    });
+    const undoCheckinRequest = new NextRequest(
+      "http://localhost/api/progression/check-ins?id=checkin-1",
+      { method: "DELETE" },
+    );
+    const resolveDeadlineRequest = new NextRequest("http://localhost/api/progression/deadlines", {
+      method: "PATCH",
+      body: JSON.stringify({ goalId: "goal-1", action: "complete" }),
+    });
+    const historyRequest = new NextRequest("http://localhost/api/progression/xp-history?limit=10");
+
+    await progressionRoute.GET(overviewRequest);
+    await progressionStatusRoute.POST(statusRequest);
+    await progressionLevelRoute.GET();
+    await progressionProfileRoute.POST(profileRequest);
+    await progressionTodayRoute.GET();
+    await progressionGoalsRoute.GET(goalsRequest);
+    await progressionGoalsRoute.GET(goalsListRequest);
+    await progressionGoalsRoute.POST(createGoalRequest);
+    await progressionGoalsRoute.PATCH(updateGoalRequest);
+    await progressionGoalsRoute.DELETE(deleteGoalRequest);
+    await progressionCheckinsRoute.POST(createCheckinRequest);
+    await progressionCheckinsRoute.DELETE(undoCheckinRequest);
+    await progressionDeadlinesRoute.GET();
+    await progressionDeadlinesRoute.PATCH(resolveDeadlineRequest);
+    await progressionXpHistoryRoute.GET(historyRequest);
+
+    expect(progressionMocks.handleGetProgressionOverview).toHaveBeenCalledWith(
+      { userId: "user-1" },
+      overviewRequest.nextUrl.searchParams,
+    );
+    expect(progressionMocks.handleGetProgressionStatus).toHaveBeenCalledWith(
+      { userId: "user-1" },
+      { timezone: "Europe/Rome" },
+    );
+    expect(progressionMocks.handleGetProgressionLevel).toHaveBeenCalledWith({
+      userId: "user-1",
+    });
+    expect(progressionMocks.handleEnsureProgressionProfile).toHaveBeenCalledWith(
+      { userId: "user-1" },
+      { timezone: "Europe/Rome" },
+    );
+    expect(progressionMocks.handleGetProgressionToday).toHaveBeenCalledWith({
+      userId: "user-1",
+    });
+    expect(progressionMocks.handleGetProgressionGoals).toHaveBeenCalledWith(
+      { userId: "user-1" },
+      goalsRequest.nextUrl.searchParams,
+    );
+    expect(progressionMocks.handleGetProgressionGoals).toHaveBeenCalledWith(
+      { userId: "user-1" },
+      goalsListRequest.nextUrl.searchParams,
+    );
+    expect(progressionMocks.handleCreateProgressionGoal).toHaveBeenCalledWith(
+      { userId: "user-1" },
+      { title: "Learn piano" },
+    );
+    expect(progressionMocks.handleUpdateProgressionGoal).toHaveBeenCalledWith(
+      { userId: "user-1" },
+      { id: "goal-1", title: "Updated" },
+    );
+    expect(progressionMocks.handleDeleteProgressionGoal).toHaveBeenCalledWith(
+      { userId: "user-1" },
+      {},
+      deleteGoalRequest.nextUrl.searchParams,
+    );
+    expect(progressionMocks.handleCreateProgressionCheckin).toHaveBeenCalledWith(
+      { userId: "user-1" },
+      { actionId: "action-1" },
+    );
+    expect(progressionMocks.handleUndoProgressionCheckin).toHaveBeenCalledWith(
+      { userId: "user-1" },
+      {},
+      undoCheckinRequest.nextUrl.searchParams,
+    );
+    expect(progressionMocks.handleGetProgressionDeadlines).toHaveBeenCalledWith({
+      userId: "user-1",
+    });
+    expect(progressionMocks.handleResolveProgressionDeadline).toHaveBeenCalledWith(
+      { userId: "user-1" },
+      { goalId: "goal-1", action: "complete" },
+    );
+    expect(progressionMocks.handleGetProgressionXpHistory).toHaveBeenCalledWith(
+      { userId: "user-1" },
+      historyRequest.nextUrl.searchParams,
+    );
+  });
+});
+
 describe("Google auth routes", () => {
   it("redirects to the Google OAuth URL", async () => {
     vi.stubEnv("GOOGLE_CALENDAR_CLIENT_ID", "google-client");
@@ -562,7 +797,12 @@ describe("Supabase auth callback route", () => {
       error: null,
     });
     serverMocks.createClient.mockReturnValueOnce(successfulSupabase);
-    const successResponse = await supabaseAuthCallbackRoute.GET(
+    serverMocks.createClient.mockReturnValueOnce(successfulSupabase);
+    const defaultSuccessResponse = await supabaseAuthCallbackRoute.GET(
+      new Request("https://jarvis.example/auth/callback?code=xyz"),
+    );
+
+    const assistantSuccessResponse = await supabaseAuthCallbackRoute.GET(
       new Request("https://jarvis.example/auth/callback?code=xyz&next=assistant"),
     );
 
@@ -572,7 +812,52 @@ describe("Supabase auth callback route", () => {
     expect(exchangeFailureResponse.headers.get("location")).toBe(
       "https://jarvis.example/?error=bad%20code",
     );
-    expect(successResponse.headers.get("location")).toBe("https://jarvis.example/assistant");
+    expect(defaultSuccessResponse.headers.get("location")).toBe("https://jarvis.example/dashboard");
+    expect(assistantSuccessResponse.headers.get("location")).toBe("https://jarvis.example/assistant");
     expect(serverMocks.createClient).toHaveBeenCalledWith(cookieStore);
+  });
+});
+
+describe("proxy route", () => {
+  it("redirects authenticated root requests to /dashboard", async () => {
+    proxyMocks.user = { id: "user-1" };
+
+    const response = await proxyRoute.proxy(
+      new NextRequest("https://jarvis.example/"),
+    );
+
+    expect(response.status).toBe(307);
+    expect(response.headers.get("location")).toBe("https://jarvis.example/dashboard");
+  });
+
+  it("redirects unauthenticated protected requests preserving the next path", async () => {
+    const response = await proxyRoute.proxy(
+      new NextRequest("https://jarvis.example/dashboard?tab=main"),
+    );
+
+    expect(response.status).toBe(307);
+    expect(response.headers.get("location")).toBe(
+      "https://jarvis.example/?next=%2Fdashboard%3Ftab%3Dmain",
+    );
+  });
+
+  it("keeps /assistant deep-link redirects after login", async () => {
+    const response = await proxyRoute.proxy(
+      new NextRequest("https://jarvis.example/assistant"),
+    );
+
+    expect(response.status).toBe(307);
+    expect(response.headers.get("location")).toBe("https://jarvis.example/?next=%2Fassistant");
+  });
+
+  it("keeps /setup/calendar protected", async () => {
+    const response = await proxyRoute.proxy(
+      new NextRequest("https://jarvis.example/setup/calendar"),
+    );
+
+    expect(response.status).toBe(307);
+    expect(response.headers.get("location")).toBe(
+      "https://jarvis.example/?next=%2Fsetup%2Fcalendar",
+    );
   });
 });

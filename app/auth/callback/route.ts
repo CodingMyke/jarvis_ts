@@ -5,12 +5,13 @@ import { cookies } from "next/headers";
 /**
  * Callback OAuth Supabase Auth (es. Google).
  * Riceve il code da Supabase, lo scambia con la sessione e imposta i cookie.
- * Reindirizza a "next" se presente, altrimenti a /.
+ * Reindirizza a "next" se presente, altrimenti a /dashboard.
  */
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const code = searchParams.get("code");
-  const nextUrl = searchParams.get("next") ?? "/";
+  const nextFromQuery = searchParams.get("next");
+  const nextUrl = nextFromQuery && nextFromQuery.trim() ? nextFromQuery : "/dashboard";
   const errorParam = searchParams.get("error");
   const errorDescription = searchParams.get("error_description");
 

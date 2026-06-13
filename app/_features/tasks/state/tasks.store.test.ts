@@ -1,4 +1,3 @@
-// used the fkg testing skill zioo
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   createTodos,
@@ -25,6 +24,18 @@ function createTodo(overrides: Partial<Todo> = {}): Todo {
     updatedAt: 1,
     ...overrides,
   };
+}
+
+function createDeferred<T>(): {
+  promise: Promise<T>;
+  resolve: (value: T) => void;
+} {
+  let resolve: (value: T) => void = () => undefined;
+  const promise = new Promise<T>((innerResolve) => {
+    resolve = innerResolve;
+  });
+
+  return { promise, resolve };
 }
 
 describe("tasks store", () => {
@@ -77,7 +88,7 @@ describe("tasks store", () => {
     });
   });
 
-  it("creates, updates, removes and clears completed todos through refresh", async () => {
+  it("creates, removes and clears completed todos through refresh", async () => {
     vi.mocked(createTodos).mockResolvedValue({
       success: true,
       todo: createTodo({ id: "todo-created", text: "Nuovo task" }),
@@ -102,13 +113,6 @@ describe("tasks store", () => {
         count: 1,
         completedCount: 0,
         pendingCount: 1,
-      })
-      .mockResolvedValueOnce({
-        success: true,
-        todos: [createTodo({ id: "todo-created", text: "Task aggiornato", completed: true })],
-        count: 1,
-        completedCount: 1,
-        pendingCount: 0,
       })
       .mockResolvedValueOnce({
         success: true,
@@ -144,6 +148,61 @@ describe("tasks store", () => {
 
     await expect(useTasksStore.getState().clearCompleted()).resolves.toBe(true);
     expect(useTasksStore.getState().todos).toEqual([]);
+  });
+
+  it("optimistically updates todo completion and keeps the server payload on success", async () => {
+    useTasksStore.getState().initialize([createTodo({ id: "todo-1", completed: false })]);
+
+    const deferred = createDeferred<Awaited<ReturnType<typeof updateTodos>>>();
+    vi.mocked(updateTodos).mockReturnValue(deferred.promise);
+
+    const updatePromise = useTasksStore.getState().update("todo-1", { completed: true });
+
+    expect(useTasksStore.getState().todos[0]).toMatchObject({
+      id: "todo-1",
+      completed: true,
+    });
+
+    deferred.resolve({
+      success: true,
+      todo: createTodo({ id: "todo-1", completed: true, updatedAt: 99 }),
+    });
+
+    await expect(updatePromise).resolves.toBe(true);
+    expect(getTodos).not.toHaveBeenCalled();
+    expect(useTasksStore.getState()).toMatchObject({
+      status: "ready",
+      error: null,
+      todos: [expect.objectContaining({ id: "todo-1", completed: true, updatedAt: 99 })],
+    });
+  });
+
+  it("rolls back optimistic updates when the update operation fails", async () => {
+    useTasksStore.getState().initialize([createTodo({ id: "todo-1", completed: false })]);
+
+    const deferred = createDeferred<Awaited<ReturnType<typeof updateTodos>>>();
+    vi.mocked(updateTodos).mockReturnValue(deferred.promise);
+
+    const updatePromise = useTasksStore.getState().update("todo-1", { completed: true });
+
+    expect(useTasksStore.getState().todos[0]).toMatchObject({
+      id: "todo-1",
+      completed: true,
+    });
+
+    deferred.resolve({
+      success: false,
+      error: "UPDATE_FAILED",
+      errorMessage: "Aggiornamento fallito",
+      status: 500,
+    });
+
+    await expect(updatePromise).resolves.toBe(false);
+    expect(useTasksStore.getState()).toMatchObject({
+      status: "error",
+      error: "Aggiornamento fallito",
+      todos: [expect.objectContaining({ id: "todo-1", completed: false })],
+    });
   });
 
   it("stores the operation error on failed refresh", async () => {

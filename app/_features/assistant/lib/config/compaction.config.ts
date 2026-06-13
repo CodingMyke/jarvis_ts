@@ -1,8 +1,8 @@
 /**
- * Parametri per la compattazione della conversazione.
- * assistant_history deve avere sempre al massimo SUMMARY_WINDOW_SIZE turni.
- * Se ce ne sono di più, si riassume la parte vecchia in un unico turno così che
- * il totale (riassunto + ultimi messaggi) sia <= SUMMARY_WINDOW_SIZE.
+ * Parameters for assistant history retention.
+ * assistant_history should stay at or below SUMMARY_WINDOW_SIZE turns.
+ * If the history grows beyond the window, the oldest turns are trimmed and the
+ * newest turns are kept as-is.
  */
 
 export const SUMMARY_WINDOW_SIZE = 30;

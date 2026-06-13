@@ -53,8 +53,17 @@ Le route `/api/auth/google` e `/api/auth/callback/google` restano per **Google C
 Per rigenerare i tipi dal progetto Supabase:
 
 ```bash
-npx supabase login   # una tantum, per fornire l'access token
+supabase login --token <your_personal_access_token>
+supabase link --project-ref surbhsaedsnkcpswwann
 npm run gen-supabase-types
 ```
 
-I tipi vengono scritti in `app/_server/supabase/database.types.ts`. Se compare "Access token not provided", esegui prima `npx supabase login`.
+I tipi vengono scritti in `app/_server/supabase/database.types.ts`.
+
+Se vuoi eseguire query/migrazioni direttamente sul database remoto (`--linked`), esporta anche:
+
+```bash
+export SUPABASE_DB_PASSWORD='<your_db_password>'
+```
+
+Se compare "Access token not provided", esegui prima `supabase login`.
