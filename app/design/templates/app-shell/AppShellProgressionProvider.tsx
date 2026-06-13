@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import { ensureUserSettings } from "@/app/_features/user-settings";
 import { getProgressionStatus } from "@/app/_features/progression/lib/progression-client";
 import { getMillisecondsUntilNextLocalMidnight } from "@/app/_features/progression/server/progression-dates";
 
@@ -26,11 +27,19 @@ export function AppShellProgressionProvider({ children }: { children: ReactNode 
   useEffect(() => {
     let isCancelled = false;
     let timeoutId: ReturnType<typeof setTimeout> | null = null;
+    const loadPersistedStatus =
+      getProgressionStatus as () => ReturnType<typeof getProgressionStatus>;
 
     async function loadStatus(): Promise<void> {
       try {
-        const timezone = getBrowserTimezone();
-        const statusResult = await getProgressionStatus(timezone);
+        const browserTimezone = getBrowserTimezone();
+        const ensured = await ensureUserSettings(browserTimezone);
+
+        if (isCancelled || !ensured.success) {
+          return;
+        }
+
+        const statusResult = await loadPersistedStatus();
 
         if (isCancelled || !statusResult.success) {
           return;
@@ -40,7 +49,7 @@ export function AppShellProgressionProvider({ children }: { children: ReactNode 
 
         timeoutId = setTimeout(() => {
           void loadStatus();
-        }, getMillisecondsUntilNextLocalMidnight(timezone));
+        }, getMillisecondsUntilNextLocalMidnight(ensured.settings.timezone));
       } catch {
         if (!isCancelled) {
           return;

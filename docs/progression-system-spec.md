@@ -46,7 +46,9 @@ The current implementation adopts these clarifications for v1:
   - `weekly_count`: `{ "targetCount": 3 }`
 - Lifecycle timestamps use `timestamptz`; deadlines and check-in local dates use `date`.
 - Level progress and streak-adjacent summaries are derived in service/UI responses rather than persisted as dedicated counters.
-- The authenticated app shell ensures the profile using the browser timezone on mount; a dedicated timezone settings editor is outside v1.
+- The authenticated app shell ensures `user_settings.timezone` from the browser on first authenticated mount.
+- The user can later edit timezone in `/settings`.
+- Progression reads timezone from `user_settings` and does not own it.
 - XP mutations and same-day check-in/undo mutations are executed through PostgreSQL RPCs for atomic behavior.
 
 ## Core Concepts
@@ -60,11 +62,10 @@ Initial values:
 
 - `level = 1`
 - `totalXp = 0`
-- `timezone` from the browser on first authenticated app entry
 
-The timezone becomes a user preference. It does not change automatically when the
-user opens the app from another location. If the user changes it in settings, the
-new timezone affects only future calculations.
+The timezone is a user preference stored in `user_settings`. It does not change
+automatically when the user opens the app from another location. If the user changes
+it in settings, the new timezone affects only future calculations.
 
 The profile stores the current total XP and level. XP history remains the audit
 log, but it does not duplicate the current total.

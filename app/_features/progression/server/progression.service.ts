@@ -148,6 +148,27 @@ function getDateContext(timezone: string, today?: string): ProgressionDateContex
   };
 }
 
+async function getUserTimezone(
+  supabase: ProgressionSupabase,
+  userId: string,
+): Promise<ProgressionResult<{ timezone: string }>> {
+  const { data, error } = await supabase
+    .from("user_settings")
+    .select("timezone")
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  if (error) {
+    return { success: false, error: getErrorMessage(error, "User settings load failed.") };
+  }
+
+  if (!data?.timezone || typeof data.timezone !== "string") {
+    return { success: false, error: "User timezone not found." };
+  }
+
+  return { success: true, timezone: data.timezone };
+}
+
 async function loadGoals(
   supabase: ProgressionSupabase,
   userId: string,
@@ -315,7 +336,7 @@ async function getProfile(
   }
 
   if (!data) {
-    return ensureProgressionProfile(supabase, "UTC");
+    return ensureProgressionProfile(supabase);
   }
 
   return { success: true, profile: data as ProgressionProfileRow };
@@ -415,11 +436,8 @@ function toActionUpdate(
 
 export async function ensureProgressionProfile(
   supabase: ProgressionSupabase,
-  timezone: string,
 ): Promise<ProgressionResult<{ profile: ProgressionProfileRow }>> {
-  const { data, error } = await supabase.rpc("progression_ensure_profile", {
-    p_timezone: timezone,
-  });
+  const { data, error } = await supabase.rpc("progression_ensure_profile");
 
   if (error || !data) {
     return { success: false, error: getErrorMessage(error, "Profile creation failed.") };
@@ -431,14 +449,18 @@ export async function ensureProgressionProfile(
 export async function getProgressionStatus(
   supabase: ProgressionSupabase,
   userId: string,
-  timezone: string,
 ): Promise<ProgressionResult<{ status: ProgressionStatus }>> {
-  const profileResult = await ensureProgressionProfile(supabase, timezone);
+  const profileResult = await getProfile(supabase, userId);
   if (!profileResult.success) {
     return profileResult;
   }
 
-  const todayLocalDate = getLocalDateForTimezone(new Date(), profileResult.profile.timezone);
+  const timezoneResult = await getUserTimezone(supabase, userId);
+  if (!timezoneResult.success) {
+    return timezoneResult;
+  }
+
+  const todayLocalDate = getLocalDateForTimezone(new Date(), timezoneResult.timezone);
   const { data, error } = await supabase
     .from("progression_goals")
     .select("id")
@@ -494,7 +516,12 @@ export async function getProgressionToday(
     return profileResult;
   }
 
-  const dateContext = getDateContext(profileResult.profile.timezone, options.today);
+  const timezoneResult = await getUserTimezone(supabase, userId);
+  if (!timezoneResult.success) {
+    return timezoneResult;
+  }
+
+  const dateContext = getDateContext(timezoneResult.timezone, options.today);
   const goalsResult = await loadGoals(supabase, userId, "in_progress");
   if (!goalsResult.success) {
     return goalsResult;
@@ -540,7 +567,12 @@ export async function getProgressionDeadlineReview(
     return profileResult;
   }
 
-  const dateContext = getDateContext(profileResult.profile.timezone, options.today);
+  const timezoneResult = await getUserTimezone(supabase, userId);
+  if (!timezoneResult.success) {
+    return timezoneResult;
+  }
+
+  const dateContext = getDateContext(timezoneResult.timezone, options.today);
   const expiredGoalsResult = await loadExpiredGoals(supabase, userId, dateContext.todayLocalDate);
   if (!expiredGoalsResult.success) {
     return expiredGoalsResult;
@@ -566,7 +598,12 @@ export async function getProgressionOverview(
   }
 
   const profile = profileResult.profile;
-  const dateContext = getDateContext(profile.timezone, options.today);
+  const timezoneResult = await getUserTimezone(supabase, userId);
+  if (!timezoneResult.success) {
+    return timezoneResult;
+  }
+
+  const dateContext = getDateContext(timezoneResult.timezone, options.today);
   const goalsResult = await loadGoals(supabase, userId, options.status ?? "all");
   if (!goalsResult.success) {
     return goalsResult;
@@ -1039,16 +1076,21 @@ export async function createProgressionCheckin(
     return profileResult;
   }
 
+  const timezoneResult = await getUserTimezone(supabase, userId);
+  if (!timezoneResult.success) {
+    return timezoneResult;
+  }
+
   const actionResult = await getActionById(supabase, userId, actionId);
   if (!actionResult.success) {
     return actionResult;
   }
 
-  const today = getLocalDateForTimezone(new Date(), profileResult.profile.timezone);
+  const today = getLocalDateForTimezone(new Date(), timezoneResult.timezone);
   const { data, error } = await supabase.rpc("progression_create_checkin", {
     p_action_id: actionId,
     p_local_date: today,
-    p_timezone: profileResult.profile.timezone,
+    p_timezone: timezoneResult.timezone,
     p_description: `Check-in: ${actionResult.action.title}`,
   });
 
@@ -1069,11 +1111,16 @@ export async function undoProgressionCheckin(
     return profileResult;
   }
 
-  const today = getLocalDateForTimezone(new Date(), profileResult.profile.timezone);
+  const timezoneResult = await getUserTimezone(supabase, userId);
+  if (!timezoneResult.success) {
+    return timezoneResult;
+  }
+
+  const today = getLocalDateForTimezone(new Date(), timezoneResult.timezone);
   const { data, error } = await supabase.rpc("progression_undo_checkin", {
     p_checkin_id: checkinId,
     p_local_date: today,
-    p_timezone: profileResult.profile.timezone,
+    p_timezone: timezoneResult.timezone,
     p_description: "Undo check-in",
   });
 

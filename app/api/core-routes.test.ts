@@ -539,14 +539,6 @@ describe("progression routes", () => {
     );
 
     const overviewRequest = new NextRequest("http://localhost/api/progression?status=all");
-    const statusRequest = new NextRequest("http://localhost/api/progression/status", {
-      method: "POST",
-      body: JSON.stringify({ timezone: "Europe/Rome" }),
-    });
-    const profileRequest = new NextRequest("http://localhost/api/progression/profile", {
-      method: "POST",
-      body: JSON.stringify({ timezone: "Europe/Rome" }),
-    });
     const goalsRequest = new NextRequest("http://localhost/api/progression/goals?id=goal-1");
     const goalsListRequest = new NextRequest("http://localhost/api/progression/goals");
     const createGoalRequest = new NextRequest("http://localhost/api/progression/goals", {
@@ -575,9 +567,9 @@ describe("progression routes", () => {
     const historyRequest = new NextRequest("http://localhost/api/progression/xp-history?limit=10");
 
     await progressionRoute.GET(overviewRequest);
-    await progressionStatusRoute.POST(statusRequest);
+    await progressionStatusRoute.GET();
     await progressionLevelRoute.GET();
-    await progressionProfileRoute.POST(profileRequest);
+    await progressionProfileRoute.POST();
     await progressionTodayRoute.GET();
     await progressionGoalsRoute.GET(goalsRequest);
     await progressionGoalsRoute.GET(goalsListRequest);
@@ -596,14 +588,12 @@ describe("progression routes", () => {
     );
     expect(progressionMocks.handleGetProgressionStatus).toHaveBeenCalledWith(
       { userId: "user-1" },
-      { timezone: "Europe/Rome" },
     );
     expect(progressionMocks.handleGetProgressionLevel).toHaveBeenCalledWith({
       userId: "user-1",
     });
     expect(progressionMocks.handleEnsureProgressionProfile).toHaveBeenCalledWith(
       { userId: "user-1" },
-      { timezone: "Europe/Rome" },
     );
     expect(progressionMocks.handleGetProgressionToday).toHaveBeenCalledWith({
       userId: "user-1",

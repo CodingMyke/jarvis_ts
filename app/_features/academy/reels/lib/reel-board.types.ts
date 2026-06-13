@@ -35,7 +35,7 @@ export interface UpdateReelInput {
   title?: string | null;
   caption?: string | null;
   body?: string | null;
-  hashtags?: string[];
+  hashtags?: string | null;
   notes?: string | null;
   scheduled_at?: string | null;
   published_at?: string | null;

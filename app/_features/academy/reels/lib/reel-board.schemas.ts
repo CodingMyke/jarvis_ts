@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { REEL_BOARD_STATUSES } from "./reel-board.constants";
+import { REEL_BOARD_STATUSES, REEL_GENERATION_STATUSES } from "./reel-board.constants";
 
 const optionalNullableTextSchema = z.union([z.string().trim().min(1), z.null()]).optional();
 const optionalNullableDateTimeSchema = z
@@ -7,16 +7,18 @@ const optionalNullableDateTimeSchema = z
   .optional();
 
 export const reelStatusSchema = z.enum(REEL_BOARD_STATUSES);
+export const generationStatusSchema = z.enum(REEL_GENERATION_STATUSES);
 
 export const reelSchema = z.object({
   id: z.string().uuid(),
   user_id: z.string().uuid(),
   status: reelStatusSchema,
+  generation_status: generationStatusSchema,
   idea: z.string().min(1),
   title: z.string().nullable(),
   caption: z.string().nullable(),
   body: z.string().nullable(),
-  hashtags: z.array(z.string()),
+  hashtags: z.string().nullable(),
   notes: z.string().nullable(),
   scheduled_at: z.string().nullable(),
   published_at: z.string().nullable(),
@@ -46,7 +48,7 @@ export const updateReelSchema = z
     title: optionalNullableTextSchema,
     caption: optionalNullableTextSchema,
     body: optionalNullableTextSchema,
-    hashtags: z.array(z.string().trim().min(1)).optional(),
+    hashtags: z.union([z.string().trim().min(1), z.null()]).optional(),
     notes: optionalNullableTextSchema,
     scheduled_at: optionalNullableDateTimeSchema,
     published_at: optionalNullableDateTimeSchema,

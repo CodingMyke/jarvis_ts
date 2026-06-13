@@ -97,14 +97,11 @@ describe("progression route handlers", () => {
   });
 
   it("ensures profiles and creates goals", async () => {
-    const invalidProfile = await handleEnsureProgressionProfile(auth, {});
     serviceMocks.ensureProgressionProfile.mockResolvedValueOnce({
       success: true,
-      profile: { timezone: "Europe/Rome" },
+      profile: { total_xp: 0 },
     });
-    const profile = await handleEnsureProgressionProfile(auth, {
-      timezone: "Europe/Rome",
-    });
+    const profile = await handleEnsureProgressionProfile(auth);
 
     const invalidGoal = await handleCreateProgressionGoal(auth, { title: "" });
     serviceMocks.createProgressionGoal.mockResolvedValueOnce({
@@ -117,8 +114,8 @@ describe("progression route handlers", () => {
       completionXp: 20,
     });
 
-    expect(invalidProfile.status).toBe(400);
     await expect(profile.json()).resolves.toMatchObject({ success: true });
+    expect(serviceMocks.ensureProgressionProfile).toHaveBeenCalledWith(auth.supabase);
     expect(invalidGoal.status).toBe(400);
     await expect(goal.json()).resolves.toMatchObject({
       success: true,
@@ -131,17 +128,13 @@ describe("progression route handlers", () => {
       success: true,
       status: "OK",
     });
-    const okResponse = await handleGetProgressionStatus(auth, {
-      timezone: "Europe/Rome",
-    });
+    const okResponse = await handleGetProgressionStatus(auth);
 
     serviceMocks.getProgressionStatus.mockResolvedValueOnce({
       success: true,
       status: "WARNING",
     });
-    const warningResponse = await handleGetProgressionStatus(auth, {
-      timezone: "Europe/Rome",
-    });
+    const warningResponse = await handleGetProgressionStatus(auth);
 
     await expect(okResponse.json()).resolves.toEqual({
       success: true,
@@ -151,13 +144,15 @@ describe("progression route handlers", () => {
       success: true,
       status: "WARNING",
     });
+    expect(serviceMocks.getProgressionStatus).toHaveBeenNthCalledWith(1, auth.supabase, auth.userId);
+    expect(serviceMocks.getProgressionStatus).toHaveBeenNthCalledWith(2, auth.supabase, auth.userId);
   });
 
   it("returns split contracts for level, today and goals list", async () => {
     serviceMocks.getProgressionLevel.mockResolvedValueOnce({
       success: true,
       level: {
-        profile: { timezone: "Europe/Rome", total_xp: 42 },
+        profile: { total_xp: 42 },
         levelProgress: { level: 3, totalXp: 42 },
       },
     });

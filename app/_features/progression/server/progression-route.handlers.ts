@@ -32,8 +32,6 @@ import {
   progressionGoalOperationBodySchema,
   progressionGoalUpdateBodySchema,
   progressionOverviewQuerySchema,
-  progressionProfileBodySchema,
-  progressionStatusBodySchema,
   progressionXpHistoryQuerySchema,
 } from "./progression-route.schemas";
 
@@ -134,16 +132,8 @@ export async function handleGetProgressionGoalDetails(
   });
 }
 
-export async function handleEnsureProgressionProfile(auth: AuthContext, body: unknown) {
-  const parsed = progressionProfileBodySchema.safeParse(body);
-  if (!parsed.success) {
-    return jsonError(400, {
-      error: "INVALID_PAYLOAD",
-      message: getZodErrorMessage(parsed.error),
-    });
-  }
-
-  const result = await ensureProgressionProfile(auth.supabase, parsed.data.timezone);
+export async function handleEnsureProgressionProfile(auth: AuthContext) {
+  const result = await ensureProgressionProfile(auth.supabase);
   if (!result.success) {
     return jsonError(500, {
       error: "EXECUTION_ERROR",
@@ -157,16 +147,8 @@ export async function handleEnsureProgressionProfile(auth: AuthContext, body: un
   });
 }
 
-export async function handleGetProgressionStatus(auth: AuthContext, body: unknown) {
-  const parsed = progressionStatusBodySchema.safeParse(body);
-  if (!parsed.success) {
-    return jsonError(400, {
-      error: "INVALID_PAYLOAD",
-      message: getZodErrorMessage(parsed.error),
-    });
-  }
-
-  const result = await getProgressionStatus(auth.supabase, auth.userId, parsed.data.timezone);
+export async function handleGetProgressionStatus(auth: AuthContext) {
+  const result = await getProgressionStatus(auth.supabase, auth.userId);
   if (!result.success) {
     return jsonError(500, {
       error: "EXECUTION_ERROR",

@@ -2,13 +2,13 @@
 
 ## Purpose
 
-This document captures the agreed high-level design for the first implementation of the Academy Reel generation flow. It is intended as a planning baseline before detailed technical design and coding.
+This document captures the implemented high-level design for Academy Reel generation v1.
 
 ## Goals
 
-- Build a reusable, deep-module agent core that is independent from domain-specific logic.
-- Implement the first domain use case: Academy -> Reel idea generation.
-- Keep the first release intentionally small while preserving a clean architecture for future agents.
+- Implement manual and scheduled-ready reel AI generation on top of the existing Academy board.
+- Keep orchestration server-only and typed.
+- Persist queue and run logs in Supabase for traceability.
 
 ## Core Principles
 
@@ -17,20 +17,19 @@ This document captures the agreed high-level design for the first implementation
 - Strict separation of concerns:
   - Agent core does not know DB details.
   - Domain modules own business rules and persistence.
-  - Async orchestration is externalized to a job runner.
+  - Async orchestration is externalized to a local worker.
 - Minimal, scalable v1 scope.
 
 ## Agreed End-to-End Flow (v1)
 
-1. User opens Academy Reel page and submits an idea.
-2. System immediately creates one reel record with status `processing`.
-3. UI applies optimistic update and shows the new item instantly.
-4. System emits an async job event (Inngest).
-5. Inngest runs one Reel generator agent in background.
-6. Agent executes with typed named tools only.
-7. Tool updates the same reel record with generated output.
-8. Record becomes `completed` or `failed`.
-9. Frontend polls every 3 seconds while status is `processing`.
+1. User opens Academy Reel page and creates/edits a reel.
+2. User triggers generation globally or for a single field.
+3. API validates input and enqueues one job in `academy_reel_generation_queue_jobs`.
+4. Local worker (`npm run reels:worker`) claims pending jobs.
+5. Worker calls one generation service that builds prompt + dynamic Zod output schema.
+6. Service calls OpenAI (`gpt-4o`) via Vercel AI SDK `generateObject`.
+7. Service updates reel fields and `generation_status`, then writes run logs.
+8. Drawer actions stay disabled while `generation_status = processing`.
 
 ## Agent Output Contract (v1)
 
@@ -47,11 +46,10 @@ Notes:
 
 ## Job and Async Strategy
 
-- Async execution is handled with Inngest (not Vercel cron-based worker loops).
+- Async execution is handled by a local polling worker script.
 - Trigger model:
-  - API request creates data + emits event.
-  - Inngest function processes work asynchronously.
-- This avoids long user-facing HTTP requests and improves reliability.
+  - API request creates queue jobs.
+  - Worker processes one job at a time and writes run logs.
 
 ## Module Boundaries
 
@@ -75,11 +73,11 @@ Responsibilities:
 - Concrete typed tools used by the Reel agent.
 - UI state model and actions for Reel pages.
 
-### 3) Async Orchestration (Inngest)
+### 3) Async Orchestration (Local Worker)
 
 Responsibilities:
-- Receive domain event.
-- Invoke agent workflow.
+- Claim queued jobs.
+- Invoke generation workflow.
 - Drive status transitions (`processing` -> `completed`/`failed`).
 
 Non-responsibilities:
@@ -94,17 +92,20 @@ Non-responsibilities:
 ## UI/UX Scope for v1
 
 Statuses:
+- `not_generated`
 - `processing`
 - `completed`
 - `failed`
 
 Actions:
-- `retry` when `failed`
-- `edit` after `completed`
+- `generate all` in drawer header
+- `generate title/caption/body/hashtags`
+- settings panel in `/settings` for automation config
 
 Rules:
-- Editing is blocked while `processing`.
-- Retry reuses the same record (no clone/new record).
+- Generation actions are blocked while `processing`.
+- Global generation only targets missing fields.
+- Field generation only targets the selected field.
 
 ## Prompt Governance
 
@@ -122,21 +123,10 @@ Rules:
 - Advanced list filters/sorting and expanded UI states.
 - Prompt versioning/audit framework.
 
-## Open Technical Planning Items
-
-These items are intentionally deferred to implementation planning:
-
-- Exact DB schema fields and constraints.
-- Exact event naming and payload schema.
-- Error taxonomy and retry backoff policies.
-- Observability detail level (logs/metrics/tracing).
-- API contract details and route-level validation shapes.
-
 ## Summary
 
-The v1 design balances delivery speed and architecture quality:
-- immediate user feedback,
-- async durable generation,
-- deep module separation,
-- strict typing + runtime safety,
-- and a clean path to scale with additional agents.
+The v1 implementation ships:
+- DB-backed queue + logs + per-user settings,
+- manual generation APIs and UI controls,
+- local worker orchestration,
+- typed contracts + route validation.

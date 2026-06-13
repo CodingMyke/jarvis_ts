@@ -17,12 +17,6 @@ const weeklyCountFrequencyConfigSchema = z.object({
   targetCount: z.number().int().min(1).max(7),
 });
 
-export const progressionProfileBodySchema = z.object({
-  timezone: z.string().trim().min(1).max(120),
-});
-
-export const progressionStatusBodySchema = progressionProfileBodySchema;
-
 export const progressionOverviewQuerySchema = z.object({
   status: z
     .enum(["in_progress", "to_start", "completed", "failed", "all"])
@@ -150,8 +144,6 @@ export const progressionStatusResponseSchema = z.object({
   status: z.enum(["OK", "WARNING"]),
 });
 
-export type ProgressionProfileBody = z.infer<typeof progressionProfileBodySchema>;
-export type ProgressionStatusBody = z.infer<typeof progressionStatusBodySchema>;
 export type ProgressionOverviewQuery = z.infer<typeof progressionOverviewQuerySchema>;
 export type ProgressionGoalDetailsQuery = z.infer<typeof progressionGoalDetailsQuerySchema>;
 export type ProgressionGoalsQuery = z.infer<typeof progressionGoalsQuerySchema>;

@@ -1,10 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { REEL_BOARD_STATUSES } from "../lib/reel-board.constants";
 import {
   createReelSchema,
+  generationStatusSchema,
   reelStatusSchema,
   updateReelSchema,
 } from "../lib/reel-board.schemas";
+import { REEL_GENERATION_STATUSES } from "../lib/reel-board.constants";
 
 const repositoryMocks = vi.hoisted(() => ({
   listReelsByUser: vi.fn(),
@@ -20,6 +24,20 @@ describe("reel board service", () => {
     vi.clearAllMocks();
   });
 
+  it("exposes reel generation fields in the DB contract", () => {
+    const dbTypesPath = resolve(process.cwd(), "app/_server/supabase/database.types.ts");
+    const dbTypes = readFileSync(dbTypesPath, "utf8");
+
+    expect(dbTypes).toContain("academy_reels");
+    expect(dbTypes).toContain("generation_status");
+    expect(dbTypes).toContain("hashtags: string | null");
+    expect(dbTypes).not.toContain("hashtags: string[]");
+
+    expect(dbTypes).toContain("academy_reel_generation_settings");
+    expect(dbTypes).toContain("academy_reel_generation_queue_jobs");
+    expect(dbTypes).toContain("academy_reel_generation_run_logs");
+  });
+
   it("exposes the exact allowed statuses", () => {
     expect(REEL_BOARD_STATUSES).toEqual([
       "idea",
@@ -30,6 +48,16 @@ describe("reel board service", () => {
       "published",
     ]);
     expect(reelStatusSchema.parse("ready")).toBe("ready");
+  });
+
+  it("exposes the exact allowed generation statuses", () => {
+    expect(REEL_GENERATION_STATUSES).toEqual([
+      "not_generated",
+      "processing",
+      "completed",
+      "failed",
+    ]);
+    expect(generationStatusSchema.parse("processing")).toBe("processing");
   });
 
   it("requires a trimmed non-empty idea on create", () => {
@@ -43,7 +71,7 @@ describe("reel board service", () => {
         title: "Title",
         caption: "Caption",
         body: "Body",
-        hashtags: ["#a", "#b"],
+        hashtags: "#a #b",
         idea: "Idea",
         notes: "Notes",
         scheduled_at: "2026-05-11T09:00:00.000Z",
@@ -53,7 +81,7 @@ describe("reel board service", () => {
       title: "Title",
       caption: "Caption",
       body: "Body",
-      hashtags: ["#a", "#b"],
+      hashtags: "#a #b",
       idea: "Idea",
       notes: "Notes",
     });

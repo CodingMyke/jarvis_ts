@@ -1,6 +1,7 @@
 import { fetchDashboardCalendarEvents } from "@/app/_features/calendar";
 import { fetchDashboardTasks } from "@/app/_features/tasks";
 import { DashboardCalendarTemplate, DashboardTodoTemplate } from "@/app/design";
+import { AppPageHeader } from "@/app/design/templates/shared/AppPageHeader";
 
 export default async function DashboardPage() {
   const now = new Date();
@@ -17,19 +18,26 @@ export default async function DashboardPage() {
   ]);
 
   return (
-    <div className="grid w-full grid-cols-4 items-start gap-6">
-      <div className="col-span-1">
-        <DashboardCalendarTemplate
-          initialEvents={days}
-          initialLoadError={hasCalendarError}
-        />
+    <section className="flex w-full flex-col gap-6">
+      <AppPageHeader
+        title="Dashboard"
+        subtitle="Panoramica rapida di calendario e task dei prossimi giorni."
+      />
+
+      <div className="grid w-full grid-cols-4 items-start gap-6">
+        <div className="col-span-1">
+          <DashboardCalendarTemplate
+            initialEvents={days}
+            initialLoadError={hasCalendarError}
+          />
+        </div>
+        <div className="col-span-1">
+          <DashboardTodoTemplate
+            initialTodos={todos}
+            initialLoadError={hasTasksError}
+          />
+        </div>
       </div>
-      <div className="col-span-1">
-        <DashboardTodoTemplate
-          initialTodos={todos}
-          initialLoadError={hasTasksError}
-        />
-      </div>
-    </div>
+    </section>
   );
 }

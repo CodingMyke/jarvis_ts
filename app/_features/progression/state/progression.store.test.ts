@@ -26,7 +26,6 @@ vi.mock("@/app/_features/progression/lib/progression-client", () => ({
   createProgressionCheckin: vi.fn(),
   createProgressionGoal: vi.fn(),
   deleteProgressionGoal: vi.fn(),
-  ensureProgressionProfile: vi.fn(),
   getProgressionOverview: vi.fn(),
   getProgressionXpHistory: vi.fn(),
   resolveProgressionDeadline: vi.fn(),
@@ -37,7 +36,7 @@ vi.mock("@/app/_features/progression/lib/progression-client", () => ({
 
 function createOverview() {
   return {
-    profile: { user_id: "user-1", total_xp: 10, level: 2, timezone: "Europe/Rome" },
+    profile: { user_id: "user-1", total_xp: 10, level: 2 },
     goals: [{ id: "goal-1", title: "Learn piano" }],
     todayItems: [],
     weeklyItems: [],
@@ -184,7 +183,7 @@ describe("progression store", () => {
       success: true,
       overview: {
         ...createOverview(),
-        profile: { user_id: "user-1", total_xp: 15, level: 2, timezone: "Europe/Rome" },
+        profile: { user_id: "user-1", total_xp: 15, level: 2 },
         levelProgress: {
           level: 2,
           totalXp: 15,
@@ -224,7 +223,7 @@ describe("progression store", () => {
     useProgressionStore.setState({
       overview: {
         ...createOverviewWithTodayAction("checkin-1"),
-        profile: { user_id: "user-1", total_xp: 15, level: 2, timezone: "Europe/Rome" },
+        profile: { user_id: "user-1", total_xp: 15, level: 2 },
         levelProgress: {
           level: 2,
           totalXp: 15,
@@ -304,7 +303,7 @@ describe("progression store", () => {
     useProgressionStore.setState({
       overview: {
         ...createOverviewWithTodayAction("checkin-1"),
-        profile: { user_id: "user-1", total_xp: 15, level: 2, timezone: "Europe/Rome" },
+        profile: { user_id: "user-1", total_xp: 15, level: 2 },
         levelProgress: {
           level: 2,
           totalXp: 15,

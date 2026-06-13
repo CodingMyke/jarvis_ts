@@ -9,6 +9,8 @@ const clientMocks = vi.hoisted(() => ({
   deleteReel: vi.fn(),
   updateReel: vi.fn(),
   updateReelStatus: vi.fn(),
+  generateReelFields: vi.fn(),
+  generateReelField: vi.fn(),
 }));
 
 vi.mock("@/app/_features/academy/reels", async () => {
@@ -22,6 +24,8 @@ vi.mock("@/app/_features/academy/reels", async () => {
     deleteReel: clientMocks.deleteReel,
     updateReel: clientMocks.updateReel,
     updateReelStatus: clientMocks.updateReelStatus,
+    generateReelFields: clientMocks.generateReelFields,
+    generateReelField: clientMocks.generateReelField,
   };
 });
 
@@ -38,7 +42,8 @@ const initialBoard: ReelBoard = {
         title: null,
         caption: null,
         body: null,
-        hashtags: [],
+        hashtags: null,
+        generation_status: "not_generated",
         notes: null,
         scheduled_at: null,
         published_at: null,
@@ -76,5 +81,31 @@ describe("useReelBoardWorkspace", () => {
     expect(result.current.board.columns.idea).toHaveLength(1);
     expect(result.current.board.columns.ready).toHaveLength(0);
     expect(result.current.errorMessage).toBe("Status failed");
+  });
+
+  it("saves draft before queueing global generation", async () => {
+    clientMocks.updateReel.mockResolvedValue({
+      success: true,
+      reel: {
+        ...initialBoard.columns.idea[0],
+        title: "Saved",
+      },
+    });
+    clientMocks.generateReelFields.mockResolvedValue({ success: true });
+
+    const { result } = renderHook(() => useReelBoardWorkspace(initialBoard));
+
+    await act(async () => {
+      result.current.openEditReel(initialBoard.columns.idea[0]);
+    });
+
+    await act(async () => {
+      await result.current.queueGlobalGeneration({ title: "Saved" });
+    });
+
+    expect(clientMocks.updateReel).toHaveBeenCalled();
+    expect(clientMocks.generateReelFields).toHaveBeenCalledWith(
+      "11111111-1111-4111-8111-111111111111",
+    );
   });
 });

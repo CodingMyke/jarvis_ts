@@ -12,6 +12,15 @@ export async function listReelsByUser(supabase: ReelSupabaseClient, userId: stri
     .order("updated_at", { ascending: false });
 }
 
+export async function getReelById(supabase: ReelSupabaseClient, userId: string, reelId: string) {
+  return supabase
+    .from("academy_reels")
+    .select("*")
+    .eq("user_id", userId)
+    .eq("id", reelId)
+    .maybeSingle();
+}
+
 export async function insertReel(
   supabase: ReelSupabaseClient,
   userId: string,

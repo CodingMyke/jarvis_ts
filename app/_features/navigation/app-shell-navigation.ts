@@ -5,6 +5,7 @@ export type AppShellSectionKey =
   | "academyDashboard"
   | "academyReels"
   | "academyCourses"
+  | "academyAutomation"
   | "reflections"
   | "learning"
   | "progression"
@@ -83,6 +84,13 @@ export const APP_SHELL_ACADEMY_NAVIGATION = [
     key: "academyCourses",
     href: "/academy/courses",
     label: "Corsi",
+    title: "Accademia",
+    enabled: true,
+  },
+  {
+    key: "academyAutomation",
+    href: "/academy/automation",
+    label: "Automazione",
     title: "Accademia",
     enabled: true,
   },

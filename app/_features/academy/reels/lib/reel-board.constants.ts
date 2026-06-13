@@ -8,3 +8,10 @@ export const REEL_BOARD_STATUSES = [
 ] as const;
 
 export const REEL_BOARD_DEFAULT_STATUS = "idea";
+
+export const REEL_GENERATION_STATUSES = [
+  "not_generated",
+  "processing",
+  "completed",
+  "failed",
+] as const;

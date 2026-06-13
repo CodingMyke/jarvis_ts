@@ -1,4 +1,3 @@
-import { NextRequest } from "next/server";
 import { getAuthContext, jsonError } from "@/app/_server";
 import {
   getProgressionUnauthorizedResponse,
@@ -9,15 +8,14 @@ function getRouteError(error: unknown): string {
   return error instanceof Error ? error.message : "Unknown error";
 }
 
-export async function POST(request: NextRequest) {
+export async function GET() {
   try {
     const auth = await getAuthContext();
     if (!auth) {
       return getProgressionUnauthorizedResponse();
     }
 
-    const body = await request.json();
-    return await handleGetProgressionStatus(auth, body);
+    return await handleGetProgressionStatus(auth);
   } catch (error) {
     return jsonError(500, {
       error: "EXECUTION_ERROR",
